@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(template_cpp_cmake_obscura)
+project(DaMaSCUS-SUN)
 
 # Use C++-11
 set(CMAKE_CXX_STANDARD 11)
