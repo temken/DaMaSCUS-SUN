@@ -1,0 +1,37 @@
+/bin/
+/lib/
+/build/
+/external/
+
+*.DS_Store
+
+*.DS_Store
+.depend
+
+# Ignore test executable
+/tests/tests
+
+# Ignore static libraries
+*.a
+
+# Ignore build files
+*.o
+
+# Ignore codecove files
+coverage.info
+*.gcov
+*.gcda
+*.gcno
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
