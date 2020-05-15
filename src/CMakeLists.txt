@@ -6,9 +6,9 @@ add_executable(DaMaSCUS-SUN
 
 target_compile_options(DaMaSCUS-SUN PUBLIC -Wall -pedantic)
 
-target_compile_definitions(DaMaSCUS-SUN
-	PRIVATE 
-		DAMASCUS_SUN_DIR="${PROJECT_SOURCE_DIR}/")
+target_include_directories(DaMaSCUS-SUN
+    PRIVATE
+        ${GENERATED_DIR} )
 
 target_link_libraries(DaMaSCUS-SUN
 	PUBLIC 
