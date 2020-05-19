@@ -12,6 +12,8 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 
+using namespace libphysica::natural_units;
+
 int main()
 {
 	//Initial terminal output
@@ -27,7 +29,7 @@ int main()
 	
 	std::cout <<fib(10) <<std::endl;
 	std::cout <<In_Units(1.0, meter/sec)<<std::endl;
-	std::cout <<Fractional_Days_since_J2000(1,1,2001,12)<<std::endl;
+	std::cout <<obscura::Fractional_Days_since_J2000(1,1,2001,12)<<std::endl;
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
