@@ -1,4 +1,3 @@
-
 # Executable
 add_executable(DaMaSCUS-SUN
 	main.cpp
@@ -6,13 +5,13 @@ add_executable(DaMaSCUS-SUN
 
 target_compile_options(DaMaSCUS-SUN PUBLIC -Wall -pedantic)
 
-target_include_directories(DaMaSCUS-SUN
-    PRIVATE
-        ${GENERATED_DIR} )
-
 target_link_libraries(DaMaSCUS-SUN
-	PUBLIC 
+	PUBLIC
 		coverage_config
 		libobscura)
+
+target_include_directories(DaMaSCUS-SUN
+	PRIVATE
+		${GENERATED_DIR} )
 
 install(TARGETS DaMaSCUS-SUN DESTINATION ${BIN_DIR})

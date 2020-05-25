@@ -1,18 +1,17 @@
-
 add_executable(tests
 	test_module.cpp
-	${SRC_DIR}/module.cpp)
+	${SRC_DIR}/module.cpp )
 
 target_link_libraries(tests
-	PUBLIC coverage_config 
-	PRIVATE gtest_main	#contains the main function
-)
+	PUBLIC
+		coverage_config 
+	PRIVATE
+		gtest_main	#contains the main function
+		libobscura )
+
+target_include_directories(tests PRIVATE ${GENERATED_DIR} )
 
 target_compile_options(tests PUBLIC -Wall -pedantic)
-
-target_include_directories(tests
-    PRIVATE
-        ${GENERATED_DIR} )
 
 install(TARGETS tests DESTINATION ${TESTS_DIR})
 
