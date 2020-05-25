@@ -1,6 +1,8 @@
 add_executable(tests
 	test_module.cpp
-	${SRC_DIR}/module.cpp )
+	${SRC_DIR}/module.cpp
+	test_Solar_Model.cpp
+	${SRC_DIR}/Solar_Model.cpp)
 
 target_link_libraries(tests
 	PUBLIC

@@ -1,7 +1,8 @@
 # Executable
 add_executable(DaMaSCUS-SUN
 	main.cpp
-	module.cpp)
+	module.cpp
+	Solar_Model.cpp )
 
 target_compile_options(DaMaSCUS-SUN PUBLIC -Wall -pedantic)
 
