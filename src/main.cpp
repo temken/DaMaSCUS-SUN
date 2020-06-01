@@ -3,7 +3,7 @@
 #include <cstring>	 // for strlen
 #include <iostream>
 
-#include "module.hpp"
+#include "Solar_Model.hpp"
 #include "version.hpp"
 
 // Headers from libphysica
@@ -24,14 +24,8 @@ int main()
 		ctime_start[std::strlen(ctime_start) - 1] = '\0';
 	std::cout << "[Started on " << ctime_start << "]" << std::endl;
 	std::cout << PROJECT_NAME << "-" << PROJECT_VERSION << "\tgit:" << GIT_BRANCH << "/" << GIT_COMMIT_HASH << std::endl
-			  << DAMASCUS_SUN_LOGO
-			  << "\t\t\t\tdeveloped by " << AUTHOR << " (" << YEAR << ")" << std::endl
-			  << std::endl;
+			  << DAMASCUS_SUN_LOGO <<std::endl;
 	////////////////////////////////////////////////////////////////////////
-
-	std::cout << fib(10) << std::endl;
-	std::cout << In_Units(1.0, meter / sec) << std::endl;
-	std::cout << obscura::Fractional_Days_since_J2000(1, 1, 2001, 12) << std::endl;
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
