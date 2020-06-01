@@ -24,8 +24,11 @@ int main()
 		ctime_start[std::strlen(ctime_start) - 1] = '\0';
 	std::cout << "[Started on " << ctime_start << "]" << std::endl;
 	std::cout << PROJECT_NAME << "-" << PROJECT_VERSION << "\tgit:" << GIT_BRANCH << "/" << GIT_COMMIT_HASH << std::endl
-			  << DAMASCUS_SUN_LOGO <<std::endl;
+			  << DAMASCUS_SUN_LOGO << std::endl;
 	////////////////////////////////////////////////////////////////////////
+
+	Solar_Model SSM;
+	SSM.Print_Summary();
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
