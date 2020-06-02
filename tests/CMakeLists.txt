@@ -1,6 +1,8 @@
 add_executable(tests
-	test_module.cpp
-	${SRC_DIR}/module.cpp
+	test_Simulation_Trajectory.cpp
+	${SRC_DIR}/Simulation_Trajectory.cpp
+	test_Simulation_Utilities.cpp
+	${SRC_DIR}/Simulation_Utilities.cpp
 	test_Solar_Model.cpp
 	${SRC_DIR}/Solar_Model.cpp)
 
