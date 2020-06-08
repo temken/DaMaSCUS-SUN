@@ -47,7 +47,7 @@ int Event::Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int nu
 	std::vector<double> ring_angles = Isoreflection_Ring_Angles(number_of_rings);
 	for(int ring = 0; ring < ring_angles.size(); ring++)
 	{
-		if(theta < ring_angles[ring])
+		if(theta <= ring_angles[ring])
 			return ring;
 	}
 	std::cerr << "Error in Event::Isoreflection_Ring(): Angle = " << theta << " out of bound." << std::endl;
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& output, const Event& event)
 }
 
 // 2. Generator of initial conditions
-Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& model, std::mt19937& PRNG, double R_initial)
+Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& model, std::mt19937& PRNG)
 {
 	// 1. Asymptotic initial velocity
 	// 1.1. Sample a velocity vector in the galactic rest frame
@@ -92,7 +92,7 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	// 2. Initial position
 	// 2.1 Define an asymptotically far away disk.
 	// Any particle starting from this disk with initial_velocity will hit the Sun.
-	double asymptotic_distance = 1000.0 * AU;
+	double asymptotic_distance = 500.0 * AU;
 	double v_esc			   = model.Local_Escape_Speed(rSun);
 	double radius_disk		   = sqrt(1.0 + v_esc * v_esc / u / u) * rSun;
 	libphysica::Vector e_z	   = (-1.0) * initial_velocity.Normalized();
@@ -111,10 +111,6 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	initial_velocity = v / u * initial_velocity;
 
 	Event initial_condition(0.0, initial_position, initial_velocity);
-
-	// 4. Kepler shift closer to the Sun
-	Hyperbolic_Kepler_Shift(initial_condition, R_initial);
-
 	return initial_condition;
 }
 

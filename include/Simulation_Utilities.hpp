@@ -36,7 +36,7 @@ struct Event
 };
 
 // 2. Generator of initial conditions
-extern Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& model, std::mt19937& PRNG, double R_initial = 1.5 * libphysica::natural_units::rSun);
+extern Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& model, std::mt19937& PRNG);
 
 // 3. Analytically propagate a particle at event on a hyperbolic Kepler orbit to a radius R (without passing the periapsis)
 extern void Hyperbolic_Kepler_Shift(Event& event, double R_final);
