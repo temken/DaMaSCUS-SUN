@@ -2,15 +2,19 @@
 #include <cmath>
 #include <cstring>	 // for strlen
 #include <iostream>
-
-#include "Solar_Model.hpp"
-#include "version.hpp"
+#include <random>
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
 
 // Headers from obscura
 #include "Astronomy.hpp"
+#include "DM_Distribution.hpp"
+
+#include "Simulation_Trajectory.hpp"
+#include "Simulation_Utilities.hpp"
+#include "Solar_Model.hpp"
+#include "version.hpp"
 
 using namespace libphysica::natural_units;
 
@@ -27,8 +31,15 @@ int main()
 			  << DAMASCUS_SUN_LOGO << std::endl;
 	////////////////////////////////////////////////////////////////////////
 
+	std::random_device rd;
+	std::mt19937 PRNG(rd());
+
 	Solar_Model SSM;
 	SSM.Print_Summary();
+
+	obscura::Standard_Halo_Model SHM;
+	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
+	SHM.Print_Summary();
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
