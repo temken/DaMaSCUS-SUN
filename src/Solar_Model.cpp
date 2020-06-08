@@ -127,7 +127,10 @@ Solar_Model::Solar_Model()
 
 double Solar_Model::Mass(double r)
 {
-	return mass(r);
+	if(r > rSun)
+		return mSun;
+	else
+		return mass(r);
 }
 
 double Solar_Model::Temperature(double r)
