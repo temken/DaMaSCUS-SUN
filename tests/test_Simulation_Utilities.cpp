@@ -105,13 +105,13 @@ TEST(TestSimulationUtilities, TestInKmSec)
 	libphysica::Vector v({4 * km / sec, 5 * km / sec, 6 * km / sec});
 	Event event(t, x, v);
 	// ACT & ASSERT
-	EXPECT_DOUBLE_EQ(event.In_km_sec().time, 7);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().position[0], 1);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().position[1], 2);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().position[2], 3);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().velocity[0], 4);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().velocity[1], 5);
-	EXPECT_DOUBLE_EQ(event.In_km_sec().velocity[2], 6);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, minute).time, 7.0 / 60);
+	EXPECT_DOUBLE_EQ(event.In_Units(rSun).position[0], km / rSun);
+	EXPECT_DOUBLE_EQ(event.In_Units().position[1], 2);
+	EXPECT_DOUBLE_EQ(event.In_Units().position[2], 3);
+	EXPECT_DOUBLE_EQ(event.In_Units().velocity[0], 4);
+	EXPECT_DOUBLE_EQ(event.In_Units().velocity[1], 5);
+	EXPECT_DOUBLE_EQ(event.In_Units().velocity[2], 6);
 }
 
 // 2. Generator of initial conditions
@@ -156,7 +156,7 @@ TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
-	int trials = 500;
+	int trials = 100;
 	for(int k = 0; k < trials; k++)
 	{
 		// ARRANGE

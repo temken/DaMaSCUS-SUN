@@ -45,7 +45,7 @@ int Event::Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int nu
 {
 	double theta					= Isoreflection_Angle(vel_sun);
 	std::vector<double> ring_angles = Isoreflection_Ring_Angles(number_of_rings);
-	for(int ring = 0; ring < ring_angles.size(); ring++)
+	for(unsigned int ring = 0; ring < ring_angles.size(); ring++)
 	{
 		if(theta <= ring_angles[ring])
 			return ring;
@@ -54,9 +54,9 @@ int Event::Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int nu
 	std::exit(EXIT_FAILURE);
 }
 
-Event Event::In_km_sec() const
+Event Event::In_Units(double unit_distance, double unit_time) const
 {
-	return Event(In_Units(time, sec), In_Units(position, km), In_Units(velocity, km / sec));
+	return Event(libphysica::natural_units::In_Units(time, unit_time), libphysica::natural_units::In_Units(position, unit_distance), libphysica::natural_units::In_Units(velocity, unit_distance / unit_time));
 }
 
 //Overload <<
