@@ -37,6 +37,8 @@ class Trajectory_Simulator
 
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM);
 
+	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
+	libphysica::Vector Sample_Target_Velocity(double r, double mass);
 	void Scatter(Event& current_event, obscura::DM_Particle& DM);
 
   public:
@@ -46,8 +48,6 @@ class Trajectory_Simulator
 	bool save_trajectory_to_file		  = false;
 
 	Trajectory_Simulator(const Solar_Model& model);
-
-	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
 
 	Trajectory_Result Simulate(const Event& initial_condition, obscura::DM_Particle& DM);
 };

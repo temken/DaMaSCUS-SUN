@@ -109,31 +109,63 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 	return success;
 }
 
+int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed)
+{
+	if(r > rSun)
+	{
+		std::cerr << "Error in Trajectory_Simulator::Sample_Target(): r > rSun." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else
+	{
+		double xi		  = libphysica::Sample_Uniform(PRNG);
+		double sum		  = 0.0;
+		double total_rate = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
+		//Electron
+		double rate_electron = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
+		sum += rate_electron / total_rate;
+		if(sum > xi)
+			return -1;
+		//Nuclei
+		for(int i = 0; i < solar_model.nuclear_targets.size(); i++)
+		{
+			double rate_nucleus = solar_model.nuclear_targets[i].DM_Scattering_Rate(DM, r, DM_speed);
+			sum += rate_nucleus / total_rate;
+			if(sum > xi)
+				return i;
+		}
+		std::cerr << "Error in Trajectory_Simulator::Sample_Target(): No target could be sampled." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+}
+
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double mass)
+{
+	if(r > rSun)
+	{
+		std::cerr << "Error in Trajectory_Simulator::Sample_Target_Velocity(): r > rSun." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else
+	{
+		// 1. Sample direction
+		double phi			 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+		double costheta		 = libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
+		libphysica::Vector n = libphysica::Spherical_Coordinates(1.0, acos(costheta), phi);
+		// 2. Sample speed
+		double temperature				  = solar_model.Temperature(r);
+		double a						  = sqrt(temperature / mass);
+		std::function<double(double)> cdf = [a](double v) {
+			return libphysica::CDF_Maxwell_Boltzmann(v, a);
+		};
+		double v = libphysica::Inverse_Transform_Sampling(cdf, 0.0, 1.0, PRNG);
+		return v * n;
+	}
+}
+
 void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& DM)
 {
 	// ...
-}
-
-int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed)
-{
-	double xi		  = libphysica::Sample_Uniform(PRNG);
-	double sum		  = 0.0;
-	double total_rate = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
-	//Electron
-	double rate_electron = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
-	sum += rate_electron / total_rate;
-	if(sum > xi)
-		return -1;
-	//Nuclei
-	for(int i = 0; i < solar_model.nuclear_targets.size(); i++)
-	{
-		double rate_nucleus = solar_model.nuclear_targets[i].DM_Scattering_Rate(DM, r, DM_speed);
-		sum += rate_nucleus / total_rate;
-		if(sum > xi)
-			return i;
-	}
-	std::cerr << "Error in Trajectory_Simulator::Sample_Target(): No target could be sampled." << std::endl;
-	std::exit(EXIT_FAILURE);
 }
 
 Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition, obscura::DM_Particle& DM)
