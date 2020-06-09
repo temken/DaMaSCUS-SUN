@@ -27,7 +27,7 @@ double Solar_Nucleus::Number_Density(double r)
 {
 	return number_density(r);
 }
-double Solar_Nucleus::DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed)
+double Solar_Nucleus::DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
 {
 	if(r > rSun)
 		return 0.0;
@@ -116,7 +116,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 	return table;
 }
 
-double Solar_Model::DM_Scattering_Rate_Electron(double r, obscura::DM_Particle& DM, double DM_speed)
+double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed)
 {
 	if(r > rSun)
 		return 0.0;
@@ -206,15 +206,15 @@ double Solar_Model::Number_Density_Electron(double r)
 		return number_density_electron(r);
 }
 
-double Solar_Model::Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed)
+double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
 {
 	if(r > rSun)
 		return 0.0;
 	else
 	{
-		double total_rate = DM_Scattering_Rate_Electron(r, DM, DM_speed);
+		double total_rate = DM_Scattering_Rate_Electron(DM, r, DM_speed);
 		for(auto& target : nuclear_targets)
-			total_rate += target.DM_Scattering_Rate(r, DM, DM_speed);
+			total_rate += target.DM_Scattering_Rate(DM, r, DM_speed);
 		return total_rate;
 	}
 }

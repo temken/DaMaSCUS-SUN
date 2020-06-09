@@ -10,6 +10,7 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 #include "DM_Distribution.hpp"
+#include "DM_Particle_Standard.hpp"
 
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"
@@ -39,7 +40,17 @@ int main()
 
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
-	SHM.Print_Summary();
+
+	obscura::DM_Particle_SI DM;
+
+	Trajectory_Simulator simulator(SSM);
+
+	Event IC = Initial_Conditions(SHM, SSM, PRNG);
+	Hyperbolic_Kepler_Shift(IC, 1.5 * rSun);
+
+	Trajectory_Result result = simulator.Simulate(IC, DM);
+
+	result.Print_Summary();
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output

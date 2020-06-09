@@ -12,8 +12,8 @@
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
-Trajectory_Result::Trajectory_Result(const Event& event, unsigned long int nScat)
-: final_event(event), number_of_scatterings(nScat)
+Trajectory_Result::Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat)
+: initial_event(event_ini), final_event(event_final), number_of_scatterings(nScat)
 {
 }
 
@@ -39,16 +39,35 @@ bool Trajectory_Result::Particle_Captured() const
 void Trajectory_Result::Print_Summary(unsigned int MPI_rank)
 {
 	if(MPI_rank == 0)
+	{
 		std::cout << SEPARATOR
 				  << "Trajectory result summary" << std::endl
+				  << std::endl
 				  << "Number of scatterings:\t" << number_of_scatterings << std::endl
-				  << "Time of simulation [days]:\t" << In_Units(final_event.time, day) << std::endl
-				  << "Final radius [rSun]:\t" << In_Units(final_event.Radius(), rSun) << std::endl
-				  << "Final speed [km/sec]:\t" << In_Units(final_event.Speed(), km / sec) << std::endl
-				  << "Reflection:\t[" << (Particle_Reflected() ? "x" : " ") << "]" << std::endl
-				  << "Free particle:\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
-				  << "Captured:\t[" << (Particle_Captured() ? "x" : " ") << "]" << std::endl
-				  << SEPARATOR << std::endl;
+				  << "Simulation time [days]:\t" << libphysica::Round(In_Units(final_event.time, day)) << std::endl
+				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
+				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
+				  << "Free particle:\t\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
+				  << "Captured:\t\t[" << (Particle_Captured() ? "x" : " ") << "]" << std::endl
+				  << "Reflection:\t\t[" << (Particle_Reflected() ? "x" : " ") << "]";
+
+		if(Particle_Reflected())
+		{
+			double r_i	  = initial_event.Radius();
+			double v_i	  = initial_event.Speed();
+			double vesc_i = sqrt(2 * G_Newton * mSun / r_i);
+			double u_i	  = sqrt(v_i * v_i - vesc_i * vesc_i);
+
+			double r_f	  = final_event.Radius();
+			double v_f	  = final_event.Speed();
+			double vesc_f = sqrt(2 * G_Newton * mSun / r_f);
+			double u_f	  = sqrt(v_f * v_f - vesc_f * vesc_f);
+			std::cout << "\t(ratio u_f/u_i = " << libphysica::Round(u_f / u_i) << ")" << std::endl;
+		}
+		else
+			std::cout << std::endl;
+		std::cout << SEPARATOR << std::endl;
+	}
 }
 
 // 2. Simulator
@@ -77,7 +96,7 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		double v_after = particle_propagator.Current_Speed();
 
 		// Check for scatterings
-		minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(r_after, DM, v_after);
+		minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
 		bool scattering = r_after < rSun && minus_log_xi < 0.0;
 
 		//Check for reflection
@@ -95,6 +114,28 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	// ...
 }
 
+int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed)
+{
+	double xi		  = libphysica::Sample_Uniform(PRNG);
+	double sum		  = 0.0;
+	double total_rate = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
+	//Electron
+	double rate_electron = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
+	sum += rate_electron / total_rate;
+	if(sum > xi)
+		return -1;
+	//Nuclei
+	for(int i = 0; i < solar_model.nuclear_targets.size(); i++)
+	{
+		double rate_nucleus = solar_model.nuclear_targets[i].DM_Scattering_Rate(DM, r, DM_speed);
+		sum += rate_nucleus / total_rate;
+		if(sum > xi)
+			return i;
+	}
+	std::cerr << "Error in Trajectory_Simulator::Sample_Target(): No target could be sampled." << std::endl;
+	std::exit(EXIT_FAILURE);
+}
+
 Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition, obscura::DM_Particle& DM)
 {
 	Event current_event						= initial_condition;
@@ -109,24 +150,18 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 		else
 			break;
 	}
-	return Trajectory_Result(current_event, number_of_scatterings);
+	return Trajectory_Result(initial_condition, current_event, number_of_scatterings);
 }
 
 // 3. Equation of motion solution with Runge-Kutta-Fehlberg
 Free_Particle_Propagator::Free_Particle_Propagator(const Event& event)
 {
-	// 1. Runge Kutta Fehlberg configuration
-	error_tolerances = {1.0 * km, 1.0e-3 * km / sec, 1.0e-6};
-	time_step_min	 = 1.0e-6 * sec;
-	time_step_max	 = 1.0e2 * sec;
-	time_step		 = 0.1 * sec;
-
-	// 2. Coordinate system
+	// 1. Coordinate system
 	axis_x = event.position.Normalized();
 	axis_z = event.position.Cross(event.velocity).Normalized();
 	axis_y = axis_z.Cross(axis_x);
 
-	// 3. Coordinates
+	// 2. Coordinates
 	time			 = event.time;
 	radius			 = event.Radius();
 	phi				 = 0.0;

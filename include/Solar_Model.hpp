@@ -20,7 +20,7 @@ class Solar_Nucleus : public obscura::Element
 	Solar_Nucleus(const std::vector<obscura::Isotope>& isotopes, const std::vector<std::vector<double>>& density_table, std::string label = "");
 
 	double Number_Density(double r);
-	double DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed);
+	double DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
 };
 
 // 2. Solar model
@@ -38,7 +38,7 @@ class Solar_Model
 
 	// Solar electrons
 	libphysica::Interpolation number_density_electron;
-	double DM_Scattering_Rate_Electron(double r, obscura::DM_Particle& DM, double DM_speed);
+	double DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed);
 
   public:
 	std::string name;
@@ -53,7 +53,7 @@ class Solar_Model
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);
 
-	double Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed);
+	double Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
 
 	void Print_Summary(int MPI_rank = 0) const;
 };

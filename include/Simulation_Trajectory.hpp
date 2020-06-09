@@ -16,10 +16,10 @@
 // 1. Result of one trajectory
 struct Trajectory_Result
 {
-	Event final_event;
+	Event initial_event, final_event;
 	unsigned long int number_of_scatterings;
 
-	Trajectory_Result(const Event& event, unsigned long int nScat);
+	Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat);
 
 	bool Particle_Reflected() const;
 	bool Particle_Free() const;
@@ -47,6 +47,8 @@ class Trajectory_Simulator
 
 	Trajectory_Simulator(const Solar_Model& model);
 
+	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
+
 	Trajectory_Result Simulate(const Event& initial_condition, obscura::DM_Particle& DM);
 };
 
@@ -61,11 +63,12 @@ class Free_Particle_Propagator
 	double dr_dt(double v);
 	double dv_dt(double r, double mass);
 	double dphi_dt(double r);
-	std::vector<double> error_tolerances;
-	double time_step_min, time_step_max;
+	std::vector<double> error_tolerances = {1.0 * libphysica::natural_units::km, 1.0e-3 * libphysica::natural_units::km / libphysica::natural_units::sec, 1.0e-7};
+	double time_step_min				 = 1.0e-6 * libphysica::natural_units::sec;
+	double time_step_max				 = 1.0e2 * libphysica::natural_units::sec;
 
   public:
-	double time_step;
+	double time_step = 0.1 * libphysica::natural_units::sec;
 
 	explicit Free_Particle_Propagator(const Event& event);
 
