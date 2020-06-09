@@ -50,7 +50,7 @@ int main()
 
 	Trajectory_Result result = simulator.Simulate(IC, DM);
 
-	result.Print_Summary();
+	result.Print_Summary(SSM);
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output

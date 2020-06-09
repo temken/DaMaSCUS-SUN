@@ -36,7 +36,7 @@ bool Trajectory_Result::Particle_Captured() const
 	return r < rSun || final_event.Speed() < vesc;
 }
 
-void Trajectory_Result::Print_Summary(unsigned int MPI_rank)
+void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int MPI_rank)
 {
 	if(MPI_rank == 0)
 	{
@@ -53,15 +53,8 @@ void Trajectory_Result::Print_Summary(unsigned int MPI_rank)
 
 		if(Particle_Reflected())
 		{
-			double r_i	  = initial_event.Radius();
-			double v_i	  = initial_event.Speed();
-			double vesc_i = sqrt(2 * G_Newton * mSun / r_i);
-			double u_i	  = sqrt(v_i * v_i - vesc_i * vesc_i);
-
-			double r_f	  = final_event.Radius();
-			double v_f	  = final_event.Speed();
-			double vesc_f = sqrt(2 * G_Newton * mSun / r_f);
-			double u_f	  = sqrt(v_f * v_f - vesc_f * vesc_f);
+			double u_i = sqrt(initial_event.Asymptotic_Speed_Sqr(solar_model));
+			double u_f = sqrt(final_event.Asymptotic_Speed_Sqr(solar_model));
 			std::cout << "\t(ratio u_f/u_i = " << libphysica::Round(u_f / u_i) << ")" << std::endl;
 		}
 		else

@@ -25,6 +25,7 @@ struct Event
 	double Radius() const;
 	double Speed() const;
 	double Angular_Momentum() const;
+	double Asymptotic_Speed_Sqr(Solar_Model& solar_model) const;
 
 	double Isoreflection_Angle(const libphysica::Vector& vel_sun) const;
 	int Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int number_of_rings) const;

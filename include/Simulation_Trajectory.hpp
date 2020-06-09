@@ -25,7 +25,7 @@ struct Trajectory_Result
 	bool Particle_Free() const;
 	bool Particle_Captured() const;
 
-	void Print_Summary(unsigned int MPI_rank = 0);
+	void Print_Summary(Solar_Model& solar_model, unsigned int MPI_rank = 0);
 };
 
 // 2. Simulator

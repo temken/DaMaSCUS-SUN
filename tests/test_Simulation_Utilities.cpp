@@ -64,6 +64,24 @@ TEST(TestSimulationUtilities, TestAngularMomentum)
 	ASSERT_DOUBLE_EQ(event.Angular_Momentum(), J);
 }
 
+TEST(TestSimulationUtilities, TestAsymptoticSpeedSqr)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	double r	= 5.0 * rSun;
+	double u	= 100.0 * km / sec;
+	double vesc = SSM.Local_Escape_Speed(r);
+	double v	= sqrt(u * u + vesc * vesc);
+
+	libphysica::Vector x({0, r, 0});
+	libphysica::Vector vel({v, 0, 0});
+	Event event(0, x, vel);
+
+	double tol = 1.0e-10;
+	// ACT & ASSERT
+	ASSERT_NEAR(event.Asymptotic_Speed_Sqr(SSM), u * u, tol);
+}
+
 TEST(TestSimulationUtilities, TestIsoreflectionAngle)
 {
 	// ARRANGE

@@ -36,6 +36,15 @@ double Event::Angular_Momentum() const
 	return position.Cross(velocity).Norm();
 }
 
+double Event::Asymptotic_Speed_Sqr(Solar_Model& solar_model) const
+{
+	double r	 = Radius();
+	double v	 = Speed();
+	double vesc	 = solar_model.Local_Escape_Speed(r);
+	double u_sqr = v * v - vesc * vesc;
+	return u_sqr;
+}
+
 double Event::Isoreflection_Angle(const libphysica::Vector& vel_sun) const
 {
 	return acos(position.Normalized().Dot(vel_sun.Normalized()));
