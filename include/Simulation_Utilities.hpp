@@ -29,7 +29,7 @@ struct Event
 	double Isoreflection_Angle(const libphysica::Vector& vel_sun) const;
 	int Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int number_of_rings) const;
 
-	Event In_Units(double unit_distance = libphysica::natural_units::km, double unit_time = libphysica::natural_units::sec) const;
+	Event In_Units(double unit_distance, double unit_time) const;
 
 	//Overloading the output operator <<
 	friend std::ostream& operator<<(std::ostream& output, const Event& event);
@@ -41,7 +41,7 @@ extern Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Mode
 // 3. Analytically propagate a particle at event on a hyperbolic Kepler orbit to a radius R (without passing the periapsis)
 extern void Hyperbolic_Kepler_Shift(Event& event, double R_final);
 
-// 4. Equiareal isodetection rings
+// 4. Equiareal isoreflection rings
 extern std::vector<double> Isoreflection_Ring_Angles(unsigned int number_of_rings);
 
 #endif

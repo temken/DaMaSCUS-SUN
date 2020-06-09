@@ -106,12 +106,12 @@ TEST(TestSimulationUtilities, TestInKmSec)
 	Event event(t, x, v);
 	// ACT & ASSERT
 	EXPECT_DOUBLE_EQ(event.In_Units(km, minute).time, 7.0 / 60);
-	EXPECT_DOUBLE_EQ(event.In_Units(rSun).position[0], km / rSun);
-	EXPECT_DOUBLE_EQ(event.In_Units().position[1], 2);
-	EXPECT_DOUBLE_EQ(event.In_Units().position[2], 3);
-	EXPECT_DOUBLE_EQ(event.In_Units().velocity[0], 4);
-	EXPECT_DOUBLE_EQ(event.In_Units().velocity[1], 5);
-	EXPECT_DOUBLE_EQ(event.In_Units().velocity[2], 6);
+	EXPECT_DOUBLE_EQ(event.In_Units(rSun, sec).position[0], km / rSun);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, sec).position[1], 2);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, sec).position[2], 3);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, sec).velocity[0], 4);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, sec).velocity[1], 5);
+	EXPECT_DOUBLE_EQ(event.In_Units(km, sec).velocity[2], 6);
 }
 
 // 2. Generator of initial conditions
@@ -163,7 +163,7 @@ TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 		Event IC = Initial_Conditions(SHM, SSM, PRNG);
 		Hyperbolic_Kepler_Shift(IC, 5.0 * rSun);
 
-		EoM_Solver eom(IC);
+		Free_Particle_Propagator eom(IC);
 		while(eom.Current_Radius() > rSun)
 			eom.Runge_Kutta_45_Step(mSun);
 		Event x_ref = eom.Event_In_3D();
@@ -179,3 +179,16 @@ TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 }
 
 // 4. Equiareal isodetection rings
+TEST(TestSimulationUtilities, TestIsoreflectionRingAngles)
+{
+	// ARRANGE
+	std::vector<double> two_rings	  = {90 * deg, 180 * deg};
+	std::vector<double> hundred_rings = {36.8699 * deg, 53.1301 * deg, 66.4218 * deg, 78.463 * deg, 90. * deg, 101.537 * deg, 113.578 * deg, 126.87 * deg, 143.13 * deg, 180. * deg};
+
+	double tol = 1.0e-3 * deg;
+	// ACT & ASSERT
+	for(unsigned int i = 0; i < two_rings.size(); i++)
+		EXPECT_NEAR(Isoreflection_Ring_Angles(2)[i], two_rings[i], tol);
+	for(unsigned int i = 0; i < hundred_rings.size(); i++)
+		EXPECT_NEAR(Isoreflection_Ring_Angles(10)[i], hundred_rings[i], tol);
+}

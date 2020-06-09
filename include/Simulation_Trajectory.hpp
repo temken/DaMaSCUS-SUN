@@ -1,6 +1,7 @@
 #ifndef __Simulation_Trajectory_hpp_
 #define __Simulation_Trajectory_hpp_
 
+#include <functional>
 #include <random>
 
 // Headers from libphysica
@@ -12,61 +13,67 @@
 #include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
 
-// 1. Trajectory class
-struct Trajectory
+// 1. Result of one trajectory
+struct Trajectory_Result
 {
-	Event current_event;
-	unsigned int number_of_scatterings;
-	bool continue_simulation;
+	Event final_event;
+	unsigned long int number_of_scatterings;
 
-	double radius_max					   = 1.5 * libphysica::natural_units::rSun;
-	unsigned int number_of_scatterings_max = 300;
-	unsigned long int time_steps_max	   = 1e8;
+	Trajectory_Result(const Event& event, unsigned long int nScat);
 
-	// Constructor
-	Trajectory();
-	explicit Trajectory(const Event& initial_event);
+	bool Particle_Reflected() const;
+	bool Particle_Free() const;
+	bool Particle_Captured() const;
 
-	// Trajectory simulation
-	void Propagate_Freely(obscura::DM_Particle& DM, Solar_Model& model, std::mt19937& PRNG);
-	void Scatter(obscura::DM_Particle& DM, Solar_Model& model, std::mt19937& PRNG);
+	void Print_Summary(unsigned int MPI_rank = 0);
 };
 
-// 2. Numerical solution of the equations of motion (EoM)
-class EoM_Solver
+// 2. Simulator
+class Trajectory_Simulator
 {
   private:
-	double time, angular_momentum;
-	double radius, phi, v_radial;
+	std::mt19937 PRNG;
+	Solar_Model solar_model;
 
+	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM);
+
+	void Scatter(Event& current_event, obscura::DM_Particle& DM);
+
+  public:
+	unsigned long int maximum_time_steps  = 1e8;
+	unsigned long int maximum_scatterings = 300;
+	double maximum_distance				  = 1.5 * libphysica::natural_units::rSun;
+	bool save_trajectory_to_file		  = false;
+
+	Trajectory_Simulator(const Solar_Model& model);
+
+	Trajectory_Result Simulate(const Event& initial_condition, obscura::DM_Particle& DM);
+};
+
+// 3. Equation of motion solution with Runge-Kutta-Fehlberg
+class Free_Particle_Propagator
+{
+  private:
+	double time, radius, phi, v_radial;
+	double angular_momentum;
 	libphysica::Vector axis_x, axis_y, axis_z;
-
-	std::vector<double> tolerance = {1.0 * libphysica::natural_units::km, 1e-3 * libphysica::natural_units::km / libphysica::natural_units::sec, 1e-6};
-	double dtMin				  = 1e-6 * libphysica::natural_units::sec;
-	double dtMax				  = 100 * libphysica::natural_units::sec;
 
 	double dr_dt(double v);
 	double dv_dt(double r, double mass);
 	double dphi_dt(double r);
+	std::vector<double> error_tolerances;
+	double time_step_min, time_step_max;
+	double time_step;
 
   public:
-	double dt;
-
-	//Constructors
-	EoM_Solver();
-	explicit EoM_Solver(const Event& event);
+	explicit Free_Particle_Propagator(const Event& event);
 
 	void Runge_Kutta_45_Step(double mass);
 
 	double Current_Radius();
 	double Current_Speed();
 
-	bool Gravitationally_Bound(Solar_Model& model);
-
 	Event Event_In_3D();
 };
-
-// 3. Simulation of a DM particle's orbit through the Sun
-extern Trajectory Simulate_Trajectory(const Event& initial_condition, obscura::DM_Particle& DM, Solar_Model& model, std::mt19937& PRNG);
 
 #endif
