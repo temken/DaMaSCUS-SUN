@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cmath>
 
+// Headers from libphysica
+#include "Statistics.hpp"
+
 // Headers from obscura
 #include "Astronomy.hpp"
 
@@ -62,6 +65,7 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 	Free_Particle_Propagator particle_propagator(current_event);
 
 	// 2. Simulate a free orbit
+	double minus_log_xi			 = -log(libphysica::Sample_Uniform(PRNG));
 	bool success				 = false;
 	unsigned long int time_steps = 0;
 	while(time_steps < maximum_time_steps && !success)
@@ -70,9 +74,15 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		double r_before = particle_propagator.Current_Radius();
 		particle_propagator.Runge_Kutta_45_Step(solar_model.Mass(r_before));
 		double r_after = particle_propagator.Current_Radius();
+		double v_after = particle_propagator.Current_Speed();
 
-		bool reflection = r_before < maximum_distance && r_after > maximum_distance && particle_propagator.Current_Speed() > solar_model.Local_Escape_Speed(r_after);
-		bool scattering = false;
+		// Check for scatterings
+		minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(r_after, DM, v_after);
+		bool scattering = r_after < rSun && minus_log_xi < 0.0;
+
+		//Check for reflection
+		bool reflection = r_before < maximum_distance && r_after > maximum_distance && v_after > solar_model.Local_Escape_Speed(r_after);
+
 		if(reflection || scattering)
 			success = true;
 	}
@@ -220,39 +230,3 @@ Event Free_Particle_Propagator::Event_In_3D()
 
 	return Event(time, xNew, vNew);
 }
-
-///////////////////////////////////
-
-// // 1. Trajectory class
-// Trajectory::Trajectory()
-// : current_event(Event()), number_of_scatterings(0), continue_simulation(true)
-// {
-// }
-
-// Trajectory::Trajectory(const Event& initial_event)
-// : current_event(initial_event), number_of_scatterings(0), continue_simulation(true)
-// {
-// }
-
-// void Trajectory::Scatter(obscura::DM_Particle& DM, Solar_Model& model, std::mt19937& PRNG)
-// {
-// 	number_of_scatterings++;
-// 	if(number_of_scatterings > number_of_scatterings_max)
-// 		continue_simulation = false;
-// 	else
-// 	{
-// 	}
-// }
-
-// // 3. Simulation of a DM particle's orbit through the Sun
-// Trajectory Simulate_Trajectory(const Event& initial_condition, obscura::DM_Particle& DM, Solar_Model& model, std::mt19937& PRNG)
-// {
-// 	Trajectory traj(initial_condition);
-// 	while(traj.continue_simulation)
-// 	{
-// 		traj.Propagate_Freely(DM, model, PRNG);
-// 		if(traj.continue_simulation)
-// 			traj.Scatter(DM, model, PRNG);
-// 	}
-// 	return traj;
-// }

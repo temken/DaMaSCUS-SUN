@@ -146,6 +146,17 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(local_escape_speed_squared(r));
 }
 
+double Solar_Model::Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+	{
+		// ...
+		return 0.0;
+	}
+}
+
 void Solar_Model::Print_Summary(int MPI_rank) const
 {
 	if(MPI_rank == 0)

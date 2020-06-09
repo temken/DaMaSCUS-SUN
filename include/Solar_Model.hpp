@@ -6,6 +6,7 @@
 #include "Numerics.hpp"
 
 // Headers from obscura
+#include "DM_Particle.hpp"
 #include "Target_Nucleus.hpp"
 
 // 1. Nuclear targets in the Sun
@@ -43,6 +44,8 @@ class Solar_Model
 	double Mass(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
+
+	double Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed);
 
 	void Print_Summary(int MPI_rank = 0) const;
 };

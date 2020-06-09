@@ -63,9 +63,10 @@ class Free_Particle_Propagator
 	double dphi_dt(double r);
 	std::vector<double> error_tolerances;
 	double time_step_min, time_step_max;
-	double time_step;
 
   public:
+	double time_step;
+
 	explicit Free_Particle_Propagator(const Event& event);
 
 	void Runge_Kutta_45_Step(double mass);
