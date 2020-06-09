@@ -27,6 +27,16 @@ double Solar_Nucleus::Number_Density(double r)
 {
 	return number_density(r);
 }
+double Solar_Nucleus::DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+	{
+		// ...
+		return 0.0;
+	}
+}
 
 // 2. Solar model
 // Auxiliary functions for the data import
@@ -104,6 +114,17 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 		}
 	}
 	return table;
+}
+
+double Solar_Model::DM_Scattering_Rate_Electron(double r, obscura::DM_Particle& DM, double DM_speed)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+	{
+		// ...
+		return 0.0;
+	}
 }
 
 Solar_Model::Solar_Model()
@@ -191,8 +212,10 @@ double Solar_Model::Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM,
 		return 0.0;
 	else
 	{
-		// ...
-		return 0.0;
+		double total_rate = DM_Scattering_Rate_Electron(r, DM, DM_speed);
+		for(auto& target : nuclear_targets)
+			total_rate += target.DM_Scattering_Rate(r, DM, DM_speed);
+		return total_rate;
 	}
 }
 

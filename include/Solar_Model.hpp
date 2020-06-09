@@ -20,6 +20,7 @@ class Solar_Nucleus : public obscura::Element
 	Solar_Nucleus(const std::vector<obscura::Isotope>& isotopes, const std::vector<std::vector<double>>& density_table, std::string label = "");
 
 	double Number_Density(double r);
+	double DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed);
 };
 
 // 2. Solar model
@@ -27,7 +28,6 @@ class Solar_Model
 {
   private:
 	libphysica::Interpolation mass, temperature, local_escape_speed_squared;
-	libphysica::Interpolation number_density_electron;
 	// Auxiliary functions for the data import
 	std::vector<std::vector<double>> raw_data;
 	void Import_Raw_Data();
@@ -35,6 +35,10 @@ class Solar_Model
 	std::vector<std::vector<double>> Create_Escape_Speed_Table();
 	std::vector<std::vector<double>> Create_Number_Density_Table(unsigned int target, double mass) const;
 	std::vector<std::vector<double>> Create_Number_Density_Table_Electron();
+
+	// Solar electrons
+	libphysica::Interpolation number_density_electron;
+	double DM_Scattering_Rate_Electron(double r, obscura::DM_Particle& DM, double DM_speed);
 
   public:
 	std::string name;
