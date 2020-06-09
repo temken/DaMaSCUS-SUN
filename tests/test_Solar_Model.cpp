@@ -57,9 +57,40 @@ TEST(TestSolarModel, TestLocalEscapeSpeed)
 	// ARRANGE
 	Solar_Model SSM;
 	// ACT & ASSERT
-	ASSERT_NEAR(SSM.Local_Escape_Speed(0), 1384.6 * km/sec, 0.1 * km/sec);
+	ASSERT_NEAR(SSM.Local_Escape_Speed(0), 1384.6 * km / sec, 0.1 * km / sec);
 	ASSERT_DOUBLE_EQ(SSM.Local_Escape_Speed(rSun), sqrt(2.0 * G_Newton * mSun / rSun));
 	ASSERT_DOUBLE_EQ(SSM.Local_Escape_Speed(2.0 * rSun), sqrt(2.0 * G_Newton * mSun / 2.0 / rSun));
+}
+
+TEST(TestSolarModel, TestNumberDensityNucleus)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	double r1 = 0.0 * rSun;
+	double r2 = 0.5 * rSun;
+	double r3 = 1.5 * rSun;
+	// ACT & ASSERT
+	for(unsigned int i = 0; i < SSM.nuclear_targets.size(); i++)
+	{
+		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r1, i), SSM.nuclear_targets[i].Number_Density(r1));
+		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r2, i), SSM.nuclear_targets[i].Number_Density(r2));
+		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r3, i), 0.0);
+	}
+}
+
+TEST(TestSolarModel, TestNumberDensityElectron)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	double r		 = 0.5 * rSun;
+	double nElectron = 0.0;
+	for(auto& nucleus : SSM.nuclear_targets)
+	{
+		nElectron += nucleus[0].Z * nucleus.Number_Density(r);
+	}
+	// ACT & ASSERT
+	EXPECT_DOUBLE_EQ(SSM.Number_Density_Electron(r), nElectron);
+	EXPECT_DOUBLE_EQ(SSM.Number_Density_Electron(1.5 * rSun), 0.0);
 }
 
 // TEST(TestSolarModel, TestPrintSummary)

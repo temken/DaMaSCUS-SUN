@@ -27,13 +27,14 @@ class Solar_Model
 {
   private:
 	libphysica::Interpolation mass, temperature, local_escape_speed_squared;
-
+	libphysica::Interpolation number_density_electron;
 	// Auxiliary functions for the data import
 	std::vector<std::vector<double>> raw_data;
 	void Import_Raw_Data();
 	std::vector<std::vector<double>> Create_Interpolation_Table(unsigned int row) const;
 	std::vector<std::vector<double>> Create_Escape_Speed_Table();
 	std::vector<std::vector<double>> Create_Number_Density_Table(unsigned int target, double mass) const;
+	std::vector<std::vector<double>> Create_Number_Density_Table_Electron();
 
   public:
 	std::string name;
@@ -44,6 +45,9 @@ class Solar_Model
 	double Mass(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
+
+	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
+	double Number_Density_Electron(double r);
 
 	double Total_DM_Scattering_Rate(double r, obscura::DM_Particle& DM, double DM_speed);
 
