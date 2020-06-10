@@ -17,5 +17,6 @@
 #define TOP_LEVEL_DIR "@CMAKE_SOURCE_DIR@/"
 
 #define SEPARATOR "\n##############################################################\n"
+#define SEPARATOR_LINE "\n--------------------------------------------------------------\n"
 
 #endif

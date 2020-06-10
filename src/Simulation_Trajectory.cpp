@@ -120,9 +120,9 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 		if(sum > xi)
 			return -1;
 		//Nuclei
-		for(int i = 0; i < solar_model.nuclear_targets.size(); i++)
+		for(int i = 0; i < solar_model.target_isotopes.size(); i++)
 		{
-			double rate_nucleus = solar_model.nuclear_targets[i].DM_Scattering_Rate(DM, r, DM_speed);
+			double rate_nucleus = solar_model.target_isotopes[i].DM_Scattering_Rate(DM, r, DM_speed);
 			sum += rate_nucleus / total_rate;
 			if(sum > xi)
 				return i;
@@ -159,6 +159,42 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double
 void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& DM)
 {
 	// ...
+	// double wDM = x0.Speed();
+	// double r   = x0.Radius();
+
+	// model.Compute_Target_Probabilities(r, wDM, DM);
+	// int target_index = model.Sample_Target(PRNG);
+	// double cosalpha, mTarget;
+	// //Electron
+	// if(target_index == 0)
+	// {
+	// 	mTarget	  = mElectron;
+	// 	double Xi = ProbabilitySample(PRNG);
+	// 	cosalpha  = DM.Sample_Scattering_Angle_e(Xi, wDM);
+	// }
+	// //Nucleus
+	// else
+	// {
+	// 	Isotope target_isotope = model.Target_Isotope(target_index);
+	// 	mTarget				   = target_isotope.mass;
+	// 	double Xi			   = ProbabilitySample(PRNG);
+	// 	cosalpha			   = DM.Sample_Scattering_Angle(Xi, target_isotope, wDM);
+	// }
+	// //Construction of n, the unit vector pointing into the direction of vfinal.
+	// Vector3D ev		= x0.Velocity().normalized();
+	// double cosphi	= 2.0 * ProbabilitySample(PRNG) - 1.0;
+	// double sinphi	= sqrt(1.0 - cosphi * cosphi);
+	// double sinalpha = sqrt(1.0 - cosalpha * cosalpha);
+	// double aux		= sqrt(1.0 - pow(ev[2], 2.0));
+	// Vector3D n(
+	// 	cosalpha * ev[0] + (sinalpha * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
+	// 	cosalpha * ev[1] + (sinalpha * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
+	// 	cosalpha * ev[2] + aux * cosphi * sinalpha);
+	// //Target velocity
+	// Vector3D vTarget = model.Sample_Target_Velocity(r, mTarget, PRNG);
+	// double vRel		 = (vTarget - x0.Velocity()).norm();
+	// Vector3D vnew	 = mTarget * vRel / (mTarget + DM.mass) * n + (DM.mass * x0.Velocity() + mTarget * vTarget) / (mTarget + DM.mass);
+	// x0.SetVelocity(vnew);
 }
 
 Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition, obscura::DM_Particle& DM)

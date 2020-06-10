@@ -17,9 +17,9 @@ TEST(TestSolarModel, TestSolarNucleus)
 	double n_H1 = f_H1 * rho / mProton;
 	Solar_Model SSM;
 	// ACT & ASSERT
-	ASSERT_DOUBLE_EQ(SSM.nuclear_targets[0].Number_Density(0.0), n_H1);
-	ASSERT_DOUBLE_EQ(SSM.nuclear_targets[0].Number_Density(0.001 * rSun), n_H1);
-	ASSERT_DOUBLE_EQ(SSM.nuclear_targets[0].Number_Density(0.00150 * rSun), n_H1);
+	ASSERT_DOUBLE_EQ(SSM.target_isotopes[0].Number_Density(0.0), n_H1);
+	ASSERT_DOUBLE_EQ(SSM.target_isotopes[0].Number_Density(0.001 * rSun), n_H1);
+	ASSERT_DOUBLE_EQ(SSM.target_isotopes[0].Number_Density(0.00150 * rSun), n_H1);
 }
 
 TEST(TestSolarModel, TestConstructor)
@@ -29,7 +29,7 @@ TEST(TestSolarModel, TestConstructor)
 	Solar_Model SSM;
 	// ASSERT
 	ASSERT_EQ(SSM.name, "Standard Solar Model AGSS09");
-	ASSERT_NE(SSM.nuclear_targets.size(), 0);
+	ASSERT_NE(SSM.target_isotopes.size(), 0);
 }
 
 TEST(TestSolarModel, TestMass)
@@ -70,10 +70,10 @@ TEST(TestSolarModel, TestNumberDensityNucleus)
 	double r2 = 0.5 * rSun;
 	double r3 = 1.5 * rSun;
 	// ACT & ASSERT
-	for(unsigned int i = 0; i < SSM.nuclear_targets.size(); i++)
+	for(unsigned int i = 0; i < SSM.target_isotopes.size(); i++)
 	{
-		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r1, i), SSM.nuclear_targets[i].Number_Density(r1));
-		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r2, i), SSM.nuclear_targets[i].Number_Density(r2));
+		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r1, i), SSM.target_isotopes[i].Number_Density(r1));
+		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r2, i), SSM.target_isotopes[i].Number_Density(r2));
 		EXPECT_DOUBLE_EQ(SSM.Number_Density_Nucleus(r3, i), 0.0);
 	}
 }
@@ -84,10 +84,8 @@ TEST(TestSolarModel, TestNumberDensityElectron)
 	Solar_Model SSM;
 	double r		 = 0.5 * rSun;
 	double nElectron = 0.0;
-	for(auto& nucleus : SSM.nuclear_targets)
-	{
-		nElectron += nucleus[0].Z * nucleus.Number_Density(r);
-	}
+	for(auto& isotope : SSM.target_isotopes)
+		nElectron += isotope.Z * isotope.Number_Density(r);
 	// ACT & ASSERT
 	EXPECT_DOUBLE_EQ(SSM.Number_Density_Electron(r), nElectron);
 	EXPECT_DOUBLE_EQ(SSM.Number_Density_Electron(1.5 * rSun), 0.0);

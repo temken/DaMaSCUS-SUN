@@ -10,14 +10,13 @@
 #include "Target_Nucleus.hpp"
 
 // 1. Nuclear targets in the Sun
-class Solar_Nucleus : public obscura::Element
+class Solar_Isotope : public obscura::Isotope
 {
   private:
 	libphysica::Interpolation number_density;
 
   public:
-	Solar_Nucleus(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, std::string label = "");
-	Solar_Nucleus(const std::vector<obscura::Isotope>& isotopes, const std::vector<std::vector<double>>& density_table, std::string label = "");
+	Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance = 1.0);
 
 	double Number_Density(double r);
 	double DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
@@ -42,7 +41,7 @@ class Solar_Model
 
   public:
 	std::string name;
-	std::vector<Solar_Nucleus> nuclear_targets;
+	std::vector<Solar_Isotope> target_isotopes;
 
 	Solar_Model();
 
