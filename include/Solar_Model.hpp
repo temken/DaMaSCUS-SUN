@@ -19,7 +19,6 @@ class Solar_Isotope : public obscura::Isotope
 	Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance = 1.0);
 
 	double Number_Density(double r);
-	double DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
 };
 
 // 2. Solar model
@@ -59,5 +58,8 @@ class Solar_Model
 
 	void Print_Summary(int MPI_rank = 0) const;
 };
+
+// 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
+extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM);
 
 #endif

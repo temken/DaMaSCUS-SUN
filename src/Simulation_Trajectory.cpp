@@ -129,7 +129,7 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 		//Nuclei
 		for(int i = 0; i < solar_model.target_isotopes.size(); i++)
 		{
-			double rate_nucleus = solar_model.target_isotopes[i].DM_Scattering_Rate(DM, r, DM_speed);
+			double rate_nucleus = solar_model.DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
 			sum += rate_nucleus / total_rate;
 			if(sum > xi)
 				return i;

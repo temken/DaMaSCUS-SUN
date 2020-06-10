@@ -22,16 +22,6 @@ double Solar_Isotope::Number_Density(double r)
 	else
 		return number_density(r);
 }
-double Solar_Isotope::DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
-{
-	if(r > rSun)
-		return 0.0;
-	else
-	{
-		// ...
-		return 0.0;
-	}
-}
 
 // 2. Solar model
 // Auxiliary functions for the data import
@@ -193,8 +183,8 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		// ...
-		return 0.0;
+		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM.mass);
+		return Number_Density_Electron(r) * DM.Sigma_Electron() * v_rel;
 	}
 }
 
@@ -205,8 +195,15 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 		std::cerr << "Error in Solar_Model::Number_Density_Nucleus(): Index = " << nucleus_index << " is out of bound (number of targets: " << target_isotopes.size() << ")." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+	else if(r > rSun)
+		return 0.0;
 	else
-		return target_isotopes[nucleus_index].DM_Scattering_Rate(DM, r, DM_speed);
+	{
+		double m_target = target_isotopes[nucleus_index].mass;
+		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM.mass);
+		double vDM		= 1.0e-3;	//NEEDS TO BE FIXED FOR LIGHT MEDIATORS
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], vDM) * v_rel;
+	}
 }
 
 double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
@@ -216,8 +213,8 @@ double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r,
 	else
 	{
 		double total_rate = DM_Scattering_Rate_Electron(DM, r, DM_speed);
-		for(auto& target : target_isotopes)
-			total_rate += target.DM_Scattering_Rate(DM, r, DM_speed);
+		for(unsigned int i = 0; i < target_isotopes.size(); i++)
+			total_rate += DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
 		return total_rate;
 	}
 }
@@ -236,4 +233,11 @@ void Solar_Model::Print_Summary(int MPI_rank) const
 			isotope.Print_Summary(MPI_rank);
 		std::cout << SEPARATOR;
 	}
+}
+
+double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM)
+{
+	double kappa		  = sqrt(mass_target / 2.0 / temperature);
+	double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
+	return relative_speed;
 }

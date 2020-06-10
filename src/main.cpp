@@ -41,7 +41,10 @@ int main()
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
-	obscura::DM_Particle_SI DM;
+	obscura::DM_Particle_SI DM(1 * GeV);
+	DM.Set_Sigma_Proton(pb);
+	DM.Set_Sigma_Electron(pb);
+	DM.Print_Summary();
 
 	Trajectory_Simulator simulator(SSM);
 
