@@ -2,6 +2,7 @@
 /lib/
 /build/
 /external/
+/results/
 
 *.DS_Store
 

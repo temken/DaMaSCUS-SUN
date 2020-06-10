@@ -71,7 +71,7 @@ Trajectory_Simulator::Trajectory_Simulator(const Solar_Model& model)
 	std::random_device rd;
 	PRNG.seed(rd());
 }
-bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Particle& DM)
+bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f)
 {
 	// 1. Define a equation-of-motion-solver in the orbital plane
 	Free_Particle_Propagator particle_propagator(current_event);
@@ -87,6 +87,14 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		particle_propagator.Runge_Kutta_45_Step(solar_model.Mass(r_before));
 		double r_after = particle_propagator.Current_Radius();
 		double v_after = particle_propagator.Current_Speed();
+
+		if(save_trajectories && time_steps % 40 == 0)
+		{
+			Event event = particle_propagator.Event_In_3D();
+			f << In_Units(event.time, sec) << "\t"
+			  << In_Units(event.position[0], km) << "\t" << In_Units(event.position[1], km) << "\t" << In_Units(event.position[2], km) << "\t"
+			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << std::endl;
+		}
 
 		// Check for scatterings
 		bool scattering = false;
@@ -216,6 +224,13 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	current_event.velocity = New_DM_Velocity(scattering_angle, DM.mass, target_mass, current_event.velocity, vel_target);
 }
 
+void Trajectory_Simulator::Toggle_Trajectory_Saving(unsigned int max_trajectories)
+{
+	saved_trajectories	   = 0;
+	saved_trajectories_max = max_trajectories;
+	save_trajectories	   = !save_trajectories;
+}
+
 void Trajectory_Simulator::Fix_PRNG_Seed(int fixed_seed)
 {
 	PRNG.seed(fixed_seed);
@@ -223,9 +238,16 @@ void Trajectory_Simulator::Fix_PRNG_Seed(int fixed_seed)
 
 Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition, obscura::DM_Particle& DM)
 {
+	std::ofstream f;
+	if(save_trajectories && saved_trajectories < saved_trajectories_max)
+	{
+		saved_trajectories++;
+		std::string path = TOP_LEVEL_DIR "results/";
+		f.open(path + "trajectory_" + std::to_string(saved_trajectories) + ".txt");
+	}
 	Event current_event						= initial_condition;
 	long unsigned int number_of_scatterings = 0;
-	while(Propagate_Freely(current_event, DM) && number_of_scatterings < maximum_scatterings)
+	while(Propagate_Freely(current_event, DM, f) && number_of_scatterings < maximum_scatterings)
 	{
 		if(current_event.Radius() < rSun)
 		{
@@ -235,6 +257,8 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 		else
 			break;
 	}
+	if(save_trajectories)
+		f.close();
 	return Trajectory_Result(initial_condition, current_event, number_of_scatterings);
 }
 

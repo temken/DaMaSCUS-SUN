@@ -1,6 +1,7 @@
 #ifndef __Simulation_Trajectory_hpp_
 #define __Simulation_Trajectory_hpp_
 
+#include <fstream>
 #include <functional>
 #include <random>
 
@@ -35,7 +36,10 @@ class Trajectory_Simulator
 	std::mt19937 PRNG;
 	Solar_Model solar_model;
 
-	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM);
+	unsigned int saved_trajectories, saved_trajectories_max;
+	bool save_trajectories = false;
+
+	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
 	libphysica::Vector Sample_Target_Velocity(double r, double mass);
@@ -50,6 +54,7 @@ class Trajectory_Simulator
 	double maximum_distance				  = 1.5 * libphysica::natural_units::rSun;
 	bool save_trajectory_to_file		  = false;
 
+	void Toggle_Trajectory_Saving(unsigned int max_trajectories = 50);
 	void Fix_PRNG_Seed(int fixed_seed);
 
 	Trajectory_Simulator(const Solar_Model& model);
