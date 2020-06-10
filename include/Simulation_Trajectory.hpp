@@ -39,6 +39,9 @@ class Trajectory_Simulator
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
 	libphysica::Vector Sample_Target_Velocity(double r, double mass);
+	double Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope);
+	double Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM);
+	libphysica::Vector New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
 	void Scatter(Event& current_event, obscura::DM_Particle& DM);
 
   public:
@@ -46,6 +49,8 @@ class Trajectory_Simulator
 	unsigned long int maximum_scatterings = 300;
 	double maximum_distance				  = 1.5 * libphysica::natural_units::rSun;
 	bool save_trajectory_to_file		  = false;
+
+	void Fix_PRNG_Seed(int fixed_seed);
 
 	Trajectory_Simulator(const Solar_Model& model);
 

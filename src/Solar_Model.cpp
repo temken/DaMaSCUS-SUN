@@ -17,7 +17,10 @@ Solar_Isotope::Solar_Isotope(const obscura::Isotope& isotope, const std::vector<
 
 double Solar_Isotope::Number_Density(double r)
 {
-	return number_density(r);
+	if(r > rSun)
+		return 0.0;
+	else
+		return number_density(r);
 }
 double Solar_Isotope::DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
 {
@@ -108,17 +111,6 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 	return table;
 }
 
-double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed)
-{
-	if(r > rSun)
-		return 0.0;
-	else
-	{
-		// ...
-		return 0.0;
-	}
-}
-
 Solar_Model::Solar_Model()
 : name("Standard Solar Model AGSS09")
 {
@@ -183,8 +175,6 @@ double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 		std::cerr << "Error in Solar_Model::Number_Density_Nucleus(): Index = " << nucleus_index << " is out of bound (number of targets: " << target_isotopes.size() << ")." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
-	else if(r > rSun)
-		return 0.0;
 	else
 		return target_isotopes[nucleus_index].Number_Density(r);
 }
@@ -195,6 +185,28 @@ double Solar_Model::Number_Density_Electron(double r)
 		return 0.0;
 	else
 		return number_density_electron(r);
+}
+
+double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+	{
+		// ...
+		return 0.0;
+	}
+}
+
+double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double DM_speed, unsigned int nucleus_index)
+{
+	if(nucleus_index >= target_isotopes.size())
+	{
+		std::cerr << "Error in Solar_Model::Number_Density_Nucleus(): Index = " << nucleus_index << " is out of bound (number of targets: " << target_isotopes.size() << ")." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else
+		return target_isotopes[nucleus_index].DM_Scattering_Rate(DM, r, DM_speed);
 }
 
 double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)

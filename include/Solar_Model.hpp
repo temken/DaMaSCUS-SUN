@@ -27,6 +27,7 @@ class Solar_Model
 {
   private:
 	libphysica::Interpolation mass, temperature, local_escape_speed_squared;
+
 	// Auxiliary functions for the data import
 	std::vector<std::vector<double>> raw_data;
 	void Import_Raw_Data();
@@ -37,7 +38,6 @@ class Solar_Model
 
 	// Solar electrons
 	libphysica::Interpolation number_density_electron;
-	double DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed);
 
   public:
 	std::string name;
@@ -51,6 +51,9 @@ class Solar_Model
 
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);
+
+	double DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed);
+	double DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double DM_speed, unsigned int nucleus_index);
 
 	double Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
 
