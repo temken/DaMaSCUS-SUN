@@ -2,7 +2,6 @@
 #define __Simulation_Trajectory_hpp_
 
 #include <fstream>
-#include <functional>
 #include <random>
 
 // Headers from libphysica
@@ -33,7 +32,6 @@ struct Trajectory_Result
 class Trajectory_Simulator
 {
   private:
-	std::mt19937 PRNG;
 	Solar_Model solar_model;
 
 	unsigned int saved_trajectories, saved_trajectories_max;
@@ -46,19 +44,19 @@ class Trajectory_Simulator
 	double Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope);
 	double Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM);
 	libphysica::Vector New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
-	void Scatter(Event& current_event, obscura::DM_Particle& DM);
 
   public:
+	std::mt19937 PRNG;
 	unsigned long int maximum_time_steps  = 1e8;
-	unsigned long int maximum_scatterings = 300;
+	unsigned long int maximum_scatterings = 500;
 	double maximum_distance				  = 1.5 * libphysica::natural_units::rSun;
 	bool save_trajectory_to_file		  = false;
+	Trajectory_Simulator(const Solar_Model& model);
 
 	void Toggle_Trajectory_Saving(unsigned int max_trajectories = 50);
 	void Fix_PRNG_Seed(int fixed_seed);
 
-	Trajectory_Simulator(const Solar_Model& model);
-
+	void Scatter(Event& current_event, obscura::DM_Particle& DM);
 	Trajectory_Result Simulate(const Event& initial_condition, obscura::DM_Particle& DM);
 };
 
@@ -84,6 +82,7 @@ class Free_Particle_Propagator
 
 	void Runge_Kutta_45_Step(double mass);
 
+	double Current_Time();
 	double Current_Radius();
 	double Current_Speed();
 

@@ -189,7 +189,7 @@ TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 		Hyperbolic_Kepler_Shift(IC, rSun);
 		//ASSERT
 		for(int i = 0; i < 3; i++)
-			ASSERT_NEAR(IC.position[i], x_ref.position[i], 0.005 * rSun);
+			ASSERT_NEAR(IC.position[i], x_ref.position[i], 0.001 * rSun);
 		for(int i = 0; i < 3; i++)
 			ASSERT_NEAR(IC.velocity[i], x_ref.velocity[i], km / sec);
 		ASSERT_LE(IC.Speed(), x_ref.Speed());

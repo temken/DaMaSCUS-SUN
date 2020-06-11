@@ -135,7 +135,7 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 		if(sum > xi)
 			return -1;
 		//Nuclei
-		for(int i = 0; i < solar_model.target_isotopes.size(); i++)
+		for(unsigned int i = 0; i < solar_model.target_isotopes.size(); i++)
 		{
 			double rate_nucleus = solar_model.DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
 			sum += rate_nucleus / total_rate;
@@ -274,7 +274,7 @@ Free_Particle_Propagator::Free_Particle_Propagator(const Event& event)
 	time			 = event.time;
 	radius			 = event.Radius();
 	phi				 = 0.0;
-	v_radial		 = event.position.Dot(event.velocity) / radius;
+	v_radial		 = (radius == 0) ? event.Speed() : event.position.Dot(event.velocity) / radius;
 	angular_momentum = (event.position.Cross(event.velocity)).Dot(axis_z);
 }
 
@@ -356,6 +356,12 @@ void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)
 		Runge_Kutta_45_Step(mass);
 	}
 }
+
+double Free_Particle_Propagator::Current_Time()
+{
+	return time;
+}
+
 double Free_Particle_Propagator::Current_Radius()
 {
 	return radius;
@@ -363,7 +369,10 @@ double Free_Particle_Propagator::Current_Radius()
 
 double Free_Particle_Propagator::Current_Speed()
 {
-	return sqrt(v_radial * v_radial + angular_momentum * angular_momentum / radius / radius);
+	if(radius == 0 || angular_momentum == 0)
+		return v_radial;
+	else
+		return sqrt(v_radial * v_radial + angular_momentum * angular_momentum / radius / radius);
 }
 
 Event Free_Particle_Propagator::Event_In_3D()
