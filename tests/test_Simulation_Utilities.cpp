@@ -115,7 +115,7 @@ TEST(TestSimulationUtilities, TestIsoreflectionRing)
 	EXPECT_EQ(event.Isoreflection_Ring(vSun, rings), 1);
 }
 
-TEST(TestSimulationUtilities, TestInKmSec)
+TEST(TestSimulationUtilities, TestInUnits)
 {
 	// ARRANGE
 	double t = 7 * sec;

@@ -5,6 +5,9 @@
 // Headers from libphysica
 #include "Natural_Units.hpp"
 
+// Headers from obscura
+#include "DM_Particle_Standard.hpp"
+
 #include "Solar_Model.hpp"
 
 using namespace libphysica::natural_units;
@@ -91,8 +94,76 @@ TEST(TestSolarModel, TestNumberDensityElectron)
 	EXPECT_DOUBLE_EQ(SSM.Number_Density_Electron(1.5 * rSun), 0.0);
 }
 
+TEST(TestSolarModel, TestDMScatteringRateElectron)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	obscura::DM_Particle_SI DM;
+	DM.Set_Sigma_Electron(pb);
+	double v_DM = 1e-3;
+	double r1	= 0.5 * rSun;
+	double r2	= 1.5 * rSun;
+	// ACT & ASSERT
+	EXPECT_GE(SSM.DM_Scattering_Rate_Electron(DM, r1, v_DM), 0.0);
+	EXPECT_DOUBLE_EQ(SSM.DM_Scattering_Rate_Electron(DM, r2, v_DM), 0.0);
+	DM.Set_Sigma_Electron(0.0);
+	EXPECT_DOUBLE_EQ(SSM.DM_Scattering_Rate_Electron(DM, r1, v_DM), 0.0);
+}
+
+TEST(TestSolarModel, TestDMScatteringRateNucleus)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	obscura::DM_Particle_SI DM;
+	DM.Set_Sigma_Proton(pb);
+	double v_DM = 1e-3;
+	double r1	= 0.5 * rSun;
+	double r2	= 1.5 * rSun;
+	// ACT & ASSERT
+	EXPECT_GE(SSM.DM_Scattering_Rate_Nucleus(DM, r1, v_DM, 0), 0.0);
+	EXPECT_DOUBLE_EQ(SSM.DM_Scattering_Rate_Nucleus(DM, r2, v_DM, 0), 0.0);
+	DM.Unfix_Coupling_Ratios();
+	DM.Set_Sigma_Proton(0.0);
+	EXPECT_DOUBLE_EQ(SSM.DM_Scattering_Rate_Nucleus(DM, r1, v_DM, 0), 0.0);
+}
+
+TEST(TestSolarModel, TestTotalDMScatteringRate)
+{
+	// ARRANGE
+	Solar_Model SSM;
+	obscura::DM_Particle_SI DM;
+	DM.Set_Sigma_Proton(pb);
+	double v_DM	 = 1e-3;
+	double r1	 = 0.5 * rSun;
+	double r2	 = 1.5 * rSun;
+	double total = SSM.DM_Scattering_Rate_Electron(DM, r1, v_DM);
+	for(unsigned int i = 0; i < SSM.target_isotopes.size(); i++)
+		total += SSM.DM_Scattering_Rate_Nucleus(DM, r1, v_DM, i);
+	// ACT & ASSERT
+	EXPECT_GE(SSM.Total_DM_Scattering_Rate(DM, r1, v_DM), 0.0);
+	EXPECT_DOUBLE_EQ(SSM.Total_DM_Scattering_Rate(DM, r2, v_DM), 0.0);
+	EXPECT_DOUBLE_EQ(SSM.Total_DM_Scattering_Rate(DM, r1, v_DM), total);
+	DM.Unfix_Coupling_Ratios();
+	DM.Set_Sigma_Proton(0.0);
+	DM.Set_Sigma_Neutron(0.0);
+	DM.Set_Sigma_Electron(0.0);
+	EXPECT_DOUBLE_EQ(SSM.Total_DM_Scattering_Rate(DM, r1, v_DM), 0.0);
+}
+
 // TEST(TestSolarModel, TestPrintSummary)
 // {
 // 	// ARRANGE
 // 	// ACT & ASSERT
 // }
+
+// 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
+TEST(TestSolarModel, TestThermalAveragedRelativeSpeed)
+{
+	// ARRANGE
+	double temperature = 1.0e7 * Kelvin;
+	double mass_target = mProton;
+	double v_DM		   = 1e-3;
+	// ACT & ASSERT
+	EXPECT_NEAR(Thermal_Averaged_Relative_Speed(0.01 * Kelvin, mass_target, v_DM), v_DM, 1e-10);
+	EXPECT_NEAR(Thermal_Averaged_Relative_Speed(temperature, mass_target, v_DM), 0.0017928, 1.0e-7);
+}
