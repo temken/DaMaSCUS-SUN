@@ -1,4 +1,6 @@
 add_executable(tests
+	test_Data_Generation.cpp
+	${SRC_DIR}/Data_Generation.cpp
 	test_Simulation_Trajectory.cpp
 	${SRC_DIR}/Simulation_Trajectory.cpp
 	test_Simulation_Utilities.cpp

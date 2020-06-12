@@ -1,5 +1,6 @@
 # Executable
 add_executable(DaMaSCUS-SUN
+	Data_Generation.cpp
 	main.cpp
 	Simulation_Trajectory.cpp
 	Simulation_Utilities.cpp
