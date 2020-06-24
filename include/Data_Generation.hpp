@@ -4,6 +4,7 @@
 #include <vector>
 
 // Headers from libphysica
+#include "Natural_Units.hpp"
 #include "Statistics.hpp"
 
 // Headers from obscura
@@ -11,19 +12,36 @@
 
 #include "Simulation_Trajectory.hpp"
 
-struct Simulation_Data_Set
+class Simulation_Data
 {
+  private:
+	// Configuration
+	unsigned int min_sample_size;
+	double minimum_speed;
+	unsigned int isoreflection_rings;
+	double initial_and_final_radius			   = 1.1 * libphysica::natural_units::rSun;
+	unsigned int minimum_number_of_scatterings = 1;
+	unsigned int maximum_number_of_scatterings = 300;
+	unsigned long int maximum_free_time_steps  = 1e8;
+
+	// Results
 	unsigned long int number_of_trajectories;
 	unsigned long int number_of_free_particles;
 	unsigned long int number_of_reflected_particles;
 	unsigned long int number_of_captured_particles;
-	double simulation_time;
+	double average_number_of_scatterings;
+	double computing_time;
 
+	std::vector<unsigned long int> number_of_data_points;
+
+  public:
 	std::vector<std::vector<libphysica::DataPoint>> data;
 
-	Simulation_Data_Set();
+	Simulation_Data(unsigned int sample_size, double u_min = 0.0, unsigned int iso_rings = 1);
 
-	unsigned int Sampe_Size(unsigned int isoreflection_ring = 0);
+	void Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering, unsigned long int max_free_steps = 1e8);
+
+	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model);
 
 	double Free_Ratio();
 	double Capture_Ratio();
@@ -31,7 +49,5 @@ struct Simulation_Data_Set
 
 	void Print_Summary(unsigned int MPI_rank = 0);
 };
-
-extern Simulation_Data_Set Generate_Data(unsigned int sample_size, obscura::DM_Particle& DM, Solar_Model& solar_model, double u_min = 0.0, unsigned int isoreflection_rings = 1);
 
 #endif

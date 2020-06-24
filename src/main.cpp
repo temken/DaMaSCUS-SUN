@@ -12,6 +12,7 @@
 #include "DM_Distribution.hpp"
 #include "DM_Particle_Standard.hpp"
 
+#include "Data_Generation.hpp"
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
@@ -38,22 +39,20 @@ int main()
 	Solar_Model SSM;
 	SSM.Print_Summary();
 
-	obscura::Standard_Halo_Model SHM;
-	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
+	// obscura::Standard_Halo_Model SHM;
+	// SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
-	obscura::DM_Particle_SI DM(1 * GeV);
-	DM.Set_Sigma_Proton(pb);
-	DM.Set_Sigma_Electron(pb);
+	obscura::DM_Particle_SI DM(0.25 * GeV);
+	DM.Set_Sigma_Proton(1e-1 * pb);
+	DM.Set_Sigma_Electron(1e-1 * pb);
 	DM.Print_Summary();
 
-	Trajectory_Simulator simulator(SSM);
-
-	Event IC = Initial_Conditions(SHM, SSM, PRNG);
-	Hyperbolic_Kepler_Shift(IC, 1.5 * rSun);
-
-	Trajectory_Result result = simulator.Simulate(IC, DM);
-
-	result.Print_Summary(SSM);
+	unsigned int sample_size		 = 1;
+	double u_min					 = 0.0;
+	unsigned int isoreflection_rings = 1;
+	Simulation_Data data_set(sample_size, u_min, isoreflection_rings);
+	data_set.Generate_Data(DM, SSM);
+	data_set.Print_Summary();
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output

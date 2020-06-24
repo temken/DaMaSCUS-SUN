@@ -64,8 +64,8 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int MPI
 }
 
 // 2. Simulator
-Trajectory_Simulator::Trajectory_Simulator(const Solar_Model& model)
-: solar_model(model)
+Trajectory_Simulator::Trajectory_Simulator(const Solar_Model& model, unsigned long int max_time_steps, unsigned int max_scatterings, double max_distance)
+: solar_model(model), maximum_time_steps(max_time_steps), maximum_scatterings(max_scatterings), maximum_distance(max_distance)
 {
 	// Pseudo-random number generator
 	std::random_device rd;

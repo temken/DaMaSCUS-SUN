@@ -47,11 +47,11 @@ class Trajectory_Simulator
 
   public:
 	std::mt19937 PRNG;
-	unsigned long int maximum_time_steps  = 1e8;
-	unsigned long int maximum_scatterings = 500;
-	double maximum_distance				  = 1.5 * libphysica::natural_units::rSun;
-	bool save_trajectory_to_file		  = false;
-	Trajectory_Simulator(const Solar_Model& model);
+	unsigned long int maximum_time_steps;
+	unsigned int maximum_scatterings;
+	double maximum_distance;
+
+	Trajectory_Simulator(const Solar_Model& model, unsigned long int max_time_steps = 1e8, unsigned int max_scatterings = 500, double max_distance = 1.1 * libphysica::natural_units::rSun);
 
 	void Toggle_Trajectory_Saving(unsigned int max_trajectories = 50);
 	void Fix_PRNG_Seed(int fixed_seed);
