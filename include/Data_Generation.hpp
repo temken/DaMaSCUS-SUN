@@ -47,6 +47,9 @@ class Simulation_Data
 	double Capture_Ratio();
 	double Reflection_Ratio();
 
+	double Lowest_Speed(unsigned int iso_ring = 0) const;
+	double Highest_Speed(unsigned int iso_ring = 0) const;
+
 	void Print_Summary(unsigned int MPI_rank = 0);
 };
 

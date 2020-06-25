@@ -84,6 +84,16 @@ double Simulation_Data::Reflection_Ratio()
 	return 1.0 * number_of_reflected_particles / number_of_trajectories;
 }
 
+double Simulation_Data::Lowest_Speed(unsigned int iso_ring) const
+{
+	return (*std::min_element(data[iso_ring].begin(), data[iso_ring].end())).value;
+}
+
+double Simulation_Data::Highest_Speed(unsigned int iso_ring) const
+{
+	return (*std::max_element(data[iso_ring].begin(), data[iso_ring].end())).value;
+}
+
 void Simulation_Data::Print_Summary(unsigned int MPI_rank)
 {
 	if(MPI_rank == 0)
@@ -112,14 +122,14 @@ void Simulation_Data::Print_Summary(unsigned int MPI_rank)
 			{
 				double rel_number_of_data_points = 100.0 * number_of_data_points[i] / number_of_data_points_tot;
 				std::vector<double> u_average	 = libphysica::Weighted_Average(data[i]);
-				double u_max					 = (*std::max_element(data[i].begin(), data[i].end())).value;
+				double u_max					 = Highest_Speed(i);
 				std::cout << "\t" << i + 1 << "\t" << number_of_data_points[i] << "\t\t" << libphysica::Round(rel_number_of_data_points) << "\t\t" << libphysica::Round(In_Units(u_average[0], km / sec)) << " +- " << libphysica::Round(In_Units(u_average[1], km / sec)) << "\t" << libphysica::Round(In_Units(u_max, km / sec)) << std::endl;
 			}
 		}
 		else
 		{
 			std::vector<double> u_average = libphysica::Weighted_Average(data[0]);
-			double u_max				  = (*std::max_element(data[0].begin(), data[0].end())).value;
+			double u_max				  = Highest_Speed();
 			std::cout << "<u> [km/sec]:\t\t\t" << libphysica::Round(In_Units(u_average[0], km / sec)) << " +- " << libphysica::Round(In_Units(u_average[1], km / sec)) << std::endl
 					  << "u_max [km/sec]:\t\t\t" << libphysica::Round(In_Units(u_max, km / sec)) << std::endl;
 		}

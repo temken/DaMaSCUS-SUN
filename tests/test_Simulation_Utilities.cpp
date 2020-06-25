@@ -167,10 +167,13 @@ TEST(TestSimulationUtilities, TestInitialConditions)
 TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 {
 	// ARRANGE
-	std::random_device rd;
-	std::mt19937 PRNG(rd());
-	// PRNG.seed(3);
+	// std::random_device rd;
+	// std::mt19937 PRNG(rd());
+	int fixed_seed = 123;
+	std::mt19937 PRNG(fixed_seed);
+
 	Solar_Model SSM;
+
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
