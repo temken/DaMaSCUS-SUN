@@ -25,12 +25,14 @@ void Simulation_Data::Configure(double initial_radius, unsigned int min_scatteri
 	maximum_free_time_steps		  = max_free_steps;
 }
 
-void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model)
+void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed)
 {
 	auto time_start = std::chrono::system_clock::now();
 
 	//Configure the simulator
 	Trajectory_Simulator simulator(solar_model, maximum_free_time_steps, maximum_number_of_scatterings, initial_and_final_radius);
+	if(fixed_seed != 0)
+		simulator.Fix_PRNG_Seed(fixed_seed);
 
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
@@ -40,35 +42,31 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	{
 		Event IC = Initial_Conditions(SHM, solar_model, simulator.PRNG);
 		Hyperbolic_Kepler_Shift(IC, initial_and_final_radius);
-		Trajectory_Result result = simulator.Simulate(IC, DM);
+		Trajectory_Result trajectory = simulator.Simulate(IC, DM);
 
 		number_of_trajectories++;
-		average_number_of_scatterings = 1.0 / number_of_trajectories * ((number_of_trajectories - 1) * average_number_of_scatterings + result.number_of_scatterings);
+		average_number_of_scatterings = 1.0 / number_of_trajectories * ((number_of_trajectories - 1) * average_number_of_scatterings + trajectory.number_of_scatterings);
 
-		if(result.Particle_Captured())
+		if(trajectory.Particle_Captured())
 			number_of_captured_particles++;
 		else
 		{
-			if(result.Particle_Free())
+			if(trajectory.Particle_Free())
 				number_of_free_particles++;
-			else if(result.Particle_Reflected())
+			else if(trajectory.Particle_Reflected())
 				number_of_reflected_particles++;
-			if(result.number_of_scatterings >= minimum_number_of_scatterings)
+			Hyperbolic_Kepler_Shift(trajectory.final_event, 1.0 * AU);
+			double v_final = trajectory.final_event.Speed();
+			if(trajectory.number_of_scatterings >= minimum_number_of_scatterings && v_final > minimum_speed)
 			{
-				Hyperbolic_Kepler_Shift(result.final_event, 1.0 * AU);
-				double v_final = result.final_event.Speed();
-				if(v_final > minimum_speed)
-				{
-					unsigned int isoreflection_ring = (isoreflection_rings == 1) ? 0 : result.final_event.Isoreflection_Ring(obscura::Sun_Velocity(), isoreflection_rings);
-					number_of_data_points[isoreflection_ring]++;
-					data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
-					smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
-					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size);
-				}
+				unsigned int isoreflection_ring = (isoreflection_rings == 1) ? 0 : trajectory.final_event.Isoreflection_Ring(obscura::Sun_Velocity(), isoreflection_rings);
+				number_of_data_points[isoreflection_ring]++;
+				data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
+				smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
+				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size);
 			}
 		}
 	}
-
 	auto time_end  = std::chrono::system_clock::now();
 	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
 }
@@ -111,12 +109,20 @@ void Simulation_Data::Print_Summary(unsigned int MPI_rank)
 			std::cout << std::endl
 					  << "\tRing\tData points\tRelative [%]\t<u> [km/sec]\tu_max [km/sec]" << std::endl;
 			for(unsigned int i = 0; i < isoreflection_rings; i++)
-				std::cout << "\t" << i + 1 << "\t" << number_of_data_points[i] << "\t\t" << libphysica::Round(100.0 * number_of_data_points[i] / number_of_data_points_tot) << "\t\t" << libphysica::Round(In_Units(libphysica::Weighted_Average(data[i])[0], km / sec)) << "\t\t" << libphysica::Round(In_Units(libphysica::Weighted_Average(data[i])[0], km / sec)) << std::endl;
+			{
+				double rel_number_of_data_points = 100.0 * number_of_data_points[i] / number_of_data_points_tot;
+				std::vector<double> u_average	 = libphysica::Weighted_Average(data[i]);
+				double u_max					 = (*std::max_element(data[i].begin(), data[i].end())).value;
+				std::cout << "\t" << i + 1 << "\t" << number_of_data_points[i] << "\t\t" << libphysica::Round(rel_number_of_data_points) << "\t\t" << libphysica::Round(In_Units(u_average[0], km / sec)) << " +- " << libphysica::Round(In_Units(u_average[1], km / sec)) << "\t" << libphysica::Round(In_Units(u_max, km / sec)) << std::endl;
+			}
 		}
 		else
-			std::cout << "<u> [km/sec]:\t\t\t" << libphysica::Round(In_Units(libphysica::Weighted_Average(data[0])[0], km / sec)) << std::endl
-					  << "u_max [km/sec]:\t\t\t" << libphysica::Round(In_Units(libphysica::Weighted_Average(data[0])[0], km / sec)) << std::endl;
-
+		{
+			std::vector<double> u_average = libphysica::Weighted_Average(data[0]);
+			double u_max				  = (*std::max_element(data[0].begin(), data[0].end())).value;
+			std::cout << "<u> [km/sec]:\t\t\t" << libphysica::Round(In_Units(u_average[0], km / sec)) << " +- " << libphysica::Round(In_Units(u_average[1], km / sec)) << std::endl
+					  << "u_max [km/sec]:\t\t\t" << libphysica::Round(In_Units(u_max, km / sec)) << std::endl;
+		}
 		std::cout << std::endl;
 		if(computing_time > 60.0)
 
