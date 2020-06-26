@@ -63,7 +63,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				number_of_data_points[isoreflection_ring]++;
 				data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
 				smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
-				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size);
+				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size, 0, 61);
 			}
 		}
 	}

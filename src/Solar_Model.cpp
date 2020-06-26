@@ -54,7 +54,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Interpolation_Table(unsigne
 
 std::vector<std::vector<double>> Solar_Model::Create_Escape_Speed_Table()
 {
-	std::vector<std::vector<double>> table_vesc(raw_data.size(), std::vector<double>(raw_data[0].size(), 0.0));
+	std::vector<std::vector<double>> table_vesc(raw_data.size(), std::vector<double>(2, 0.0));
 	for(unsigned int i = 0; i < raw_data.size(); i++)
 	{
 		double r	   = raw_data[i][1];
