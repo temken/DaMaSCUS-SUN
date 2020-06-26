@@ -96,18 +96,16 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << std::endl;
 		}
 
-		// Check for scatterings
+		// Check for scatterings and reflection
 		bool scattering = false;
+		bool reflection = false;
 		if(r_after < rSun)
 		{
 			minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
 			if(minus_log_xi < 0.0)
 				scattering = true;
 		}
-
-		//Check for reflection
-		bool reflection = false;
-		if(r_before < maximum_distance && r_after > maximum_distance && v_after > solar_model.Local_Escape_Speed(r_after))
+		else if(r_before < maximum_distance && r_after > maximum_distance && v_after > solar_model.Local_Escape_Speed(r_after))
 			reflection = true;
 
 		if(reflection || scattering)
