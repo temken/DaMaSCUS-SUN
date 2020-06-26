@@ -1,5 +1,4 @@
-[![Build Status](https://github.com/temken/DaMaSCUS-SUN/workflows/Build%20Status/badge.svg)](https://github.com/temken/DaMaSCUS-SUN/actions)
-[![Test Status](https://github.com/temken/DaMaSCUS-SUN/workflows/Unit%20Tests/badge.svg)](https://github.com/temken/DaMaSCUS-SUN/actions)
+[![Build & Test Status](https://github.com/temken/DaMaSCUS-SUN/workflows/Build%20&%20Tests/badge.svg)](https://github.com/temken/DaMaSCUS-SUN/actions)
 [![codecov](https://codecov.io/gh/temken/DaMaSCUS-SUN/branch/master/graph/badge.svg)](https://codecov.io/gh/temken/DaMaSCUS-SUN)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -12,3 +11,4 @@ Dark Matter Simulation Code for Underground Scatterings - Sun Edition
 - [libconfig](https://github.com/hyperrealm/libconfig)
 - [libphysica](https://github.com/temken/libphysica)
 - [obscura](https://github.com/temken/obscura)
+- [open MPI])(https://www.open-mpi.org/)

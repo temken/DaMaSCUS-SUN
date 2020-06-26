@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Build & Tests
 
 on:
   push:
@@ -25,12 +25,12 @@ jobs:
       run: sudo apt-get install lcov
 
     # LIBCONFIG
-    - name: Download libconfig
-      run: wget https://hyperrealm.github.io/libconfig/dist/libconfig-1.7.2.tar.gz 
-    - name: Unpack libconfig
-      run: tar -xvzf libconfig-1.7.2.tar.gz
     - name: Install libconfig
-      run: pushd libconfig-1.7.2 && ./configure && make && sudo make install && popd
+      run: wget https://hyperrealm.github.io/libconfig/dist/libconfig-1.7.2.tar.gz && tar -xvzf libconfig-1.7.2.tar.gz && pushd libconfig-1.7.2 && ./configure && make && sudo make install && popd
+    
+    # MPI
+    - name: Install MPI
+      run: sudo apt-get install openmpi-bin libopenmpi-dev
     
     # CODECOV
     - name: Install codecov

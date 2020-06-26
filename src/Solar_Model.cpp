@@ -7,6 +7,8 @@
 #include "Statistics.hpp"
 #include "Utilities.hpp"
 
+#include "version.hpp"
+
 using namespace libphysica::natural_units;
 // 1. Nuclear targets in the Sun
 Solar_Isotope::Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance)
