@@ -13,6 +13,7 @@
 #include "DM_Particle_Standard.hpp"
 
 #include "Data_Generation.hpp"
+#include "Reflection_Spectrum.hpp"
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
@@ -51,8 +52,12 @@ int main()
 	double u_min					 = 0.0;
 	unsigned int isoreflection_rings = 1;
 	Simulation_Data data_set(sample_size, u_min, isoreflection_rings);
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 	data_set.Generate_Data(DM, SSM);
 	data_set.Print_Summary();
+
+	Reflection_Spectrum spectrum(data_set);
+	spectrum.Print_Summary();
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output

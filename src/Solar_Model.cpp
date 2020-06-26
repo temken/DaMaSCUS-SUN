@@ -102,7 +102,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 }
 
 Solar_Model::Solar_Model()
-: name("Standard Solar Model AGSS09")
+: using_interpolated_rate(false), name("Standard Solar Model AGSS09")
 {
 	Import_Raw_Data();
 
@@ -208,6 +208,14 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 
 double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
 {
+	if(using_interpolated_rate && DM_speed < rate_interpolation.domain[1][1])
+		return Total_DM_Scattering_Rate_Interpolated(DM, r, DM_speed);
+	else
+		return Total_DM_Scattering_Rate_Computed(DM, r, DM_speed);
+}
+
+double Solar_Model::Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed)
+{
 	if(r > rSun)
 		return 0.0;
 	else
@@ -216,6 +224,33 @@ double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r,
 		for(unsigned int i = 0; i < target_isotopes.size(); i++)
 			total_rate += DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
 		return total_rate;
+	}
+}
+
+double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+		return rate_interpolation(r, DM_speed);
+}
+
+void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned N_speed)
+{
+	if(N_radius == 0 || N_speed == 0)
+		using_interpolated_rate = false;
+	else
+	{
+		using_interpolated_rate = true;
+
+		std::vector<double> radii  = libphysica::Linear_Space(0, rSun, N_radius);
+		std::vector<double> speeds = libphysica::Linear_Space(0, 0.3, N_speed);
+		std::vector<std::vector<double>> rates;
+		for(auto& radius : radii)
+			for(auto& speed : speeds)
+				rates.push_back({radius, speed, Total_DM_Scattering_Rate_Computed(DM, radius, speed)});
+
+		rate_interpolation = libphysica::Interpolation_2D(rates);
 	}
 }
 

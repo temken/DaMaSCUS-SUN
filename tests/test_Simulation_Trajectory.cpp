@@ -114,7 +114,7 @@ TEST(TestSimulationTrajectory, TestScatter)
 	Solar_Model SSM;
 	Trajectory_Simulator simulator(SSM);
 	// ACT & ASSERT
-	int trials = 100;
+	int trials = 10;
 	for(int i = 0; i < trials; i++)
 	{
 		libphysica::Vector v_ini = event.velocity;

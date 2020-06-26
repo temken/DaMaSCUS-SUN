@@ -124,19 +124,21 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 	}
 	else
 	{
-		double xi		  = libphysica::Sample_Uniform(PRNG);
-		double sum		  = 0.0;
-		double total_rate = solar_model.Total_DM_Scattering_Rate(DM, r, DM_speed);
-		//Electron
+		std::vector<double> rate_nuclei;
+		for(unsigned int i = 0; i < solar_model.target_isotopes.size(); i++)
+			rate_nuclei.push_back(solar_model.DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i));
 		double rate_electron = solar_model.DM_Scattering_Rate_Electron(DM, r, DM_speed);
-		sum += rate_electron / total_rate;
+		double total_rate	 = std::accumulate(rate_nuclei.begin(), rate_nuclei.end(), rate_electron);
+
+		double xi = libphysica::Sample_Uniform(PRNG);
+		//Electron
+		double sum = rate_electron / total_rate;
 		if(sum > xi)
 			return -1;
 		//Nuclei
 		for(unsigned int i = 0; i < solar_model.target_isotopes.size(); i++)
 		{
-			double rate_nucleus = solar_model.DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
-			sum += rate_nucleus / total_rate;
+			sum += rate_nuclei[i] / total_rate;
 			if(sum > xi)
 				return i;
 		}

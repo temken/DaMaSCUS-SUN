@@ -38,6 +38,10 @@ class Solar_Model
 	// Solar electrons
 	libphysica::Interpolation number_density_electron;
 
+	// Interpolation of total scattering rate
+	bool using_interpolated_rate;
+	libphysica::Interpolation_2D rate_interpolation;
+
   public:
 	std::string name;
 	std::vector<Solar_Isotope> target_isotopes;
@@ -55,6 +59,10 @@ class Solar_Model
 	double DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double DM_speed, unsigned int nucleus_index);
 
 	double Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
+	double Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed);
+
+	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed);
+	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned N_speed);
 
 	void Print_Summary(int MPI_rank = 0) const;
 };

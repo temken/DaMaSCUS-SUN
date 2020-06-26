@@ -1,9 +1,11 @@
 #include "gtest/gtest.h"
 
 #include <cmath>
+#include <random>
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
+#include "Statistics.hpp"
 
 // Headers from obscura
 #include "DM_Particle_Standard.hpp"
@@ -150,11 +152,37 @@ TEST(TestSolarModel, TestTotalDMScatteringRate)
 	EXPECT_DOUBLE_EQ(SSM.Total_DM_Scattering_Rate(DM, r1, v_DM), 0.0);
 }
 
-// TEST(TestSolarModel, TestPrintSummary)
-// {
-// 	// ARRANGE
-// 	// ACT & ASSERT
-// }
+TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
+{
+	// ARRANGE
+	int fixed_seed = 137;
+	std::mt19937 PRNG(fixed_seed);
+	Solar_Model SSM;
+	obscura::DM_Particle_SI DM;
+	DM.Set_Sigma_Proton(pb);
+	int trials		 = 1000;
+	double tolerance = 0.01;
+	// ACT
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
+	// ASSERT
+	for(int i = 0; i < trials; i++)
+	{
+		double r			 = libphysica::Sample_Uniform(PRNG, 0, rSun);
+		double w			 = libphysica::Sample_Uniform(PRNG, 0, 0.3);
+		double correct_value = SSM.Total_DM_Scattering_Rate_Computed(DM, r, w);
+		double max_deviation = tolerance * correct_value;
+		ASSERT_NEAR(SSM.Total_DM_Scattering_Rate(DM, r, w), correct_value, max_deviation);
+	}
+}
+
+TEST(TestSolarModel, TestPrintSummary)
+{
+	// ARRANGE
+	Solar_Model SSM;
+
+	// ACT & ASSERT
+	SSM.Print_Summary();
+}
 
 // 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
 TEST(TestSolarModel, TestThermalAveragedRelativeSpeed)
