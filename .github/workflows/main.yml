@@ -1,0 +1,80 @@
+name: Build & Tests
+
+on:
+  push:
+    branches: [ master , dev]
+  pull_request:
+    branches: [ master , dev]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Update apt-get
+      run: sudo apt-get update
+
+    # LCOV
+    - name: Install lcov
+      run: sudo apt-get install lcov
+
+    # LIBCONFIG
+    - name: Install libconfig
+      run: wget https://hyperrealm.github.io/libconfig/dist/libconfig-1.7.2.tar.gz && tar -xvzf libconfig-1.7.2.tar.gz && pushd libconfig-1.7.2 && ./configure && make && sudo make install && popd
+    
+    # MPI
+    - name: Install MPI
+      run: sudo apt-get install openmpi-bin libopenmpi-dev
+    
+    # CODECOV
+    - name: Install codecov
+      shell: bash
+      run: sudo pip install codecov
+
+    # BUILD
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source 
+      # and build directories, but this is only available with CMake 3.13 and higher.  
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCODE_COVERAGE=ON $GITHUB_WORKSPACE
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config $BUILD_TYPE
+
+    # TEST
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute tests defined by the CMake configuration.  
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest -V
+
+    # CODE COVERAGE
+    - name: Code coverage - Capture coverage info
+      working-directory: ${{runner.workspace}}/build
+      run: lcov --directory . --capture --output-file coverage.info 
+    - name: Code coverage - Filter out system, external, and unit test source files
+      working-directory: ${{runner.workspace}}/build
+      run: lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/tests/*' '*/external/*' --output-file coverage.info
+    - name: Code coverage - Output coverage data for debugging
+      working-directory: ${{runner.workspace}}/build
+      run: lcov --list coverage.info
+    - name: Code coverage - Upload to CodeCov
+      working-directory: ${{runner.workspace}}/build
+      run:  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
