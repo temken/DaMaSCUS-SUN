@@ -19,6 +19,7 @@ set(EXTERNAL_DIR  ${PROJECT_SOURCE_DIR}/external)
 
 #External projects
 find_package(MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
 
 include(FetchContent)
 # obscura
@@ -62,7 +63,7 @@ configure_file(
   ${GENERATED_DIR}/version.hpp )
 
 # Source and include directories
-include_directories( ${INCLUDE_DIR} )
+include_directories( ${INCLUDE_DIR} ${MPI_INCLUDE_PATH})
 add_subdirectory( ${SRC_DIR} )
 
 # Code Coverage Configuration

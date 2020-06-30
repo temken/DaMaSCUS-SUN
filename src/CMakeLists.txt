@@ -13,12 +13,10 @@ target_link_libraries(DaMaSCUS-SUN
 	PUBLIC
 		coverage_config
 		libobscura
-	PRIVATE
-		${MPI_LIBRARIES})
+		${MPI_CXX_LIBRARIES} )
 
 target_include_directories(DaMaSCUS-SUN
 	PRIVATE
-		${GENERATED_DIR}
-		${MPI_INCLUDE_PATH} )
+		${GENERATED_DIR} )
 
 install(TARGETS DaMaSCUS-SUN DESTINATION ${BIN_DIR})

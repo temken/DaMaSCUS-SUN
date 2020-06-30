@@ -88,7 +88,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
-	unsigned int sample_size = 20;
+	unsigned int sample_size = 10;
 
 	// ACT
 	Simulation_Data data_set(sample_size);
@@ -108,7 +108,7 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
-	unsigned int sample_size = 20;
+	unsigned int sample_size = 10;
 
 	// ACT
 	Simulation_Data data_set(sample_size);

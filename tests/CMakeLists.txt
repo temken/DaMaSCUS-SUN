@@ -13,6 +13,7 @@ add_executable(tests
 target_link_libraries(tests
 	PUBLIC
 		coverage_config 
+		${MPI_CXX_LIBRARIES}
 	PRIVATE
 		gtest_main	#contains the main function
 		libobscura )
@@ -23,5 +24,8 @@ target_compile_options(tests PUBLIC -Wall -pedantic)
 
 install(TARGETS tests DESTINATION ${TESTS_DIR})
 
-add_test(NAME all_tests COMMAND tests
+add_test(NAME unit_tests COMMAND tests
 	WORKING_DIRECTORY ${TESTS_DIR})
+
+add_test(NAME executable_test COMMAND mpirun DaMaSCUS-SUN
+	WORKING_DIRECTORY ${BIN_DIR})

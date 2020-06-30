@@ -11,4 +11,4 @@ Dark Matter Simulation Code for Underground Scatterings - Sun Edition
 - [libconfig](https://github.com/hyperrealm/libconfig)
 - [libphysica](https://github.com/temken/libphysica)
 - [obscura](https://github.com/temken/obscura)
-- [open MPI])(https://www.open-mpi.org/)
+- [open MPI](https://www.open-mpi.org/)
