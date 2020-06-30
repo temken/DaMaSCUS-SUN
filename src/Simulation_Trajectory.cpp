@@ -36,9 +36,9 @@ bool Trajectory_Result::Particle_Captured() const
 	return r < rSun || final_event.Speed() < vesc;
 }
 
-void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int MPI_rank)
+void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank)
 {
-	if(MPI_rank == 0)
+	if(mpi_rank == 0)
 	{
 		std::cout << SEPARATOR
 				  << "Trajectory result summary" << std::endl

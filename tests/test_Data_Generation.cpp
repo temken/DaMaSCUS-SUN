@@ -121,6 +121,6 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 // TEST(TestDataGeneration, TestDataSetPrintSummary)
 // {
 // 	// ARRANGE
-// 	// void Print_Summary(unsigned int MPI_rank = 0);
+// 	// void Print_Summary(unsigned int mpi_rank = 0);
 // 	// ACT & ASSERT
 // }

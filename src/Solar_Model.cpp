@@ -256,9 +256,9 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 	}
 }
 
-void Solar_Model::Print_Summary(int MPI_rank) const
+void Solar_Model::Print_Summary(int mpi_rank) const
 {
-	if(MPI_rank == 0)
+	if(mpi_rank == 0)
 	{
 		std::cout << SEPARATOR
 				  << "Solar model:\t\t" << name << std::endl
@@ -267,7 +267,7 @@ void Solar_Model::Print_Summary(int MPI_rank) const
 				  << "Isotope\tZ\tA\tAbund.[%]\tSpin\t<sp>\t<sn>"
 				  << SEPARATOR_LINE;
 		for(auto& isotope : target_isotopes)
-			isotope.Print_Summary(MPI_rank);
+			isotope.Print_Summary(mpi_rank);
 		std::cout << SEPARATOR;
 	}
 }

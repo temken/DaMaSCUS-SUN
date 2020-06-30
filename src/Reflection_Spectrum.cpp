@@ -31,10 +31,10 @@ double Reflection_Spectrum::Differential_Flux(double u)
 	return 1.0 / 4.0 / M_PI / distance / distance * Differential_Spectrum(u);
 }
 
-void Reflection_Spectrum::Print_Summary(int MPI_rank)
+void Reflection_Spectrum::Print_Summary(int mpi_rank)
 {
 	std::cout << SEPARATOR;
-	Print_Summary_Base(MPI_rank);
+	Print_Summary_Base(mpi_rank);
 	std::cout << SEPARATOR;
 }
 

@@ -24,7 +24,7 @@ class Reflection_Spectrum : public obscura::DM_Distribution
 	double Differential_Spectrum(double v);
 	double Differential_Flux(double v);
 
-	virtual void Print_Summary(int MPI_rank = 0) override;
+	virtual void Print_Summary(int mpi_rank = 0) override;
 };
 
 double DM_Entering_Rate(Solar_Model& solar_model, obscura::DM_Distribution& halo_model, double mDM);

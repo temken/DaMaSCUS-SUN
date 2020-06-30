@@ -64,7 +64,7 @@ class Solar_Model
 	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed);
 	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned N_speed);
 
-	void Print_Summary(int MPI_rank = 0) const;
+	void Print_Summary(int mpi_rank = 0) const;
 };
 
 // 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
