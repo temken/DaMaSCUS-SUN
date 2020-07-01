@@ -55,10 +55,8 @@ int Event::Isoreflection_Ring(const libphysica::Vector& vel_sun, unsigned int nu
 	double theta					= Isoreflection_Angle(vel_sun);
 	std::vector<double> ring_angles = Isoreflection_Ring_Angles(number_of_rings);
 	for(unsigned int ring = 0; ring < ring_angles.size(); ring++)
-	{
 		if(theta <= ring_angles[ring])
 			return ring;
-	}
 	std::cerr << "Error in Event::Isoreflection_Ring(): Angle = " << theta << " out of bound." << std::endl;
 	std::exit(EXIT_FAILURE);
 }
@@ -175,10 +173,11 @@ std::vector<double> Isoreflection_Ring_Angles(unsigned int number_of_rings)
 {
 	std::vector<double> thetas;
 	double theta = 0;
-	for(unsigned int i = 0; i < number_of_rings; i++)
+	for(unsigned int i = 0; i < number_of_rings - 1; i++)
 	{
 		theta = acos(cos(theta) - 2.0 / number_of_rings);
 		thetas.push_back(theta);
 	}
+	thetas.push_back(180. * deg);
 	return thetas;
 }
