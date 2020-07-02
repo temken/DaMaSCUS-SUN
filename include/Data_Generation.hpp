@@ -34,6 +34,10 @@ class Simulation_Data
 
 	std::vector<unsigned long int> number_of_data_points;
 
+	// MPI
+	int mpi_rank, mpi_processes;
+	void Perform_MPI_Reductions();
+
   public:
 	std::vector<std::vector<libphysica::DataPoint>> data;
 
@@ -41,7 +45,7 @@ class Simulation_Data
 
 	void Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering, unsigned long int max_free_steps = 1e8);
 
-	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, int mpi_rank = 0, unsigned int fixed_seed = 0);
+	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
 	void Generate_Data_RMA(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
 	void Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
 

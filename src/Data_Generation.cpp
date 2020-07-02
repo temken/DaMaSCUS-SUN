@@ -16,6 +16,8 @@ using namespace libphysica::natural_units;
 Simulation_Data::Simulation_Data(unsigned int sample_size, double u_min, unsigned int iso_rings)
 : min_sample_size(sample_size), minimum_speed(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
 {
+	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 }
 
 void Simulation_Data::Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering, unsigned long int max_free_steps)
@@ -26,7 +28,7 @@ void Simulation_Data::Configure(double initial_radius, unsigned int min_scatteri
 	maximum_free_time_steps		  = max_free_steps;
 }
 
-void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, int mpi_rank, unsigned int fixed_seed)
+void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed)
 {
 	auto time_start = std::chrono::system_clock::now();
 
@@ -87,9 +89,6 @@ void Simulation_Data::Generate_Data_RMA(obscura::DM_Particle& DM, Solar_Model& s
 	// 1. Generate the data in parallel
 
 	// Open an MPI Remote Memory Access window for the data counters
-	int mpi_rank, mpi_processes;
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 	MPI_Win mpi_window;
 	// std::vector<unsigned long int> counters(isoreflection_rings, 0);
 	unsigned long int data_counters[isoreflection_rings];
@@ -139,7 +138,7 @@ void Simulation_Data::Generate_Data_RMA(obscura::DM_Particle& DM, Solar_Model& s
 	}
 	MPI_Win_free(&mpi_window);
 
-	// 2. Reduce the worker's data sets.
+	// // 2. Reduce the worker's data sets.
 	average_number_of_scatterings *= number_of_trajectories;
 	MPI_Allreduce(MPI_IN_PLACE, &number_of_trajectories, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -148,35 +147,35 @@ void Simulation_Data::Generate_Data_RMA(obscura::DM_Particle& DM, Solar_Model& s
 	MPI_Allreduce(MPI_IN_PLACE, &average_number_of_scatterings, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	average_number_of_scatterings /= number_of_trajectories;
 
-	MPI_Datatype mpi_datapoint;
-	MPI_Type_contiguous(2, MPI_DOUBLE, &mpi_datapoint);
-	MPI_Type_commit(&mpi_datapoint);
-	std::vector<std::vector<libphysica::DataPoint>> global_data;
-	for(unsigned int i = 0; i < isoreflection_rings; i++)
-	{
-		// 1. How many data points did this worker gather?
-		unsigned long int local_number_of_data_points = data[i].size();
-		// 2. How many data points did all workers gather in total?
-		unsigned long int total_number_of_data_points;
-		MPI_Allreduce(&number_of_data_points[i], &total_number_of_data_points, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-		number_of_data_points[i] = total_number_of_data_points;
-		// 3. Every worker needs to know how much every worker did.
-		std::vector<unsigned long int> data_points_of_workers(mpi_processes);
-		MPI_Allgather(&local_number_of_data_points, 1, MPI_UNSIGNED_LONG, data_points_of_workers.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-		//4. Collect info on the data packages to be received.
-		std::vector<int> receive_counter(mpi_processes);
-		std::vector<int> receive_displacements(mpi_processes);
-		for(int j = 0; j < mpi_processes; j++)
-		{
-			receive_counter[j]		 = data_points_of_workers[j];
-			receive_displacements[j] = (j == 0) ? 0 : receive_displacements[j - 1] + data_points_of_workers[j - 1];
-		}
-		// 5.
-		std::vector<libphysica::DataPoint> ring_data(total_number_of_data_points);
-		MPI_Allgatherv(&data[i].front(), local_number_of_data_points, mpi_datapoint, &ring_data.front(), receive_counter.data(), receive_displacements.data(), mpi_datapoint, MPI_COMM_WORLD);
-		global_data.push_back(ring_data);
-	}
-	data = global_data;
+	// MPI_Datatype mpi_datapoint;
+	// MPI_Type_contiguous(2, MPI_DOUBLE, &mpi_datapoint);
+	// MPI_Type_commit(&mpi_datapoint);
+	// std::vector<std::vector<libphysica::DataPoint>> global_data;
+	// for(unsigned int i = 0; i < isoreflection_rings; i++)
+	// {
+	// 	// 1. How many data points did this worker gather?
+	// 	unsigned long int local_number_of_data_points = data[i].size();
+	// 	// 2. How many data points did all workers gather in total?
+	// 	unsigned long int total_number_of_data_points;
+	// 	MPI_Allreduce(&number_of_data_points[i], &total_number_of_data_points, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	// 	number_of_data_points[i] = total_number_of_data_points;
+	// 	// 3. Every worker needs to know how much every worker did.
+	// 	std::vector<unsigned long int> data_points_of_workers(mpi_processes);
+	// 	MPI_Allgather(&local_number_of_data_points, 1, MPI_UNSIGNED_LONG, data_points_of_workers.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+	// 	//4. Collect info on the data packages to be received.
+	// 	std::vector<int> receive_counter(mpi_processes);
+	// 	std::vector<int> receive_displacements(mpi_processes);
+	// 	for(int j = 0; j < mpi_processes; j++)
+	// 	{
+	// 		receive_counter[j]		 = data_points_of_workers[j];
+	// 		receive_displacements[j] = (j == 0) ? 0 : receive_displacements[j - 1] + data_points_of_workers[j - 1];
+	// 	}
+	// 	// 5.
+	// 	std::vector<libphysica::DataPoint> ring_data(total_number_of_data_points);
+	// 	MPI_Allgatherv(&data[i].front(), local_number_of_data_points, mpi_datapoint, &ring_data.front(), receive_counter.data(), receive_displacements.data(), mpi_datapoint, MPI_COMM_WORLD);
+	// 	global_data.push_back(ring_data);
+	// }
+	// data = global_data;
 
 	auto time_end  = std::chrono::system_clock::now();
 	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
@@ -188,9 +187,6 @@ void Simulation_Data::Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& 
 	auto time_start = std::chrono::system_clock::now();
 
 	//MPI ring communication
-	int mpi_rank, mpi_processes;
-	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 	int mpi_source		= (mpi_rank == 0) ? mpi_processes - 1 : mpi_rank - 1;
 	int mpi_destination = (mpi_rank == mpi_processes - 1) ? 0 : mpi_rank + 1;
 	int mpi_tag			= 0;
@@ -205,7 +201,7 @@ void Simulation_Data::Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& 
 	obscura::Standard_Halo_Model SHM;
 	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
-	//Get the MPI ring communication started
+	//Get the MPI ring communication started by sending the data counters
 	std::vector<unsigned long int> local_counter_new(isoreflection_rings, 0);
 	if(mpi_rank == 0)
 		MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
@@ -236,37 +232,47 @@ void Simulation_Data::Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& 
 				local_counter_new[isoreflection_ring]++;
 				data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
 			}
-			//Check if MPI token arrived.
+			//Check if data counters arrived.
 			int mpi_flag;
 			MPI_Iprobe(mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_flag, &mpi_status);
 			if(mpi_flag)
 			{
-				//Receive the tokens
+				//Receive and increment the data counters
 				MPI_Recv(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_status);
-				//Update the tokens
-				unsigned long int nMin1 = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
+				unsigned long int smallest_sample_size_old = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
 				for(int i = 0; i < isoreflection_rings; i++)
 				{
 					number_of_data_points[i] += local_counter_new[i];
 					local_counter_new[i] = 0;
 				}
 				smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
-
 				//Check if we are done
-				if(nMin1 < min_sample_size && smallest_sample_size >= min_sample_size)
+				if(smallest_sample_size_old < min_sample_size && smallest_sample_size >= min_sample_size)
 					mpi_tag = mpi_source + 1;
-				else if(nMin1 >= min_sample_size)
+				else if(smallest_sample_size_old >= min_sample_size)
 					mpi_tag = mpi_status.MPI_TAG;
-				//Pass on the tokens, unless you are the very last process.
+
+				//Pass on the counters, unless you are the very last process.
 				if(mpi_tag != (mpi_rank + 1))
 					MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
-				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size, mpi_rank, 61);
+				//Progress bar
+				if(mpi_rank == 0)
+				{
+					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size, mpi_rank, 39, time);
+				}
 			}
 		}
 	}
+	auto time_end  = std::chrono::system_clock::now();
+	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	// 2. Reduce the worker's data sets.
+	Perform_MPI_Reductions();
+}
+
+void Simulation_Data::Perform_MPI_Reductions()
+{
 	average_number_of_scatterings *= number_of_trajectories;
 	MPI_Allreduce(MPI_IN_PLACE, &number_of_trajectories, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -305,8 +311,6 @@ void Simulation_Data::Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& 
 	}
 	data = global_data;
 
-	auto time_end  = std::chrono::system_clock::now();
-	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
 	MPI_Allreduce(MPI_IN_PLACE, &computing_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 }
 
