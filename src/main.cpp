@@ -65,7 +65,7 @@ int main()
 	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 	// data_set.Generate_Data(DM, SSM);
 	// data_set.Generate_Data_RMA(DM, SSM);
-	data_set.Generate_Data_Ring(DM, SSM);
+	data_set.Generate_Data(DM, SSM);
 	data_set.Print_Summary(mpi_rank);
 
 	// Reflection_Spectrum spectrum(data_set);

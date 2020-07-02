@@ -46,8 +46,6 @@ class Simulation_Data
 	void Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering, unsigned long int max_free_steps = 1e8);
 
 	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
-	void Generate_Data_RMA(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
-	void Generate_Data_Ring(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
 
 	double Free_Ratio();
 	double Capture_Ratio();
