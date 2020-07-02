@@ -155,7 +155,7 @@ TEST(TestDataGeneration, TestSpeedFunctions)
 	data_set.Generate_Data(DM, SSM);
 
 	// ASSERT
-	EXPECT_DOUBLE_EQ(data_set.Minimum_Speed(), u_min);
+	EXPECT_DOUBLE_EQ(data_set.Minimum_Speed(), 0.75 * u_min);
 	EXPECT_GT(data_set.Lowest_Speed(), data_set.Minimum_Speed());
 	EXPECT_GT(data_set.Highest_Speed(), data_set.Lowest_Speed());
 }

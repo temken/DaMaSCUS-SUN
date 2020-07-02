@@ -14,7 +14,7 @@
 using namespace libphysica::natural_units;
 
 Simulation_Data::Simulation_Data(unsigned int sample_size, double u_min, unsigned int iso_rings)
-: min_sample_size(sample_size), minimum_speed(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
+: min_sample_size_above_threshold(sample_size), minimum_speed_threshold(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
 {
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -53,7 +53,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 		MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
 
 	unsigned int smallest_sample_size = 0;
-	while(smallest_sample_size < min_sample_size)
+	while(smallest_sample_size < min_sample_size_above_threshold)
 	{
 		Event IC = Initial_Conditions(SHM, solar_model, simulator.PRNG);
 		Hyperbolic_Kepler_Shift(IC, initial_and_final_radius);
@@ -72,10 +72,11 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				number_of_reflected_particles++;
 			Hyperbolic_Kepler_Shift(trajectory.final_event, 1.0 * AU);
 			double v_final = trajectory.final_event.Speed();
-			if(trajectory.number_of_scatterings >= minimum_number_of_scatterings && v_final > minimum_speed)
+			if(trajectory.number_of_scatterings >= minimum_number_of_scatterings && v_final > KDE_boundary_correction_factor * minimum_speed_threshold)
 			{
 				unsigned int isoreflection_ring = (isoreflection_rings == 1) ? 0 : trajectory.final_event.Isoreflection_Ring(obscura::Sun_Velocity(), isoreflection_rings);
-				local_counter_new[isoreflection_ring]++;
+				if(v_final > minimum_speed_threshold)
+					local_counter_new[isoreflection_ring]++;
 				data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
 			}
 			//Check if data counters arrived.
@@ -93,9 +94,9 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				}
 				smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
 				//Check if we are done
-				if(smallest_sample_size_old < min_sample_size && smallest_sample_size >= min_sample_size)
+				if(smallest_sample_size_old < min_sample_size_above_threshold && smallest_sample_size >= min_sample_size_above_threshold)
 					mpi_tag = mpi_source + 1;
-				else if(smallest_sample_size_old >= min_sample_size)
+				else if(smallest_sample_size_old >= min_sample_size_above_threshold)
 					mpi_tag = mpi_status.MPI_TAG;
 
 				//Pass on the counters, unless you are the very last process.
@@ -105,7 +106,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				if(mpi_rank == 0)
 				{
 					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size, mpi_rank, 39, time);
+					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, mpi_rank, 39, time);
 				}
 			}
 		}
@@ -135,13 +136,12 @@ void Simulation_Data::Perform_MPI_Reductions()
 	{
 		// 1. How many data points did this worker gather?
 		unsigned long int local_number_of_data_points = data[i].size();
-		// 2. How many data points did all workers gather in total?
-		unsigned long int total_number_of_data_points;
-		MPI_Allreduce(&number_of_data_points[i], &total_number_of_data_points, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-		number_of_data_points[i] = total_number_of_data_points;
-		// 3. Every worker needs to know how much every worker did.
+		// 2. Every worker needs to know how much every worker did.
 		std::vector<unsigned long int> data_points_of_workers(mpi_processes);
 		MPI_Allgather(&local_number_of_data_points, 1, MPI_UNSIGNED_LONG, data_points_of_workers.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+		// 3. How many data points did all workers gather in total?
+		number_of_data_points[i] = std::accumulate(data_points_of_workers.begin(), data_points_of_workers.end(), 0);
+
 		//4. Collect info on the data packages to be received.
 		std::vector<int> receive_counter(mpi_processes);
 		std::vector<int> receive_displacements(mpi_processes);
@@ -150,13 +150,12 @@ void Simulation_Data::Perform_MPI_Reductions()
 			receive_counter[j]		 = data_points_of_workers[j];
 			receive_displacements[j] = (j == 0) ? 0 : receive_displacements[j - 1] + data_points_of_workers[j - 1];
 		}
-		// 5.
-		std::vector<libphysica::DataPoint> ring_data(total_number_of_data_points);
+		// 5. Gather data packages
+		std::vector<libphysica::DataPoint> ring_data(number_of_data_points[i]);
 		MPI_Allgatherv(&data[i].front(), local_number_of_data_points, mpi_datapoint, &ring_data.front(), receive_counter.data(), receive_displacements.data(), mpi_datapoint, MPI_COMM_WORLD);
 		global_data.push_back(ring_data);
 	}
 	data = global_data;
-
 	MPI_Allreduce(MPI_IN_PLACE, &computing_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 }
 
@@ -178,7 +177,7 @@ double Simulation_Data::Reflection_Ratio(int isoreflection_ring) const
 
 double Simulation_Data::Minimum_Speed() const
 {
-	return minimum_speed;
+	return KDE_boundary_correction_factor * minimum_speed_threshold;
 }
 
 double Simulation_Data::Lowest_Speed(unsigned int iso_ring) const
@@ -200,8 +199,8 @@ void Simulation_Data::Print_Summary(unsigned int mpi_rank)
 				  << "Simulation data summary" << std::endl
 				  << std::endl
 				  << "Configuration:" << std::endl
-				  << "Minimum DM speed [km/sec]:\t" << libphysica::Round(In_Units(minimum_speed, km / sec)) << std::endl
-				  << "Minimum sample size:\t\t" << min_sample_size << std::endl
+				  << "DM speed threshold [km/sec]:\t" << libphysica::Round(In_Units(minimum_speed_threshold, km / sec)) << std::endl
+				  << "Minimum sample size:\t\t" << min_sample_size_above_threshold << std::endl
 				  << "Isoreflection rings:\t\t" << isoreflection_rings << std::endl
 				  << std::endl
 				  << "Results:" << std::endl

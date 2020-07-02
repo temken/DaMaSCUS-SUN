@@ -16,8 +16,8 @@ class Simulation_Data
 {
   private:
 	// Configuration
-	unsigned int min_sample_size;
-	double minimum_speed;
+	unsigned int min_sample_size_above_threshold;
+	double minimum_speed_threshold;
 	unsigned int isoreflection_rings;
 	double initial_and_final_radius			   = 1.1 * libphysica::natural_units::rSun;
 	unsigned int minimum_number_of_scatterings = 1;
@@ -37,6 +37,8 @@ class Simulation_Data
 	// MPI
 	int mpi_rank, mpi_processes;
 	void Perform_MPI_Reductions();
+
+	double KDE_boundary_correction_factor = 0.75;
 
   public:
 	std::vector<std::vector<libphysica::DataPoint>> data;
