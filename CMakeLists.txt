@@ -23,11 +23,11 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include(FetchContent)
 # obscura
-set(LIBPHYSICA_DIR   ${EXTERNAL_DIR}/obscura)
+set(OBSCURA_DIR   ${EXTERNAL_DIR}/obscura)
 FetchContent_Declare(obscura
   GIT_REPOSITORY  https://github.com/temken/obscura.git
   GIT_TAG         origin/master
-  SOURCE_DIR     "${LIBPHYSICA_DIR}"
+  SOURCE_DIR     "${OBSCURA_DIR}"
   CMAKE_ARGS     "-DCMAKE_BUILD_TYPE=Release -DCODE_COVERAGE=OFF" )
 FetchContent_GetProperties(obscura)
 if(NOT obscura_POPULATED)
