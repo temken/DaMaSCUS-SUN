@@ -47,6 +47,8 @@ TEST(TestDataGeneration, TestGenerateData)
 
 	unsigned int sample_size = 2;
 
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
+
 	// ACT
 	Simulation_Data data_set(sample_size);
 	data_set.Generate_Data(DM, SSM);
@@ -80,8 +82,9 @@ TEST(TestDataGeneration, TestDataFreeRatio)
 	DM.Set_Sigma_Proton(1.0e-100 * pb);
 	DM.Set_Sigma_Electron(1.0e-100 * pb);
 
-	unsigned int sample_size = 10;
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
 
+	unsigned int sample_size = 10;
 	// ACT
 	Simulation_Data data_set(sample_size);
 	data_set.Configure(1.1 * rSun, 0, 500);
@@ -99,6 +102,8 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	obscura::DM_Particle_SI DM(1.0 * GeV);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
+
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
 
 	unsigned int sample_size = 10;
 
@@ -120,6 +125,8 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
+
 	unsigned int sample_size = 10;
 
 	// ACT
@@ -128,6 +135,29 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 
 	// ASSERT
 	ASSERT_GT(data_set.Reflection_Ratio(), 0.0);
+}
+
+TEST(TestDataGeneration, TestSpeedFunctions)
+{
+	// ARRANGE
+	Solar_Model SSM;
+
+	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Sigma_Proton(1.0 * pb);
+	DM.Set_Sigma_Electron(1.0 * pb);
+
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
+
+	unsigned int sample_size = 10;
+	double u_min			 = 0.0001;
+	// ACT
+	Simulation_Data data_set(sample_size, u_min);
+	data_set.Generate_Data(DM, SSM);
+
+	// ASSERT
+	EXPECT_DOUBLE_EQ(data_set.Minimum_Speed(), u_min);
+	EXPECT_GT(data_set.Lowest_Speed(), data_set.Minimum_Speed());
+	EXPECT_GT(data_set.Highest_Speed(), data_set.Lowest_Speed());
 }
 
 // TEST(TestDataGeneration, TestDataSetPrintSummary)
