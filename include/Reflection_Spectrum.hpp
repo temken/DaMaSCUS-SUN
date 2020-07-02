@@ -13,16 +13,20 @@
 class Reflection_Spectrum : public obscura::DM_Distribution
 {
   private:
-	libphysica::Interpolation spectrum_interpolation;
+	libphysica::Interpolation kde_speed;
+	double total_entering_rate, total_reflection_rate, total_reflection_flux;
+	double distance;
 
   public:
 	//Constructors
-	Reflection_Spectrum(const Simulation_Data& simulation_data, unsigned int iso_ring = 0);
+	Reflection_Spectrum(const Simulation_Data& simulation_data, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, double mDM, int iso_ring = 0);
 
 	virtual double PDF_Speed(double v) override;
 
 	double Differential_Spectrum(double v);
 	double Differential_Flux(double v);
+
+	void Set_Distance(double d);
 
 	virtual void Print_Summary(int mpi_rank = 0) override;
 };

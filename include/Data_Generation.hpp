@@ -21,7 +21,7 @@ class Simulation_Data
 	unsigned int isoreflection_rings;
 	double initial_and_final_radius			   = 1.1 * libphysica::natural_units::rSun;
 	unsigned int minimum_number_of_scatterings = 1;
-	unsigned int maximum_number_of_scatterings = 300;
+	unsigned int maximum_number_of_scatterings = 1000;
 	unsigned long int maximum_free_time_steps  = 1e8;
 
 	// Results
@@ -47,10 +47,11 @@ class Simulation_Data
 
 	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed = 0);
 
-	double Free_Ratio();
-	double Capture_Ratio();
-	double Reflection_Ratio();
+	double Free_Ratio() const;
+	double Capture_Ratio() const;
+	double Reflection_Ratio(int isoreflection_ring = -1) const;
 
+	double Minimum_Speed() const;
 	double Lowest_Speed(unsigned int iso_ring = 0) const;
 	double Highest_Speed(unsigned int iso_ring = 0) const;
 

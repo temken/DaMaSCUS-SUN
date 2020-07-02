@@ -160,17 +160,25 @@ void Simulation_Data::Perform_MPI_Reductions()
 	MPI_Allreduce(MPI_IN_PLACE, &computing_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 }
 
-double Simulation_Data::Free_Ratio()
+double Simulation_Data::Free_Ratio() const
 {
 	return 1.0 * number_of_free_particles / number_of_trajectories;
 }
-double Simulation_Data::Capture_Ratio()
+double Simulation_Data::Capture_Ratio() const
 {
 	return 1.0 * number_of_captured_particles / number_of_trajectories;
 }
-double Simulation_Data::Reflection_Ratio()
+double Simulation_Data::Reflection_Ratio(int isoreflection_ring) const
 {
-	return 1.0 * number_of_reflected_particles / number_of_trajectories;
+	if(isoreflection_ring < 0)
+		return 1.0 * number_of_reflected_particles / number_of_trajectories;
+	else
+		return 1.0 * data[isoreflection_ring].size() / number_of_trajectories;
+}
+
+double Simulation_Data::Minimum_Speed() const
+{
+	return minimum_speed;
 }
 
 double Simulation_Data::Lowest_Speed(unsigned int iso_ring) const

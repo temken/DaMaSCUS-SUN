@@ -115,9 +115,10 @@ Solar_Model::Solar_Model()
 
 	// Nuclear abundances
 	obscura::Import_Nuclear_Data();
-	std::vector<int> Zs						   = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
-	std::vector<double> As					   = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 20.0, 23.0, 24.0, 27.0, 28.0, 31.0, 32.0, 35.0, 40.0, 39.0, 40.0, 45.0, 48.0, 51.0, 52.0, 55.0, 56.0, 59.0, 58.0};
-	std::vector<unsigned int> included_targets = {0, 1, 7, 26};
+	std::vector<int> Zs	   = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
+	std::vector<double> As = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0};
+	// std::vector<unsigned int> included_targets = {0, 1, 7, 26};
+	std::vector<unsigned int> included_targets = libphysica::Range(Zs.size());
 	for(auto& target_index : included_targets)
 	{
 		int Z = Zs[target_index];

@@ -3,20 +3,16 @@
 #include <cstring>	 // for strlen
 #include <iostream>
 #include <mpi.h>
-#include <random>
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
 
 // Headers from obscura
-#include "Astronomy.hpp"
 #include "DM_Distribution.hpp"
 #include "DM_Particle_Standard.hpp"
 
 #include "Data_Generation.hpp"
 #include "Reflection_Spectrum.hpp"
-#include "Simulation_Trajectory.hpp"
-#include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
 #include "version.hpp"
 
@@ -44,18 +40,11 @@ int main()
 	MPI_Barrier(MPI_COMM_WORLD);
 	////////////////////////////////////////////////////////////////////////
 
-	std::random_device rd;
-	std::mt19937 PRNG(rd());
-
 	Solar_Model SSM;
-	SSM.Print_Summary(mpi_rank);
 
-	// obscura::Standard_Halo_Model SHM;
-	// SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
-
-	obscura::DM_Particle_SI DM(0.25 * GeV);
+	obscura::DM_Particle_SI DM(0.1 * GeV);
 	DM.Set_Sigma_Proton(1e-1 * pb);
-	DM.Set_Sigma_Electron(1e-1 * pb);
+	DM.Set_Sigma_Electron(0.0 * pb);
 	DM.Print_Summary(mpi_rank);
 
 	unsigned int sample_size		 = 10;
@@ -63,13 +52,12 @@ int main()
 	unsigned int isoreflection_rings = 1;
 	Simulation_Data data_set(sample_size, u_min, isoreflection_rings);
 	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
-	// data_set.Generate_Data(DM, SSM);
-	// data_set.Generate_Data_RMA(DM, SSM);
 	data_set.Generate_Data(DM, SSM);
 	data_set.Print_Summary(mpi_rank);
 
-	// Reflection_Spectrum spectrum(data_set);
-	// spectrum.Print_Summary(mpi_rank);
+	obscura::Standard_Halo_Model SHM;
+	Reflection_Spectrum spectrum(data_set, SSM, SHM, DM.mass);
+	spectrum.Print_Summary(mpi_rank);
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
