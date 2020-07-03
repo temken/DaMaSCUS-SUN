@@ -39,7 +39,7 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 	double v = 1e-3;
 	// ACT & ASSERT
 	Reflection_Spectrum spectrum(data_set, solar_model, SHM, mDM);
-	EXPECT_DOUBLE_EQ(spectrum.Differential_Spectrum(v), 4.0 * M_PI * AU * AU * spectrum.Differential_Flux(v));
+	EXPECT_DOUBLE_EQ(spectrum.Differential_Spectrum(v), 4.0 * M_PI * AU * AU * spectrum.Differential_DM_Flux(v));
 
 	EXPECT_GT(spectrum.PDF_Speed(v), 0.0);
 
@@ -49,9 +49,9 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 	double norm = libphysica::Integrate(pdf, spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 1e-3);
 	EXPECT_NEAR(norm, 1.0, 1e-3);
 
-	double flux_1 = spectrum.Differential_Flux(v);
+	double flux_1 = spectrum.Differential_DM_Flux(v);
 	spectrum.Set_Distance(2.0 * AU);
-	double flux_2 = spectrum.Differential_Flux(v);
+	double flux_2 = spectrum.Differential_DM_Flux(v);
 	EXPECT_DOUBLE_EQ(flux_1, 4.0 * flux_2);
 }
 

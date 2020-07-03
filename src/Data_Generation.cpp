@@ -106,7 +106,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				if(mpi_rank == 0)
 				{
 					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, mpi_rank, 39, time);
+					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, mpi_rank, 44, time);
 				}
 			}
 		}

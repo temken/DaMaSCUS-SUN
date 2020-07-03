@@ -24,7 +24,7 @@ class Reflection_Spectrum : public obscura::DM_Distribution
 	virtual double PDF_Speed(double v) override;
 
 	double Differential_Spectrum(double v);
-	double Differential_Flux(double v);
+	virtual double Differential_DM_Flux(double v, double mDM = 0.0) override;
 
 	void Set_Distance(double d);
 

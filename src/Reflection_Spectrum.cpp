@@ -32,7 +32,7 @@ double Reflection_Spectrum::Differential_Spectrum(double u)
 		return total_reflection_rate * kde_speed(u);
 }
 
-double Reflection_Spectrum::Differential_Flux(double u)
+double Reflection_Spectrum::Differential_DM_Flux(double u, double mDM)
 {
 	if(u < v_domain[0] || u > v_domain[1])
 		return 0.0;
