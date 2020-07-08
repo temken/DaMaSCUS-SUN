@@ -17,6 +17,7 @@ install(TARGETS DaMaSCUS-SUN DESTINATION ${BIN_DIR})
 # Static library
 add_library(lib_damascus_sun STATIC
 	Data_Generation.cpp
+	Parameter_Scan.cpp
 	Reflection_Spectrum.cpp
 	Simulation_Trajectory.cpp
 	Simulation_Utilities.cpp
