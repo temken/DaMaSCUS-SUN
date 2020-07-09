@@ -276,6 +276,9 @@ Free_Particle_Propagator::Free_Particle_Propagator(const Event& event)
 	phi				 = 0.0;
 	v_radial		 = (radius == 0) ? event.Speed() : event.position.Dot(event.velocity) / radius;
 	angular_momentum = (event.position.Cross(event.velocity)).Dot(axis_z);
+
+	//3. Error tolerances
+	error_tolerances = {1.0 * km, 1.0e-3 * km / sec, 1.0e-7};
 }
 
 double Free_Particle_Propagator::dr_dt(double v)
@@ -328,6 +331,7 @@ void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)
 	double radius_4	  = radius + 25.0 / 216.0 * k_r[0] + 1408.0 / 2565.0 * k_r[2] + 2197.0 / 4101.0 * k_r[3] - 1.0 / 5.0 * k_r[4];
 	double v_radial_4 = v_radial + 25.0 / 216.0 * k_v[0] + 1408.0 / 2565.0 * k_v[2] + 2197.0 / 4101.0 * k_v[3] - 1.0 / 5.0 * k_v[4];
 	double phi_4	  = phi + 25.0 / 216.0 * k_p[0] + 1408.0 / 2565.0 * k_p[2] + 2197.0 / 4101.0 * k_p[3] - 1.0 / 5.0 * k_p[4];
+
 	double radius_5	  = radius + 16.0 / 135.0 * k_r[0] + 6656.0 / 12825.0 * k_r[2] + 28561.0 / 56430.0 * k_r[3] - 9.0 / 50.0 * k_r[4] + 2.0 / 55.0 * k_r[5];
 	double v_radial_5 = v_radial + 16.0 / 135.0 * k_v[0] + 6656.0 / 12825.0 * k_v[2] + 28561.0 / 56430.0 * k_v[3] - 9.0 / 50.0 * k_v[4] + 2.0 / 55.0 * k_v[5];
 	double phi_5	  = phi + 16.0 / 135.0 * k_p[0] + 6656.0 / 12825.0 * k_p[2] + 28561.0 / 56430.0 * k_p[3] - 9.0 / 50.0 * k_p[4] + 2.0 / 55.0 * k_p[5];
@@ -339,7 +343,6 @@ void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)
 		deltas.push_back(0.84 * pow(error_tolerances[i] / errors[i], 1.0 / 4.0));
 	double delta		 = *std::min_element(std::begin(deltas), std::end(deltas));
 	double time_step_new = delta * time_step;
-	time_step_new		 = std::max(time_step_min, std::min(time_step_new, time_step_max));
 
 	// Check if errors fall below the tolerance
 	if(errors[0] < error_tolerances[0] && errors[1] < error_tolerances[1] && errors[2] < error_tolerances[2])

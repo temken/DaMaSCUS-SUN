@@ -71,9 +71,7 @@ class Free_Particle_Propagator
 	double dr_dt(double v);
 	double dv_dt(double r, double mass);
 	double dphi_dt(double r);
-	std::vector<double> error_tolerances = {1.0 * libphysica::natural_units::km, 1.0e-3 * libphysica::natural_units::km / libphysica::natural_units::sec, 1.0e-7};
-	double time_step_min				 = 1.0e-6 * libphysica::natural_units::sec;
-	double time_step_max				 = 1.0e2 * libphysica::natural_units::sec;
+	std::vector<double> error_tolerances;
 
   public:
 	double time_step = 0.1 * libphysica::natural_units::sec;
