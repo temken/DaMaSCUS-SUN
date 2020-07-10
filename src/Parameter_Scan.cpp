@@ -17,12 +17,12 @@ Parameter_Scan::Parameter_Scan(const std::vector<double> masses, const std::vect
 	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), 1.0));
 }
 
-void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, int mpi_rank)
+void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
 	double mDM_original		 = DM.mass;
 	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
 
-	obscura::Standard_Halo_Model SHM;
+	// obscura::Standard_Halo_Model SHM;
 	unsigned int counter	  = 0;
 	unsigned int mass_counter = 0;
 	for(unsigned int i = 0; i < DM_masses.size(); i++)
@@ -44,8 +44,8 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 			double u_min = detector.Minimum_DM_Speed(DM);
 			Simulation_Data data_set(sample_size, u_min);
 
-			data_set.Generate_Data(DM, solar_model);
-			Reflection_Spectrum spectrum(data_set, solar_model, SHM, DM.mass);
+			data_set.Generate_Data(DM, solar_model, halo_model);
+			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 
 			double p								  = detector.P_Value(DM, spectrum);
 			p_value_grid[couplings.size() - 1 - j][i] = p;

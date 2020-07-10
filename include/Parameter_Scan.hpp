@@ -20,7 +20,7 @@ class Parameter_Scan
   public:
 	Parameter_Scan(const std::vector<double> masses, const std::vector<double>& coupl, unsigned int samplesize);
 
-	void Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, int mpi_rank = 0);
+	void Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
 	std::vector<std::vector<double>> Limit_Curve(double certainty_level);
 

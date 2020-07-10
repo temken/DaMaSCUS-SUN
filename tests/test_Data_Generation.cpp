@@ -40,6 +40,7 @@ TEST(TestDataGeneration, TestGenerateData)
 {
 	// ARRANGE
 	Solar_Model SSM;
+	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
 	DM.Set_Sigma_Proton(1.0 * pb);
@@ -51,7 +52,7 @@ TEST(TestDataGeneration, TestGenerateData)
 
 	// ACT
 	Simulation_Data data_set(sample_size);
-	data_set.Generate_Data(DM, SSM);
+	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
 	ASSERT_EQ(data_set.data[0].size(), sample_size);
@@ -77,6 +78,7 @@ TEST(TestDataGeneration, TestDataFreeRatio)
 {
 	// ARRANGE
 	Solar_Model SSM;
+	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
 	DM.Set_Sigma_Proton(1.0e-100 * pb);
@@ -88,7 +90,7 @@ TEST(TestDataGeneration, TestDataFreeRatio)
 	// ACT
 	Simulation_Data data_set(sample_size);
 	data_set.Configure(1.1 * rSun, 0, 500);
-	data_set.Generate_Data(DM, SSM);
+	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
 	ASSERT_DOUBLE_EQ(data_set.Free_Ratio(), 1.0);
@@ -98,6 +100,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 {
 	// ARRANGE
 	Solar_Model SSM;
+	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
 	DM.Set_Sigma_Proton(1.0 * pb);
@@ -110,7 +113,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	// ACT
 	Simulation_Data data_set(sample_size);
 	data_set.Configure(1.1 * rSun, 0, 500);
-	data_set.Generate_Data(DM, SSM);
+	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
 	ASSERT_GT(data_set.Capture_Ratio(), 0.0);
@@ -120,6 +123,7 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 {
 	// ARRANGE
 	Solar_Model SSM;
+	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
 	DM.Set_Sigma_Proton(1.0 * pb);
@@ -131,7 +135,7 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 
 	// ACT
 	Simulation_Data data_set(sample_size);
-	data_set.Generate_Data(DM, SSM);
+	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
 	ASSERT_GT(data_set.Reflection_Ratio(), 0.0);
@@ -141,6 +145,7 @@ TEST(TestDataGeneration, TestSpeedFunctions)
 {
 	// ARRANGE
 	Solar_Model SSM;
+	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
 	DM.Set_Sigma_Proton(1.0 * pb);
@@ -152,7 +157,7 @@ TEST(TestDataGeneration, TestSpeedFunctions)
 	double u_min			 = 0.0001;
 	// ACT
 	Simulation_Data data_set(sample_size, u_min);
-	data_set.Generate_Data(DM, SSM);
+	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
 	EXPECT_DOUBLE_EQ(data_set.Minimum_Speed(), 0.75 * u_min);

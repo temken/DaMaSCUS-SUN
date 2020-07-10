@@ -28,7 +28,7 @@ void Simulation_Data::Configure(double initial_radius, unsigned int min_scatteri
 	maximum_free_time_steps		  = max_free_steps;
 }
 
-void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, unsigned int fixed_seed)
+void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int fixed_seed)
 {
 	auto time_start = std::chrono::system_clock::now();
 
@@ -43,9 +43,6 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	Trajectory_Simulator simulator(solar_model, maximum_free_time_steps, maximum_number_of_scatterings, initial_and_final_radius);
 	if(fixed_seed != 0)
 		simulator.Fix_PRNG_Seed(fixed_seed);
-
-	obscura::Standard_Halo_Model SHM;
-	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
 	//Get the MPI ring communication started by sending the data counters
 	std::vector<unsigned long int> local_counter_new(isoreflection_rings, 0);
@@ -64,7 +61,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	unsigned int smallest_sample_size = 0;
 	while(smallest_sample_size < min_sample_size_above_threshold)
 	{
-		Event IC = Initial_Conditions(SHM, solar_model, simulator.PRNG);
+		Event IC = Initial_Conditions(halo_model, solar_model, simulator.PRNG);
 		Hyperbolic_Kepler_Shift(IC, initial_and_final_radius);
 		Trajectory_Result trajectory = simulator.Simulate(IC, DM);
 

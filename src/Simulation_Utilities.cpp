@@ -83,6 +83,7 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 {
 	// 1. Asymptotic initial velocity
 	// 1.1. Sample a velocity vector in the galactic rest frame
+	dynamic_cast<obscura::Standard_Halo_Model*>(&halo_model)->Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 	std::function<double(double)> cdf = [&halo_model](double v) {
 		return halo_model.CDF_Speed(v);
 	};
@@ -90,10 +91,13 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	double phi	 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
 	double theta = acos(libphysica::Sample_Uniform(PRNG, -1.0, 1.0));
 
+	libphysica::Vector vel_sun = obscura::Sun_Velocity();
+	dynamic_cast<obscura::Standard_Halo_Model*>(&halo_model)->Set_Observer_Velocity(vel_sun);
+
 	libphysica::Vector initial_velocity = libphysica::Spherical_Coordinates(u, theta, phi);
 
 	// 1.2 Boost the vector into the Sun's rest frame.
-	initial_velocity -= obscura::Sun_Velocity();
+	initial_velocity -= vel_sun;
 	u = initial_velocity.Norm();
 
 	// 2. Initial position

@@ -27,15 +27,16 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 {
 	// ARRANGE
 	Solar_Model solar_model;
+	obscura::Standard_Halo_Model SHM;
+
 	double mDM = 0.1;
 	obscura::DM_Particle_SI DM(mDM);
 	DM.Set_Sigma_Proton(1e-1 * pb);
 
 	solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
-	obscura::Standard_Halo_Model SHM;
 	Simulation_Data data_set(10, 0, 1);
 	int fixed_seed = 13;
-	data_set.Generate_Data(DM, solar_model, fixed_seed);
+	data_set.Generate_Data(DM, solar_model, SHM, fixed_seed);
 	double v = 1e-3;
 	// ACT & ASSERT
 	Reflection_Spectrum spectrum(data_set, solar_model, SHM, mDM);
