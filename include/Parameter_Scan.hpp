@@ -22,7 +22,11 @@ class Parameter_Scan
 
 	void Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, int mpi_rank = 0);
 
-	void Export_P_Values(const std::string& path);
+	std::vector<std::vector<double>> Limit_Curve(double certainty_level);
+
+	void Import_P_Values(const std::string& file_path);
+	void Export_P_Values(const std::string& folder_path, int mpi_rank = 0);
+	void Export_Limits(const std::string& folder_path, int mpi_rank = 0, std::vector<double> certainty_levels = {0.9, 0.95, 0.99});
 };
 
 #endif
