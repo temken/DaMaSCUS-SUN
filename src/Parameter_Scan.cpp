@@ -4,10 +4,13 @@
 #include <set>
 
 // Headers from libphysica
+#include "Natural_Units.hpp"
 #include "Utilities.hpp"
 
 #include "Data_Generation.hpp"
 #include "Reflection_Spectrum.hpp"
+
+using namespace libphysica::natural_units;
 
 Parameter_Scan::Parameter_Scan(const std::vector<double> masses, const std::vector<double>& coupl, unsigned int samplesize)
 : DM_masses(masses), couplings(coupl), sample_size(samplesize)
@@ -43,8 +46,11 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 			solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 			double u_min = detector.Minimum_DM_Speed(DM);
 			Simulation_Data data_set(sample_size, u_min);
-
-			data_set.Generate_Data(DM, solar_model, halo_model);
+			std::random_device rd;
+			std::mt19937 PRNG(rd());
+			unsigned int seed = libphysica::Sample_Uniform(PRNG, 0, 10000000);
+			std::cout << "MPI rank:\t" << mpi_rank << "\tRandom seed: " << seed << std::endl;
+			data_set.Generate_Data(DM, solar_model, halo_model, seed);
 			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 
 			double p								  = detector.P_Value(DM, spectrum);
@@ -109,7 +115,7 @@ void Parameter_Scan::Export_P_Values(const std::string& folder_path, int mpi_ran
 		for(unsigned int i = 0; i < DM_masses.size(); i++)
 			for(unsigned int j = 0; j < couplings.size(); j++)
 				table.push_back({DM_masses[i], couplings[j], p_value_grid[j][i]});
-		libphysica::Export_Table(folder_path + "p_values.txt", table);
+		libphysica::Export_Table(folder_path + "p_values.txt", table, {GeV, cm * cm, 1.0});
 	}
 }
 
@@ -121,6 +127,6 @@ void Parameter_Scan::Export_Limits(const std::string& folder_path, int mpi_rank,
 		int CL								   = std::round(100 * certainty_level);
 		std::string filename				   = "Limit_" + std::to_string(CL) + ".txt";
 		if(mpi_rank == 0)
-			libphysica::Export_Table(folder_path + filename, limit);
+			libphysica::Export_Table(folder_path + filename, limit, {GeV, cm * cm});
 	}
 }

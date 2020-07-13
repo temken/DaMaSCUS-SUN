@@ -100,13 +100,18 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	initial_velocity -= vel_sun;
 	u = initial_velocity.Norm();
 
+	// 1.3. Blue-shift the speed
+	double asymptotic_distance = 1000.0 * AU;
+	double vesc_asymptotic	   = model.Local_Escape_Speed(asymptotic_distance);
+	double v				   = sqrt(u * u + vesc_asymptotic * vesc_asymptotic);
+	initial_velocity		   = v * initial_velocity.Normalized();
+
 	// 2. Initial position
 	// 2.1 Define an asymptotically far away disk.
 	// Any particle starting from this disk with initial_velocity will hit the Sun.
-	double asymptotic_distance = 500.0 * AU;
-	double v_esc			   = model.Local_Escape_Speed(rSun);
-	double radius_disk		   = sqrt(1.0 + v_esc * v_esc / u / u) * rSun;
-	libphysica::Vector e_z	   = (-1.0) * initial_velocity.Normalized();
+	double v_esc		   = model.Local_Escape_Speed(rSun);
+	double radius_disk	   = sqrt(u * u + v_esc * v_esc) / v * rSun;
+	libphysica::Vector e_z = (-1.0) * initial_velocity.Normalized();
 	libphysica::Vector e_x({0, e_z[2], -e_z[1]});
 	e_x.Normalize();
 	libphysica::Vector e_y = e_z.Cross(e_x);
@@ -116,13 +121,7 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	double xi							= libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
 	libphysica::Vector initial_position = asymptotic_distance * e_z + sqrt(xi) * radius_disk * (cos(phi_disk) * e_x + sin(phi_disk) * e_y);
 
-	// 3. Blue-shift the speed
-	double vesc		 = model.Local_Escape_Speed(initial_position.Norm());
-	double v		 = sqrt(u * u + vesc * vesc);
-	initial_velocity = v / u * initial_velocity;
-
-	Event initial_condition(0.0, initial_position, initial_velocity);
-	return initial_condition;
+	return Event(0.0, initial_position, initial_velocity);
 }
 
 // 3. Analytically propagate a particle at event on a hyperbolic Kepler orbit to a radius R (without passing the periapsis)
