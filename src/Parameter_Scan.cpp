@@ -54,7 +54,7 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 
 			double p								  = detector.P_Value(DM, spectrum);
-			p_value_grid[couplings.size() - 1 - j][i] = p;
+			p_value_grid[couplings.size() - 1 - j][i] = (p < 1.0e-100) ? 0.0 : p;
 			if(mpi_rank == 0)
 				std::cout << "p-value = " << libphysica::Round(p) << std::endl;
 			if(p > 0.15)
@@ -76,7 +76,7 @@ std::vector<std::vector<double>> Parameter_Scan::Limit_Curve(double certainty_le
 			for(unsigned int j = 0; j < couplings.size(); j++)
 				interpolation_list.push_back(p_value_grid[j][i] - (1.0 - certainty_level));
 			libphysica::Interpolation interpolation(couplings, interpolation_list);
-			double coupling_limit = libphysica::Find_Root(interpolation, couplings[0], couplings.back(), 1.0e-6);
+			double coupling_limit = libphysica::Find_Root(interpolation, couplings[0], couplings.back(), 0.01 * couplings[0]);
 			limit.push_back({DM_masses[i], coupling_limit});
 		}
 	}
@@ -85,7 +85,7 @@ std::vector<std::vector<double>> Parameter_Scan::Limit_Curve(double certainty_le
 
 void Parameter_Scan::Import_P_Values(const std::string& file_path)
 {
-	std::vector<std::vector<double>> table = libphysica::Import_Table(file_path);
+	std::vector<std::vector<double>> table = libphysica::Import_Table(file_path, {GeV, cm * cm, 1.0});
 	// 1. Determine grid dimensions
 	std::vector<double> all_masses;
 	for(unsigned int i = 0; i < table.size(); i++)
