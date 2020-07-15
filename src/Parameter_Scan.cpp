@@ -130,3 +130,54 @@ void Parameter_Scan::Export_Limits(const std::string& folder_path, int mpi_rank,
 			libphysica::Export_Table(folder_path + filename, limit, {GeV, cm * cm});
 	}
 }
+
+Solar_Reflection_Limit::Solar_Reflection_Limit(unsigned int Nsample, double mMin, double mMax, unsigned int Nmass, double c_min, double c_max, double CL)
+: sample_size(Nsample), coupling_min(c_min), coupling_max(c_max), certainty_level(CL)
+{
+	masses = libphysica::Log_Space(mMin, mMax, Nmass);
+}
+
+double Solar_Reflection_Limit::Upper_Limit(double mass, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
+	double mDM_original		 = DM.mass;
+	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
+	DM.Set_Mass(mass);
+	std::function<double(double)> func = [this, &DM, &detector, &solar_model, &halo_model](double log_coupling) {
+		DM.Set_Interaction_Parameter(exp(log_coupling), detector.Target_Particles());
+		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
+		double u_min = detector.Minimum_DM_Speed(DM);
+		Simulation_Data data_set(sample_size, u_min);
+		data_set.Generate_Data(DM, solar_model, halo_model);
+		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
+		double p = detector.P_Value(DM, spectrum);
+		return p - (1.0 - certainty_level);
+	};
+	double log_coupling_min = log(coupling_min);
+	double log_coupling_max = log(coupling_max);
+	double log_limit		= libphysica::Find_Root(func, log_coupling_min, log_coupling_max, 1.0e-2);
+
+	DM.Set_Mass(mDM_original);
+	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
+	return exp(log_limit);
+}
+
+void Solar_Reflection_Limit::Compute_Limit_Curve(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
+	for(auto& mass : masses)
+	{
+		double limit = Upper_Limit(mass, DM, detector, solar_model, halo_model, mpi_rank);
+		limits.push_back(limit);
+	}
+}
+
+void Solar_Reflection_Limit::Export_Curve(std::string& ID, int mpi_rank)
+{
+	if(mpi_rank == 0)
+	{
+		std::vector<std::vector<double>> data(masses.size(), std::vector<double>(2, 0.0));
+		for(unsigned int i = 0; i < masses.size(); i++)
+			data[i] = {masses[i], limits[i]};
+		int CL = std::round(100.0 * certainty_level);
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt", data, {GeV, cm * cm});
+	}
+}

@@ -29,4 +29,21 @@ class Parameter_Scan
 	void Export_Limits(const std::string& folder_path, int mpi_rank = 0, std::vector<double> certainty_levels = {0.9, 0.95, 0.99});
 };
 
+class Solar_Reflection_Limit
+{
+  private:
+	unsigned int sample_size;
+	double coupling_min, coupling_max;
+	std::vector<double> masses;
+	std::vector<double> limits;
+	double certainty_level;
+
+  public:
+	Solar_Reflection_Limit(unsigned int Nsample, double mMin, double mMax, unsigned int Nmass, double c_min, double c_max, double CL = 0.95);
+
+	double Upper_Limit(double mass, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+	void Compute_Limit_Curve(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+	void Export_Curve(std::string& ID, int mpi_rank = 0);
+};
+
 #endif
