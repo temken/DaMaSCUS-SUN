@@ -21,6 +21,7 @@
 #include "Solar_Model.hpp"
 #include "version.hpp"
 
+using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
 int main()

@@ -9,6 +9,9 @@
 
 #include "version.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 // 1. Nuclear targets in the Sun
 Solar_Isotope::Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance)
@@ -279,3 +282,5 @@ double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, d
 	double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
 	return relative_speed;
 }
+
+}	// namespace DaMaSCUS_SUN

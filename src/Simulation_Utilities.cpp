@@ -8,6 +8,9 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 
 // 1. Event Class
@@ -184,3 +187,5 @@ std::vector<double> Isoreflection_Ring_Angles(unsigned int number_of_rings)
 	thetas.push_back(180. * deg);
 	return thetas;
 }
+
+}	// namespace DaMaSCUS_SUN

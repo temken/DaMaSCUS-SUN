@@ -10,6 +10,9 @@
 #include "Data_Generation.hpp"
 #include "Solar_Model.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 class Reflection_Spectrum : public obscura::DM_Distribution
 {
   private:
@@ -32,4 +35,7 @@ class Reflection_Spectrum : public obscura::DM_Distribution
 };
 
 double DM_Entering_Rate(Solar_Model& solar_model, obscura::DM_Distribution& halo_model, double mDM);
+
+}	// namespace DaMaSCUS_SUN
+
 #endif

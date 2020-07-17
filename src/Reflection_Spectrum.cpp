@@ -4,6 +4,9 @@
 #include "Natural_Units.hpp"
 #include "Statistics.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 
 Reflection_Spectrum::Reflection_Spectrum(const Simulation_Data& simulation_data, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, double mDM, int iso_ring)
@@ -68,3 +71,5 @@ double DM_Entering_Rate(Solar_Model& solar_model, obscura::DM_Distribution& halo
 	double v_esc		  = solar_model.Local_Escape_Speed(rSun);
 	return rSun * rSun * M_PI * number_density * (u_average + v_esc * v_esc * u_inv_average);
 }
+
+}	// namespace DaMaSCUS_SUN

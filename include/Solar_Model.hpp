@@ -9,6 +9,9 @@
 #include "DM_Particle.hpp"
 #include "Target_Nucleus.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 // 1. Nuclear targets in the Sun
 class Solar_Isotope : public obscura::Isotope
 {
@@ -69,5 +72,5 @@ class Solar_Model
 
 // 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
 extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM);
-
+}	// namespace DaMaSCUS_SUN
 #endif

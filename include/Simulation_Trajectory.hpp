@@ -13,6 +13,9 @@
 #include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 // 1. Result of one trajectory
 struct Trajectory_Result
 {
@@ -86,5 +89,7 @@ class Free_Particle_Propagator
 
 	Event Event_In_3D();
 };
+
+}	// namespace DaMaSCUS_SUN
 
 #endif

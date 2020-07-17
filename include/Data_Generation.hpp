@@ -12,6 +12,8 @@
 
 #include "Simulation_Trajectory.hpp"
 
+namespace DaMaSCUS_SUN
+{
 class Simulation_Data
 {
   private:
@@ -59,5 +61,5 @@ class Simulation_Data
 
 	void Print_Summary(unsigned int mpi_rank = 0);
 };
-
+}	// namespace DaMaSCUS_SUN
 #endif

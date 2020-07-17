@@ -11,6 +11,9 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 
 Simulation_Data::Simulation_Data(unsigned int sample_size, double u_min, unsigned int iso_rings)
@@ -247,3 +250,5 @@ void Simulation_Data::Print_Summary(unsigned int mpi_rank)
 		std::cout << SEPARATOR << std::endl;
 	}
 }
+
+}	// namespace DaMaSCUS_SUN

@@ -11,7 +11,9 @@
 #include "Data_Generation.hpp"
 #include "Reflection_Spectrum.hpp"
 
-using namespace libphysica::natural_units;
+namespace DaMaSCUS_SUN
+{
+
 using namespace libconfig;
 using namespace libphysica::natural_units;
 
@@ -246,3 +248,5 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::exit(EXIT_FAILURE);
 	}
 }
+
+}	// namespace DaMaSCUS_SUN

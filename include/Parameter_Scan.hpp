@@ -10,6 +10,9 @@
 
 #include "Solar_Model.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 class Parameter_Scan
 {
   private:
@@ -58,5 +61,5 @@ class Configuration : public obscura::Configuration
 	bool compute_halo_constraints;
 	explicit Configuration(std::string cfg_filename, int MPI_rank = 0);
 };
-
+}	// namespace DaMaSCUS_SUN
 #endif

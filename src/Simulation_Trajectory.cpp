@@ -9,6 +9,9 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
@@ -386,3 +389,5 @@ Event Free_Particle_Propagator::Event_In_3D()
 
 	return Event(time, xNew, vNew);
 }
+
+}	// namespace DaMaSCUS_SUN

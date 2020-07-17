@@ -12,6 +12,7 @@
 
 #include "Solar_Model.hpp"
 
+using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
 TEST(TestSolarModel, TestSolarNucleus)

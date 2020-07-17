@@ -9,6 +9,7 @@
 // Headers from obscura
 #include "DM_Particle_Standard.hpp"
 
+using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
 int main(int argc, char* argv[])
