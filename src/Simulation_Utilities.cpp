@@ -107,19 +107,19 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& mode
 	initial_velocity		   = v * initial_velocity.Normalized();
 
 	// 2. Initial position
-	// 2.1 Define an asymptotically far away disk.
-	// Any particle starting from this disk with initial_velocity will hit the Sun.
-	double v_esc		   = model.Local_Escape_Speed(rSun);
-	double radius_disk	   = sqrt(u * u + v_esc * v_esc) / v * rSun;
-	libphysica::Vector e_z = (-1.0) * initial_velocity.Normalized();
+	// 2.1 Find the maximum impact parameter such that the particle still hits the Sun.
+	double v_esc				= model.Local_Escape_Speed(rSun);
+	double impact_parameter_max = sqrt(u * u + v_esc * v_esc) / v * rSun;
+	libphysica::Vector e_z		= (-1.0) * initial_velocity.Normalized();
 	libphysica::Vector e_x({0, e_z[2], -e_z[1]});
 	e_x.Normalize();
 	libphysica::Vector e_y = e_z.Cross(e_x);
 
-	// 2.2 Find a random point on that disk.
+	// 2.2 Find a random point in the plane..
 	double phi_disk						= libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
 	double xi							= libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-	libphysica::Vector initial_position = asymptotic_distance * e_z + sqrt(xi) * radius_disk * (cos(phi_disk) * e_x + sin(phi_disk) * e_y);
+	double impact_parameter				= sqrt(xi) * impact_parameter_max;
+	libphysica::Vector initial_position = asymptotic_distance * e_z + impact_parameter * (cos(phi_disk) * e_x + sin(phi_disk) * e_y);
 
 	return Event(0.0, initial_position, initial_velocity);
 }
@@ -143,10 +143,10 @@ void Hyperbolic_Kepler_Shift(Event& event, double R_final)
 	double u2	= v_initial * v_initial - vEsc * vEsc;
 
 	// 3. Kepler orbit parameter
-	double semi_major_axis	= -G_Newton * mSun / u2;
+	double semi_major_axis	= G_Newton * mSun / u2;
 	double semilatus_rectum = angular_momentum * angular_momentum / G_Newton / mSun;
-	double eccentricity		= sqrt(1.0 - semilatus_rectum / semi_major_axis);
-	// double perihelion		= semi_major_axis * (1.0 - eccentricity);
+	double eccentricity		= sqrt(1.0 + semilatus_rectum / semi_major_axis);
+	// double perihelion		= semi_major_axis * ( eccentricity - 1.0);
 
 	// 4. Initial and final orbital angle
 	double theta_initial = libphysica::Sign(R_final - R_initial) * acos(1.0 / eccentricity * (semilatus_rectum / R_initial - 1.0));
@@ -161,10 +161,10 @@ void Hyperbolic_Kepler_Shift(Event& event, double R_final)
 	// 6.1 Time
 	// double F1 = acosh((eccentricity + cos(theta_initial)) / (1.0 + eccentricity * cos(theta_initial)));
 	// double M1 = eccentricity * sinh(F1) - F1;
-	// double t1 = sqrt(pow(-semi_major_axis, 3) / G_Newton / mSun) * M1;
+	// double t1 = sqrt(pow(+semi_major_axis, 3) / G_Newton / mSun) * M1;
 	// double F2 = acosh((eccentricity + cos(theta_final)) / (1.0 + eccentricity * cos(theta_final)));
 	// double M2 = eccentricity * sinh(F2) - F2;
-	// double t2 = sqrt(pow(-semi_major_axis, 3) / G_Newton / mSun) * M2;
+	// double t2 = sqrt(pow(+semi_major_axis, 3) / G_Newton / mSun) * M2;
 	// event.time += libphysica::Sign(R_final - R_initial) * (t2 - t1);
 	//6.2 Position and Velocity
 	event.position = R_final * cos(theta_final) * axis_x + R_final * sin(theta_final) * axis_y;

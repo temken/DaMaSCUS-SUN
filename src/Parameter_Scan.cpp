@@ -142,7 +142,7 @@ double Solar_Reflection_Limit::Upper_Limit(double mass, obscura::DM_Particle& DM
 	double mDM_original		 = DM.mass;
 	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
 	DM.Set_Mass(mass);
-	std::function<double(double)> func = [this, &DM, &detector, &solar_model, &halo_model](double log_coupling) {
+	std::function<double(double)> func = [this, &DM, &detector, &solar_model, &halo_model, mpi_rank](double log_coupling) {
 		DM.Set_Interaction_Parameter(exp(log_coupling), detector.Target_Particles());
 		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 		double u_min = detector.Minimum_DM_Speed(DM);
@@ -150,6 +150,8 @@ double Solar_Reflection_Limit::Upper_Limit(double mass, obscura::DM_Particle& DM
 		data_set.Generate_Data(DM, solar_model, halo_model);
 		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 		double p = detector.P_Value(DM, spectrum);
+		if(mpi_rank == 0)
+			std::cout << "p = " << libphysica::Round(p) << std::endl;
 		return p - (1.0 - certainty_level);
 	};
 	double log_coupling_min = log(coupling_min);
@@ -161,13 +163,25 @@ double Solar_Reflection_Limit::Upper_Limit(double mass, obscura::DM_Particle& DM
 	return exp(log_limit);
 }
 
-void Solar_Reflection_Limit::Compute_Limit_Curve(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+void Solar_Reflection_Limit::Compute_Limit_Curve(std::string& ID, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
+	std::ofstream f;
+	if(mpi_rank == 0)
+	{
+		int CL = std::round(100.0 * certainty_level);
+		f.open(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt");
+	}
 	for(auto& mass : masses)
 	{
 		double limit = Upper_Limit(mass, DM, detector, solar_model, halo_model, mpi_rank);
 		limits.push_back(limit);
+		if(mpi_rank == 0)
+		{
+			std::cout << mass << "\t" << In_Units(limit, cm * cm) << std::endl;
+			f << mass << "\t" << In_Units(limit, cm * cm) << std::endl;
+		}
 	}
+	f.close();
 }
 
 void Solar_Reflection_Limit::Export_Curve(std::string& ID, int mpi_rank)
