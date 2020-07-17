@@ -4,6 +4,7 @@
 #include <vector>
 
 // Headers from obscura
+#include "Configuration.hpp"
 #include "DM_Particle.hpp"
 #include "Direct_Detection.hpp"
 
@@ -44,6 +45,18 @@ class Solar_Reflection_Limit
 	double Upper_Limit(double mass, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 	void Compute_Limit_Curve(std::string& ID, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 	void Export_Curve(std::string& ID, int mpi_rank = 0);
+};
+
+class Configuration : public obscura::Configuration
+{
+  protected:
+	void Import_Parameter_Scan_Parameter();
+
+  public:
+	unsigned int sample_size;
+	double cross_section_min, cross_section_max;
+	bool compute_halo_constraints;
+	explicit Configuration(std::string cfg_filename, int MPI_rank = 0);
 };
 
 #endif

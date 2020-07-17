@@ -1,6 +1,7 @@
 #include "Parameter_Scan.hpp"
 
 #include <algorithm>
+#include <libconfig.h++>
 #include <set>
 
 // Headers from libphysica
@@ -10,6 +11,8 @@
 #include "Data_Generation.hpp"
 #include "Reflection_Spectrum.hpp"
 
+using namespace libphysica::natural_units;
+using namespace libconfig;
 using namespace libphysica::natural_units;
 
 Parameter_Scan::Parameter_Scan(const std::vector<double> masses, const std::vector<double>& coupl, unsigned int samplesize)
@@ -193,5 +196,53 @@ void Solar_Reflection_Limit::Export_Curve(std::string& ID, int mpi_rank)
 			data[i] = {masses[i], limits[i]};
 		int CL = std::round(100.0 * certainty_level);
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt", data, {GeV, cm * cm});
+	}
+}
+
+Configuration::Configuration(std::string cfg_filename, int MPI_rank)
+: obscura::Configuration(cfg_filename, MPI_rank)
+{
+	Import_Parameter_Scan_Parameter();
+}
+
+void Configuration::Import_Parameter_Scan_Parameter()
+{
+	try
+	{
+		sample_size = config.lookup("sample_size");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'sample_size' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		cross_section_min = config.lookup("cross_section_min");
+		cross_section_min *= cm * cm;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'cross_section_min' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		cross_section_max = config.lookup("cross_section_max");
+		cross_section_max *= cm * cm;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'cross_section_max' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		compute_halo_constraints = config.lookup("compute_halo_constraints");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 }

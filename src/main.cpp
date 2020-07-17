@@ -44,36 +44,59 @@ int main()
 				  << "MPI processes:\t" << mpi_processes << std::endl;
 
 	// Configuration parameters
-	obscura::Configuration cfg(PROJECT_DIR "bin/config.cfg", mpi_rank);
+	Configuration cfg(PROJECT_DIR "bin/config.cfg", mpi_rank);
 	Solar_Model SSM;
-	// cfg.Print_Summary(mpi_rank);
+	cfg.Print_Summary(mpi_rank);
 	MPI_Barrier(MPI_COMM_WORLD);
 	////////////////////////////////////////////////////////////////////////
 
-	// ////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
 	// // Parameter Scan
-	// std::vector<double> DM_masses	   = libphysica::Log_Space(1.0 * keV, 5.0 * MeV, 20);
-	// std::vector<double> cross_sections = libphysica::Log_Space(1.0e-35 * cm * cm, 1.0e-32 * cm * cm, 15);
-	// unsigned int sample_size		   = 10;
+	// std::vector<double> DM_masses	   = libphysica::Log_Space(1.0 * keV, 10.0 * MeV, 20);
+	// std::vector<double> cross_sections = libphysica::Log_Space(1.0e-38 * cm * cm, 1.0e-33 * cm * cm, 15);
+	// unsigned int sample_size		   = 1000;
 	// Parameter_Scan scan(DM_masses, cross_sections, sample_size);
-	// scan.Perform_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
-	// scan.Export_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values_3.txt");
-	// // scan.Import_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values.txt");
+	// // scan.Perform_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+	// // scan.Export_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values.txt");
+	// scan.Import_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values.txt");
+	// // scan.Export_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/");
+
 	// scan.Export_Limits(TOP_LEVEL_DIR "results/" + cfg.ID + "/", mpi_rank);
-	// ////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	// Generate data
-	SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, 1000, 50);
-	unsigned int sample_size = 100;
-	double u_min			 = 0.0;
-	Simulation_Data data_set(sample_size, u_min);
-	// data_set.Configure(1.1 * rSun, 0, 100);
-	data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
-	data_set.Print_Summary(mpi_rank);
-	Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass);
-	spectrum.Print_Summary(mpi_rank);
+	// Limit curve for halo DM
+	if(mpi_rank == 0 && cfg.compute_halo_constraints)
+	{
+		double mDM_min								= 4.0 * cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
+		std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 35);
+		std::vector<std::vector<double>> halo_limit = cfg.DM_detector->Upper_Limit_Curve(*cfg.DM, *cfg.DM_distr, DM_masses, cfg.constraints_certainty);
+		int CL										= std::round(100.0 * cfg.constraints_certainty);
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + cfg.ID + "/Halo_Limit_" + std::to_string(CL) + ".txt", halo_limit, {GeV, cm * cm});
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	// Limit curve for reflection
+	Solar_Reflection_Limit limit(cfg.sample_size, cfg.constraints_mass_min, cfg.constraints_mass_max, cfg.constraints_masses, cfg.cross_section_min, cfg.cross_section_max, cfg.constraints_certainty);
+	limit.Compute_Limit_Curve(cfg.ID, *cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
 	////////////////////////////////////////////////////////////////////////
+
+	// ////////////////////////////////////////////////////////////////////////
+	// // Generate data
+	// SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, 1000, 50);
+	// unsigned int sample_size = 1000;
+	// // double u_min			 = 0.0;
+	// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
+	// Simulation_Data data_set(sample_size, u_min);
+	// // data_set.Configure(1.1 * rSun, 1, 1);
+	// data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
+	// data_set.Print_Summary(mpi_rank);
+	// Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass);
+	// spectrum.Print_Summary(mpi_rank);
+	// double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
+	// if(mpi_rank == 0)
+	// 	std::cout << "p-value = " << libphysica::Round(p) << std::endl;
+	// ////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
