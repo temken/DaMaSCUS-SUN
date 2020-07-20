@@ -17,7 +17,87 @@ namespace DaMaSCUS_SUN
 using namespace libconfig;
 using namespace libphysica::natural_units;
 
-Parameter_Scan::Parameter_Scan(const std::vector<double> masses, const std::vector<double>& coupl, unsigned int samplesize)
+Configuration::Configuration(std::string cfg_filename, int MPI_rank)
+: obscura::Configuration(cfg_filename, MPI_rank)
+{
+	Import_Parameter_Scan_Parameter();
+}
+
+void Configuration::Import_Parameter_Scan_Parameter()
+{
+	try
+	{
+		sample_size = config.lookup("sample_size");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'sample_size' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
+		cross_section_min = config.lookup("cross_section_min");
+		cross_section_min *= cm * cm;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'cross_section_min' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
+		cross_section_max = config.lookup("cross_section_max");
+		cross_section_max *= cm * cm;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'cross_section_max' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
+		cross_sections = config.lookup("cross_sections");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'cross_sections' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
+		compute_halo_constraints = config.lookup("compute_halo_constraints");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+}
+
+void Configuration::Print_Summary(int mpi_rank)
+{
+	if(mpi_rank == 0)
+	{
+		Print_Summary_Base(mpi_rank);
+		std::cout << "DaMaSCUS-SUN parameters" << std::endl
+				  << "\tSample size:\t\t\t" << sample_size << std::endl
+				  << "\tCross section (min) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_min, cm * cm)) << std::endl
+				  << "\tCross section (max) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_max, cm * cm)) << std::endl
+				  << "\tCross section steps:\t\t" << cross_sections << std::endl
+				  << SEPARATOR << std::endl;
+	}
+}
+
+Parameter_Scan::Parameter_Scan(Configuration& config)
+: Parameter_Scan(libphysica::Log_Space(config.constraints_mass_min, config.constraints_mass_max, config.constraints_masses), libphysica::Log_Space(config.cross_section_min, config.cross_section_max, config.cross_sections), config.sample_size)
+{
+}
+
+Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize)
 : DM_masses(masses), couplings(coupl), sample_size(samplesize)
 {
 	std::sort(DM_masses.begin(), DM_masses.end());
@@ -30,41 +110,41 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 	double mDM_original		 = DM.mass;
 	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
 
-	// obscura::Standard_Halo_Model SHM;
-	unsigned int counter	  = 0;
-	unsigned int mass_counter = 0;
-	for(unsigned int i = 0; i < DM_masses.size(); i++)
+	int counter					 = 0;
+	int last_excluded_mass_index = DM_masses.size();
+	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
-		mass_counter++;
-		DM.Set_Mass(DM_masses[i]);
-
-		unsigned int cs_counter = 0;
-		for(unsigned int j = 0; j < couplings.size(); j++)
+		bool row_exclusion = false;
+		int index_coupling = couplings.size() - 1 - i;
+		DM.Set_Interaction_Parameter(couplings[index_coupling], detector.Target_Particles());
+		for(unsigned int j = 0; j < DM_masses.size(); j++)
 		{
-			counter++;
-			cs_counter++;
+			int index_mass = DM_masses.size() - 1 - j;
+			DM.Set_Mass(DM_masses[index_mass]);
 			if(mpi_rank == 0)
 				std::cout << std::endl
-						  << counter << ") Mass " << mass_counter << " / " << DM_masses.size() << "\t Cross section " << cs_counter << std::endl;
-
-			DM.Set_Interaction_Parameter(couplings[couplings.size() - 1 - j], detector.Target_Particles());
+						  << ++counter << ")" << std::endl;
+			Print_Grid(mpi_rank, i, j);
 			solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 			double u_min = detector.Minimum_DM_Speed(DM);
 			Simulation_Data data_set(sample_size, u_min);
-			std::random_device rd;
-			std::mt19937 PRNG(rd());
-			unsigned int seed = libphysica::Sample_Uniform(PRNG, 0, 10000000);
-			std::cout << "MPI rank:\t" << mpi_rank << "\tRandom seed: " << seed << std::endl;
-			data_set.Generate_Data(DM, solar_model, halo_model, seed);
+			data_set.Generate_Data(DM, solar_model, halo_model);
 			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
+			double p = detector.P_Value(DM, spectrum);
 
-			double p								  = detector.P_Value(DM, spectrum);
-			p_value_grid[couplings.size() - 1 - j][i] = (p < 1.0e-100) ? 0.0 : p;
+			p_value_grid[index_coupling][index_mass] = (p < 1.0e-100) ? 0.0 : p;
 			if(mpi_rank == 0)
 				std::cout << "p-value = " << libphysica::Round(p) << std::endl;
-			if(p > 0.15)
+			if(p < 0.1)
+			{
+				row_exclusion			 = true;
+				last_excluded_mass_index = j;
+			}
+			else if(row_exclusion || j > last_excluded_mass_index + 1)
 				break;
 		}
+		if(!row_exclusion)
+			break;
 	}
 	DM.Set_Mass(mDM_original);
 	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
@@ -88,9 +168,10 @@ std::vector<std::vector<double>> Parameter_Scan::Limit_Curve(double certainty_le
 	return limit;
 }
 
-void Parameter_Scan::Import_P_Values(const std::string& file_path)
+void Parameter_Scan::Import_P_Values(const std::string& ID)
 {
-	std::vector<std::vector<double>> table = libphysica::Import_Table(file_path, {GeV, cm * cm, 1.0});
+	std::string filepath				   = TOP_LEVEL_DIR "results/" + ID + "/p_values.txt";
+	std::vector<std::vector<double>> table = libphysica::Import_Table(filepath, {GeV, cm * cm, 1.0});
 	// 1. Determine grid dimensions
 	std::vector<double> all_masses;
 	for(unsigned int i = 0; i < table.size(); i++)
@@ -112,7 +193,7 @@ void Parameter_Scan::Import_P_Values(const std::string& file_path)
 			p_value_grid[j][i] = table[k++][2];
 }
 
-void Parameter_Scan::Export_P_Values(const std::string& folder_path, int mpi_rank)
+void Parameter_Scan::Export_P_Values(const std::string& ID, int mpi_rank)
 {
 	if(mpi_rank == 0)
 	{
@@ -120,7 +201,8 @@ void Parameter_Scan::Export_P_Values(const std::string& folder_path, int mpi_ran
 		for(unsigned int i = 0; i < DM_masses.size(); i++)
 			for(unsigned int j = 0; j < couplings.size(); j++)
 				table.push_back({DM_masses[i], couplings[j], p_value_grid[j][i]});
-		libphysica::Export_Table(folder_path + "p_values.txt", table, {GeV, cm * cm, 1.0});
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_values.txt", table, {GeV, cm * cm, 1.0});
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_grid.txt", p_value_grid);
 	}
 }
 
@@ -133,6 +215,33 @@ void Parameter_Scan::Export_Limits(const std::string& folder_path, int mpi_rank,
 		std::string filename				   = "Limit_" + std::to_string(CL) + ".txt";
 		if(mpi_rank == 0)
 			libphysica::Export_Table(folder_path + filename, limit, {GeV, cm * cm});
+	}
+}
+
+void Parameter_Scan::Print_Grid(int mpi_rank, int index_coupling, int index_mass)
+{
+	if(mpi_rank == 0)
+	{
+		bool current_progress = true;
+		if(index_coupling < 0 || index_mass < 0)
+			current_progress = false;
+		for(int row = 0; row < couplings.size(); row++)
+		{
+			std::cout << "\t";
+			for(int col = 0; col < DM_masses.size(); col++)
+			{
+				double p = p_value_grid[couplings.size() - 1 - row][col];
+				if(current_progress && (row > index_coupling || (row == index_coupling && index_mass < DM_masses.size() - col - 1)))
+					std::cout << "·";
+				else if(current_progress && (index_coupling == row && index_mass == DM_masses.size() - col - 1))
+				{
+					std::cout << "¤";
+				}
+				else
+					std::cout << ((p > 0.1) ? "░" : "█");
+			}
+			std::cout << std::endl;
+		}
 	}
 }
 
@@ -198,54 +307,6 @@ void Solar_Reflection_Limit::Export_Curve(std::string& ID, int mpi_rank)
 			data[i] = {masses[i], limits[i]};
 		int CL = std::round(100.0 * certainty_level);
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt", data, {GeV, cm * cm});
-	}
-}
-
-Configuration::Configuration(std::string cfg_filename, int MPI_rank)
-: obscura::Configuration(cfg_filename, MPI_rank)
-{
-	Import_Parameter_Scan_Parameter();
-}
-
-void Configuration::Import_Parameter_Scan_Parameter()
-{
-	try
-	{
-		sample_size = config.lookup("sample_size");
-	}
-	catch(const SettingNotFoundException& nfex)
-	{
-		std::cerr << "No 'sample_size' setting in configuration file." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	try
-	{
-		cross_section_min = config.lookup("cross_section_min");
-		cross_section_min *= cm * cm;
-	}
-	catch(const SettingNotFoundException& nfex)
-	{
-		std::cerr << "No 'cross_section_min' setting in configuration file." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	try
-	{
-		cross_section_max = config.lookup("cross_section_max");
-		cross_section_max *= cm * cm;
-	}
-	catch(const SettingNotFoundException& nfex)
-	{
-		std::cerr << "No 'cross_section_max' setting in configuration file." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	try
-	{
-		compute_halo_constraints = config.lookup("compute_halo_constraints");
-	}
-	catch(const SettingNotFoundException& nfex)
-	{
-		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
-		std::exit(EXIT_FAILURE);
 	}
 }
 
