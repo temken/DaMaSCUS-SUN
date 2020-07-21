@@ -102,7 +102,7 @@ Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vec
 {
 	std::sort(DM_masses.begin(), DM_masses.end());
 	std::sort(couplings.begin(), couplings.end());
-	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), 1.0));
+	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), -1.0));
 }
 
 void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
@@ -114,37 +114,59 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 	int last_excluded_mass_index = DM_masses.size();
 	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
-		bool row_exclusion = false;
 		int index_coupling = couplings.size() - 1 - i;
+		bool row_exclusion = false;
 		DM.Set_Interaction_Parameter(couplings[index_coupling], detector.Target_Particles());
 		for(unsigned int j = 0; j < DM_masses.size(); j++)
 		{
 			int index_mass = DM_masses.size() - 1 - j;
 			DM.Set_Mass(DM_masses[index_mass]);
+			double u_min = detector.Minimum_DM_Speed(DM);
+
 			if(mpi_rank == 0)
 				std::cout << std::endl
-						  << ++counter << ")" << std::endl;
-			Print_Grid(mpi_rank, i, j);
+						  << ++counter << ")\t"
+						  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
+						  << "u_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << std::endl
+						  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << "\t\t"
+						  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
+						  << std::endl;
+			Print_Grid(mpi_rank, index_coupling, index_mass);
+
 			solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
-			double u_min = detector.Minimum_DM_Speed(DM);
 			Simulation_Data data_set(sample_size, u_min);
 			data_set.Generate_Data(DM, solar_model, halo_model);
 			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 			double p = detector.P_Value(DM, spectrum);
 
 			p_value_grid[index_coupling][index_mass] = (p < 1.0e-100) ? 0.0 : p;
+
 			if(mpi_rank == 0)
-				std::cout << "p-value = " << libphysica::Round(p) << std::endl;
+			{
+				std::cout << std::endl
+						  << std::endl;
+				libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1);
+			}
+
 			if(p < 0.1)
 			{
 				row_exclusion			 = true;
 				last_excluded_mass_index = j;
 			}
 			else if(row_exclusion || j > last_excluded_mass_index + 1)
+			{
+				for(unsigned int k = 0; k < index_mass; k++)
+					p_value_grid[index_coupling][k] = 1.0;
 				break;
+			}
 		}
 		if(!row_exclusion)
+		{
+			for(unsigned int k = 0; k < index_coupling; k++)
+				for(unsigned int j = 0; j < DM_masses.size(); j++)
+					p_value_grid[k][j] = 1.0;
 			break;
+		}
 	}
 	DM.Set_Mass(mDM_original);
 	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
@@ -218,30 +240,28 @@ void Parameter_Scan::Export_Limits(const std::string& folder_path, int mpi_rank,
 	}
 }
 
-void Parameter_Scan::Print_Grid(int mpi_rank, int index_coupling, int index_mass)
+void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 {
 	if(mpi_rank == 0)
 	{
-		bool current_progress = true;
-		if(index_coupling < 0 || index_mass < 0)
-			current_progress = false;
 		for(int row = 0; row < couplings.size(); row++)
 		{
 			std::cout << "\t";
 			for(int col = 0; col < DM_masses.size(); col++)
 			{
 				double p = p_value_grid[couplings.size() - 1 - row][col];
-				if(current_progress && (row > index_coupling || (row == index_coupling && index_mass < DM_masses.size() - col - 1)))
-					std::cout << "·";
-				else if(current_progress && (index_coupling == row && index_mass == DM_masses.size() - col - 1))
-				{
+				if(row == couplings.size() - 1 - marker_row && col == marker_col)
 					std::cout << "¤";
-				}
-				else
-					std::cout << ((p > 0.1) ? "░" : "█");
+				else if(p < 0.0)
+					std::cout << "·";
+				else if(p < 0.1)
+					std::cout << "█";
+				else if(p > 0.1)
+					std::cout << "░";
 			}
 			std::cout << std::endl;
 		}
+		std::cout << std::endl;
 	}
 }
 

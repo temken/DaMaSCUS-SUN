@@ -50,15 +50,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	//Get the MPI ring communication started by sending the data counters
 	std::vector<unsigned long int> local_counter_new(isoreflection_rings, 0);
 	if(mpi_rank == 0)
-	{
 		MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
-		std::cout << "\nGenerating reflection data for" << std::endl
-				  << "\t- m_DM [MeV]:\t\t" << libphysica::Round(In_Units(DM.mass, MeV)) << std::endl
-				  << "\t- sigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
-				  << "\t- sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
-				  << "\t- u_min [km/sec]:\t" << libphysica::Round(In_Units(minimum_speed_threshold, km / sec)) << std::endl
-				  << std::endl;
-	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	unsigned int smallest_sample_size = 0;
@@ -122,9 +114,6 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	}
 	auto time_end  = std::chrono::system_clock::now();
 	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
-	if(mpi_rank == 0)
-		std::cout << "\n\nFinished in " << libphysica::Time_Display(computing_time) << std::endl
-				  << std::endl;
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	Perform_MPI_Reductions();
