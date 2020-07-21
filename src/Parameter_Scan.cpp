@@ -105,41 +105,201 @@ Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vec
 	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), -1.0));
 }
 
-void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+void Parameter_Scan::Go_Forward(int& row, int& col, std::string& direction)
 {
-	double mDM_original		 = DM.mass;
-	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
+	if(direction == "N")
 
-	int counter					 = 0;
+	{
+		if(row == couplings.size() - 1)
+			Go_Right(row, col, direction);
+		else
+			row++;
+	}
+	else if(direction == "E")
+	{
+		if(col == DM_masses.size() - 1)
+			Go_Right(row, col, direction);
+		else
+			col++;
+	}
+	else if(direction == "S")
+	{
+		if(row == 0)
+			Go_Right(row, col, direction);
+		else
+			row--;
+	}
+	else if(direction == "W")
+	{
+		if(col == 0)
+			Go_Right(row, col, direction);
+		else
+			col--;
+	}
+}
+
+void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
+{
+	if(direction == "N")
+	{
+		if(col == 0)
+			Go_Forward(row, col, direction);
+		else
+		{
+			col--;
+			direction = "W";
+		}
+	}
+	else if(direction == "E")
+	{
+		if(row == couplings.size() - 1)
+			Go_Forward(row, col, direction);
+		else
+		{
+			row++;
+			direction = "N";
+		}
+	}
+	else if(direction == "S")
+	{
+		if(col == DM_masses.size() - 1)
+			Go_Forward(row, col, direction);
+		else
+		{
+			col++;
+			direction = "E";
+		}
+	}
+	else if(direction == "W")
+	{
+		if(row == 0)
+			Go_Forward(row, col, direction);
+		else
+		{
+			row--;
+			direction = "S";
+		}
+	}
+}
+
+void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
+{
+	if(direction == "N")
+	{
+		if(col == DM_masses.size() - 1)
+			Go_Forward(row, col, direction);
+		else
+		{
+			col++;
+			direction = "E";
+		}
+	}
+	else if(direction == "E")
+	{
+		if(row == 0)
+			Go_Forward(row, col, direction);
+		else
+		{
+			row--;
+			direction = "S";
+		}
+	}
+	else if(direction == "S")
+	{
+		if(col == 0)
+			Go_Forward(row, col, direction);
+		else
+		{
+			col--;
+			direction = "W";
+		}
+	}
+	else if(direction == "W")
+	{
+		if(row == couplings.size() - 1)
+			Go_Forward(row, col, direction);
+		else
+		{
+			row++;
+			direction = "N";
+		}
+	}
+}
+
+void Parameter_Scan::Fill_STA_Gaps(double certainty_level)
+{
+	for(unsigned int row = 0; row < couplings.size(); row++)
+	{
+		bool excluded = false;
+		for(unsigned int col = 0; col < DM_masses.size(); col++)
+		{
+			double p = p_value_grid[row][col];
+			if(p < 0)
+				p_value_grid[row][col] = excluded ? 0.0 : 1.0;
+			else if(p < 1.0 - certainty_level)
+				excluded = true;
+			else
+				excluded = false;
+		}
+	}
+}
+
+double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
+	if(p_value_grid[row][col] > 0)
+		return p_value_grid[row][col];
+	else
+	{
+		double mDM_original		 = DM.mass;
+		double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
+
+		DM.Set_Interaction_Parameter(couplings[row], detector.Target_Particles());
+		DM.Set_Mass(DM_masses[col]);
+		double u_min = detector.Minimum_DM_Speed(DM);
+
+		if(mpi_rank == 0)
+			std::cout << std::endl
+					  << ++counter << ")\t"
+					  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
+					  << "u_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << std::endl
+					  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << "\t\t"
+					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
+					  << std::endl;
+		Print_Grid(mpi_rank, row, col);
+
+		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
+		Simulation_Data data_set(sample_size, u_min);
+		data_set.Generate_Data(DM, solar_model, halo_model);
+		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
+		double p = detector.P_Value(DM, spectrum);
+
+		DM.Set_Mass(mDM_original);
+		DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
+
+		p_value_grid[row][col] = p;
+		if(mpi_rank == 0)
+		{
+			std::cout << std::endl
+					  << std::endl;
+			libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1);
+		}
+		return ((p < 1.0e-100) ? 0.0 : p);
+	}
+}
+
+void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
 	int last_excluded_mass_index = DM_masses.size();
 	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
 		int index_coupling = couplings.size() - 1 - i;
 		bool row_exclusion = false;
-		DM.Set_Interaction_Parameter(couplings[index_coupling], detector.Target_Particles());
 		for(unsigned int j = 0; j < DM_masses.size(); j++)
 		{
 			int index_mass = DM_masses.size() - 1 - j;
-			DM.Set_Mass(DM_masses[index_mass]);
-			double u_min = detector.Minimum_DM_Speed(DM);
+			double p	   = Compute_p_Value(index_coupling, index_mass, DM, detector, solar_model, halo_model, mpi_rank);
 
-			if(mpi_rank == 0)
-				std::cout << std::endl
-						  << ++counter << ")\t"
-						  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
-						  << "u_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << std::endl
-						  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << "\t\t"
-						  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
-						  << std::endl;
-			Print_Grid(mpi_rank, index_coupling, index_mass);
-
-			solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
-			Simulation_Data data_set(sample_size, u_min);
-			data_set.Generate_Data(DM, solar_model, halo_model);
-			Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
-			double p = detector.P_Value(DM, spectrum);
-
-			p_value_grid[index_coupling][index_mass] = (p < 1.0e-100) ? 0.0 : p;
+			p_value_grid[index_coupling][index_mass] = p;
 
 			if(mpi_rank == 0)
 			{
@@ -168,8 +328,35 @@ void Parameter_Scan::Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector
 			break;
 		}
 	}
-	DM.Set_Mass(mDM_original);
-	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
+}
+
+void Parameter_Scan::Perform_STA_Scan(double certainty_level, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
+	std::string direction = "S";
+	int row				  = couplings.size() - 1;
+	int col				  = DM_masses.size() - 1;
+	int row_start		  = row;
+	int col_start		  = col;
+	while(true)
+	{
+		double p = Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank);
+
+		if(p < 1.0 - certainty_level)
+			Go_Left(row, col, direction);
+		else
+		{
+			if(col == 0 && direction == "S")
+			{
+				direction = "N";
+				Go_Forward(row, col, direction);
+			}
+			else
+				Go_Right(row, col, direction);
+		}
+		if(row == row_start && col == col_start)
+			break;
+	}
+	Fill_STA_Gaps(certainty_level);
 }
 
 std::vector<std::vector<double>> Parameter_Scan::Limit_Curve(double certainty_level)

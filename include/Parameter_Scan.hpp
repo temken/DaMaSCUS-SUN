@@ -30,16 +30,25 @@ class Configuration : public obscura::Configuration
 class Parameter_Scan
 {
   private:
+	unsigned int counter = 0;
 	std::vector<double> DM_masses;
 	std::vector<double> couplings;
 	std::vector<std::vector<double>> p_value_grid;
 	unsigned int sample_size;
 
+	double Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+
+	void Go_Forward(int& row, int& col, std::string& direction);
+	void Go_Left(int& row, int& col, std::string& direction);
+	void Go_Right(int& row, int& col, std::string& direction);
+	void Fill_STA_Gaps(double certainty_level);
+
   public:
 	Parameter_Scan(Configuration& config);
 	Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize);
 
-	void Perform_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+	void Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+	void Perform_STA_Scan(double certainty_level, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
 	std::vector<std::vector<double>> Limit_Curve(double certainty_level);
 

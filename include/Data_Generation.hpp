@@ -24,7 +24,7 @@ class Simulation_Data
 	double initial_and_final_radius			   = 1.1 * libphysica::natural_units::rSun;
 	unsigned int minimum_number_of_scatterings = 1;
 	unsigned int maximum_number_of_scatterings = 1000;
-	unsigned long int maximum_free_time_steps  = 1e8;
+	unsigned long int maximum_free_time_steps  = 1e7;
 
 	// Results
 	unsigned long int number_of_trajectories;

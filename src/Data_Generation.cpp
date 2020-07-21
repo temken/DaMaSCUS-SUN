@@ -104,18 +104,15 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				if(mpi_tag != (mpi_rank + 1))
 					MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
 				//Progress bar
-				if(mpi_rank == 0)
-				{
-					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, mpi_rank, 44, time);
-				}
+				double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, 0, 44, time);
 			}
 		}
 	}
 	auto time_end  = std::chrono::system_clock::now();
 	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
 	MPI_Barrier(MPI_COMM_WORLD);
-
+	libphysica::Print_Progress_Bar(1.0, mpi_rank, 44, computing_time);
 	Perform_MPI_Reductions();
 }
 
