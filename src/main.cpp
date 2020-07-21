@@ -52,34 +52,27 @@ int main()
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	// // Parameter Scan
-	// std::vector<double> DM_masses	   = libphysica::Log_Space(1.0 * keV, 10.0 * MeV, 20);
-	// std::vector<double> cross_sections = libphysica::Log_Space(1.0e-38 * cm * cm, 1.0e-33 * cm * cm, 15);
-	// unsigned int sample_size		   = 1000;
-	// Parameter_Scan scan(DM_masses, cross_sections, sample_size);
-	// // scan.Perform_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
-	// // scan.Export_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values.txt");
-	// scan.Import_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/p_values.txt");
-	// // scan.Export_P_Values(TOP_LEVEL_DIR "results/" + cfg.ID + "/");
-
-	// scan.Export_Limits(TOP_LEVEL_DIR "results/" + cfg.ID + "/", mpi_rank);
-	////////////////////////////////////////////////////////////////////////
-
-	////////////////////////////////////////////////////////////////////////
-	// Limit curve for halo DM
+	// Parameter Scan
 	if(mpi_rank == 0 && cfg.compute_halo_constraints)
 	{
-		double mDM_min								= 4.0 * cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
-		std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 35);
+		std::cout << "Compute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
+		double mDM_min								= cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
+		std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 50);
 		std::vector<std::vector<double>> halo_limit = cfg.DM_detector->Upper_Limit_Curve(*cfg.DM, *cfg.DM_distr, DM_masses, cfg.constraints_certainty);
 		int CL										= std::round(100.0 * cfg.constraints_certainty);
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + cfg.ID + "/Halo_Limit_" + std::to_string(CL) + ".txt", halo_limit, {GeV, cm * cm});
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	Parameter_Scan scan(cfg);
+	// scan.Perform_Full_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+	scan.Export_P_Values(cfg.ID, mpi_rank);
+	// scan.Import_P_Values(cfg.ID);
+	scan.Print_Grid(mpi_rank);
 
+	////////////////////////////////////////////////////////////////////////
 	// Limit curve for reflection
-	Solar_Reflection_Limit limit(cfg.sample_size, cfg.constraints_mass_min, cfg.constraints_mass_max, cfg.constraints_masses, cfg.cross_section_min, cfg.cross_section_max, cfg.constraints_certainty);
-	limit.Compute_Limit_Curve(cfg.ID, *cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+	// Solar_Reflection_Limit limit(cfg.sample_size, cfg.constraints_mass_min, cfg.constraints_mass_max, cfg.constraints_masses, cfg.cross_section_min, cfg.cross_section_max, cfg.constraints_certainty);
+	// limit.Compute_Limit_Curve(cfg.ID, *cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
 	////////////////////////////////////////////////////////////////////////
 
 	// ////////////////////////////////////////////////////////////////////////
@@ -105,7 +98,7 @@ int main()
 	auto time_end		 = std::chrono::system_clock::now();
 	double durationTotal = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
 	if(mpi_rank == 0)
-		std::cout << "\n[Finished in " << libphysica::Time_Display(durationTotal) << "]" << std::endl;
+		std::cout << "\n[Finished in " << libphysica::Time_Display(durationTotal) << "]\a" << std::endl;
 	MPI_Finalize();
 	return 0;
 }

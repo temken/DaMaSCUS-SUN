@@ -93,12 +93,12 @@ void Configuration::Print_Summary(int mpi_rank)
 }
 
 Parameter_Scan::Parameter_Scan(Configuration& config)
-: Parameter_Scan(libphysica::Log_Space(config.constraints_mass_min, config.constraints_mass_max, config.constraints_masses), libphysica::Log_Space(config.cross_section_min, config.cross_section_max, config.cross_sections), config.sample_size)
+: Parameter_Scan(libphysica::Log_Space(config.constraints_mass_min, config.constraints_mass_max, config.constraints_masses), libphysica::Log_Space(config.cross_section_min, config.cross_section_max, config.cross_sections), config.sample_size, config.constraints_certainty)
 {
 }
 
-Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize)
-: DM_masses(masses), couplings(coupl), sample_size(samplesize)
+Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize, double CL)
+: DM_masses(masses), couplings(coupl), sample_size(samplesize), certainty_level(CL)
 {
 	std::sort(DM_masses.begin(), DM_masses.end());
 	std::sort(couplings.begin(), couplings.end());
@@ -226,7 +226,7 @@ void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
 	}
 }
 
-void Parameter_Scan::Fill_STA_Gaps(double certainty_level)
+void Parameter_Scan::Fill_STA_Gaps()
 {
 	for(unsigned int row = 0; row < couplings.size(); row++)
 	{
@@ -330,18 +330,56 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 	}
 }
 
-void Parameter_Scan::Perform_STA_Scan(double certainty_level, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
 	std::string direction = "S";
 	int row				  = couplings.size() - 1;
 	int col				  = DM_masses.size() - 1;
 	int row_start		  = row;
 	int col_start		  = col;
+	int row_previous, col_previous;
+	double p_previous = 0.0;
+	double p_critical = 1.0 - certainty_level;
 	while(true)
 	{
 		double p = Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank);
+		// if((p < p_critical && p_previous > p_critical) || (p > p_critical && p_previous < p_critical))
+		if((p - p_critical) * (p_previous - p_critical) < 0.0)
+		{
+			if(row_previous == row)
+			{
+				double sigma = couplings[row];
+				int col_1	 = (DM_masses[col] < DM_masses[col_previous]) ? col : col_previous;
+				int col_2	 = (col_1 == col) ? col_previous : col;
+				double x_1	 = DM_masses[col_1];
+				double x_2	 = DM_masses[col_2];
+				double y_1	 = log10(p_value_grid[row][col_1]);
+				double y_2	 = log10(p_value_grid[row][col_2]);
+				double y	 = log10(p_critical);
+				double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+				if(limit_curve.empty() || limit_curve.back()[1] != sigma)
+					limit_curve.push_back({x, sigma});
+			}
+			else
+			{
+				double mDM = DM_masses[col];
+				int row_1  = (couplings[row] < couplings[row_previous]) ? row : row_previous;
+				int row_2  = (row_1 == row) ? row_previous : row;
+				double x_1 = couplings[row_1];
+				double x_2 = couplings[row_2];
+				double y_1 = log10(p_value_grid[row_1][col]);
+				double y_2 = log10(p_value_grid[row_2][col]);
+				double y   = log10(p_critical);
+				double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+				if(limit_curve.empty() || limit_curve.back()[0] != mDM)
+					limit_curve.push_back({mDM, x});
+			}
+		}
 
-		if(p < 1.0 - certainty_level)
+		p_previous	 = p;
+		row_previous = row;
+		col_previous = col;
+		if(p < p_critical)
 			Go_Left(row, col, direction);
 		else
 		{
@@ -356,10 +394,11 @@ void Parameter_Scan::Perform_STA_Scan(double certainty_level, obscura::DM_Partic
 		if(row == row_start && col == col_start)
 			break;
 	}
-	Fill_STA_Gaps(certainty_level);
+	Fill_STA_Gaps();
+	std::reverse(limit_curve.begin(), limit_curve.end());
 }
 
-std::vector<std::vector<double>> Parameter_Scan::Limit_Curve(double certainty_level)
+std::vector<std::vector<double>> Parameter_Scan::Limit_Curve()
 {
 	std::vector<std::vector<double>> limit;
 	for(unsigned int i = 0; i < DM_masses.size(); i++)
@@ -412,18 +451,8 @@ void Parameter_Scan::Export_P_Values(const std::string& ID, int mpi_rank)
 				table.push_back({DM_masses[i], couplings[j], p_value_grid[j][i]});
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_values.txt", table, {GeV, cm * cm, 1.0});
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_grid.txt", p_value_grid);
-	}
-}
-
-void Parameter_Scan::Export_Limits(const std::string& folder_path, int mpi_rank, std::vector<double> certainty_levels)
-{
-	for(auto certainty_level : certainty_levels)
-	{
-		std::vector<std::vector<double>> limit = Limit_Curve(certainty_level);
-		int CL								   = std::round(100 * certainty_level);
-		std::string filename				   = "Limit_" + std::to_string(CL) + ".txt";
-		if(mpi_rank == 0)
-			libphysica::Export_Table(folder_path + filename, limit, {GeV, cm * cm});
+		int CL = std::round(100.0 * certainty_level);
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Constraint_" + std::to_string(CL) + ".txt", limit_curve, {GeV, cm * cm});
 	}
 }
 
@@ -431,6 +460,7 @@ void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 {
 	if(mpi_rank == 0)
 	{
+		double p_critical = 1.0 - certainty_level;
 		for(int row = 0; row < couplings.size(); row++)
 		{
 			std::cout << "\t";
@@ -441,9 +471,9 @@ void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 					std::cout << "¤";
 				else if(p < 0.0)
 					std::cout << "·";
-				else if(p < 0.1)
+				else if(p < p_critical)
 					std::cout << "█";
-				else if(p > 0.1)
+				else if(p > p_critical)
 					std::cout << "░";
 			}
 			std::cout << std::endl;
