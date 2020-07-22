@@ -111,8 +111,10 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	}
 	auto time_end  = std::chrono::system_clock::now();
 	computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
-	MPI_Barrier(MPI_COMM_WORLD);
 	libphysica::Print_Progress_Bar(1.0, mpi_rank, 44, computing_time);
+	if(mpi_rank == 0)
+		std::cout << std::endl;
+	MPI_Barrier(MPI_COMM_WORLD);
 	Perform_MPI_Reductions();
 }
 

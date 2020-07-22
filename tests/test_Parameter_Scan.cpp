@@ -26,11 +26,11 @@ TEST(TestParameterScan, TestConfiguration)
 	// ACT & ASSERT
 	Configuration cfg(PROJECT_DIR "tests/config_unittest.cfg", 1);
 	// ASSERT
-	ASSERT_TRUE(cfg.compute_halo_constraints);
-	ASSERT_EQ(cfg.sample_size, 100);
-	ASSERT_DOUBLE_EQ(cfg.cross_section_min, 1.0e-35 * cm * cm);
-	ASSERT_DOUBLE_EQ(cfg.cross_section_max, 1.0e-32 * cm * cm);
-	ASSERT_EQ(cfg.cross_sections, 10);
+	EXPECT_TRUE(cfg.compute_halo_constraints);
+	EXPECT_EQ(cfg.sample_size, 50);
+	EXPECT_DOUBLE_EQ(cfg.cross_section_min, 1.0e-35 * cm * cm);
+	EXPECT_DOUBLE_EQ(cfg.cross_section_max, 1.0e-32 * cm * cm);
+	EXPECT_EQ(cfg.cross_sections, 5);
 }
 
 TEST(TestParameterScan, TestConfigurationSummary)

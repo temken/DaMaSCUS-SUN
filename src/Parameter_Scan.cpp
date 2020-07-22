@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <libconfig.h++>
+#include <mpi.h>
 #include <set>
 
 // Headers from libphysica
@@ -295,11 +296,12 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 			std::cout << std::endl
 					  << ++counter << ")\t"
 					  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
-					  << "u_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << std::endl
-					  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << "\t\t"
+					  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
+					  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
 					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
 					  << std::endl;
 		Print_Grid(mpi_rank, row, col);
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
 		Simulation_Data data_set(sample_size, u_min);
@@ -331,6 +333,7 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 		bool row_exclusion = false;
 		for(unsigned int j = 0; j < DM_masses.size(); j++)
 		{
+			MPI_Barrier(MPI_COMM_WORLD);
 			int index_mass = DM_masses.size() - 1 - j;
 			double p	   = Compute_p_Value(index_coupling, index_mass, DM, detector, solar_model, halo_model, mpi_rank);
 
@@ -376,8 +379,9 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 	std::vector<int> first_excluded_point = {-1, -1};
 	int first_excluded_point_counter	  = 0;
 
-	while(first_excluded_point_counter < 3)
+	while(first_excluded_point_counter < 2)
 	{
+		MPI_Barrier(MPI_COMM_WORLD);
 		double p = Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank);
 
 		// Stopping criterion
@@ -387,9 +391,8 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 			first_excluded_point_counter++;
 
 		// Interpolate at the boundary to find the point where p == p_critical
-		if((p - p_critical) * (p_previous - p_critical) < 0.0)
+		if(counter > 1 && (p - p_critical) * (p_previous - p_critical) < 0.0)
 			STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
-
 		p_previous	 = p;
 		row_previous = row;
 		col_previous = col;
