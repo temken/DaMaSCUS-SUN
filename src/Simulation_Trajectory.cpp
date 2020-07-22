@@ -104,7 +104,11 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		bool reflection = false;
 		if(r_after < rSun)
 		{
-			minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
+			double total_rate	 = solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
+			double time_step_max = 0.1 / total_rate;
+			if(particle_propagator.time_step > time_step_max)
+				particle_propagator.time_step = time_step_max;
+			minus_log_xi -= particle_propagator.time_step * total_rate;
 			if(minus_log_xi < 0.0)
 				scattering = true;
 		}
