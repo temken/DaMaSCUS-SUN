@@ -17,6 +17,8 @@ namespace DaMaSCUS_SUN
 using namespace libconfig;
 using namespace libphysica::natural_units;
 
+// 1. Configuration class for input file, which extends the obscura::Configuration class.
+
 Configuration::Configuration(std::string cfg_filename, int MPI_rank)
 : obscura::Configuration(cfg_filename, MPI_rank)
 {
@@ -92,6 +94,7 @@ void Configuration::Print_Summary(int mpi_rank)
 	}
 }
 
+// 2. 	Class to perform parameter scans in the (m_DM, sigma)-plane to search for equal-p-value contours.
 Parameter_Scan::Parameter_Scan(Configuration& config)
 : Parameter_Scan(libphysica::Log_Space(config.constraints_mass_min, config.constraints_mass_max, config.constraints_masses), libphysica::Log_Space(config.cross_section_min, config.cross_section_max, config.cross_sections), config.sample_size, config.constraints_certainty)
 {
@@ -105,45 +108,44 @@ Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vec
 	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), -1.0));
 }
 
-void Parameter_Scan::Go_Forward(int& row, int& col, std::string& direction)
+void Parameter_Scan::STA_Go_Forward(int& row, int& col, std::string& direction)
 {
 	if(direction == "N")
-
 	{
 		if(row == couplings.size() - 1)
-			Go_Right(row, col, direction);
+			STA_Go_Right(row, col, direction);
 		else
 			row++;
 	}
 	else if(direction == "E")
 	{
 		if(col == DM_masses.size() - 1)
-			Go_Right(row, col, direction);
+			STA_Go_Right(row, col, direction);
 		else
 			col++;
 	}
 	else if(direction == "S")
 	{
 		if(row == 0)
-			Go_Right(row, col, direction);
+			STA_Go_Right(row, col, direction);
 		else
 			row--;
 	}
 	else if(direction == "W")
 	{
 		if(col == 0)
-			Go_Right(row, col, direction);
+			STA_Go_Right(row, col, direction);
 		else
 			col--;
 	}
 }
 
-void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
+void Parameter_Scan::STA_Go_Left(int& row, int& col, std::string& direction)
 {
 	if(direction == "N")
 	{
 		if(col == 0)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			col--;
@@ -153,7 +155,7 @@ void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
 	else if(direction == "E")
 	{
 		if(row == couplings.size() - 1)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			row++;
@@ -163,7 +165,7 @@ void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
 	else if(direction == "S")
 	{
 		if(col == DM_masses.size() - 1)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			col++;
@@ -173,7 +175,7 @@ void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
 	else if(direction == "W")
 	{
 		if(row == 0)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			row--;
@@ -182,12 +184,12 @@ void Parameter_Scan::Go_Left(int& row, int& col, std::string& direction)
 	}
 }
 
-void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
+void Parameter_Scan::STA_Go_Right(int& row, int& col, std::string& direction)
 {
 	if(direction == "N")
 	{
 		if(col == DM_masses.size() - 1)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			col++;
@@ -197,7 +199,7 @@ void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
 	else if(direction == "E")
 	{
 		if(row == 0)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			row--;
@@ -207,7 +209,7 @@ void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
 	else if(direction == "S")
 	{
 		if(col == 0)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			col--;
@@ -217,7 +219,7 @@ void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
 	else if(direction == "W")
 	{
 		if(row == couplings.size() - 1)
-			Go_Forward(row, col, direction);
+			STA_Go_Forward(row, col, direction);
 		else
 		{
 			row++;
@@ -226,7 +228,39 @@ void Parameter_Scan::Go_Right(int& row, int& col, std::string& direction)
 	}
 }
 
-void Parameter_Scan::Fill_STA_Gaps()
+void Parameter_Scan::STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical)
+{
+	if(row_previous == row)
+	{
+		double sigma = couplings[row];
+		int col_1	 = (DM_masses[col] < DM_masses[col_previous]) ? col : col_previous;
+		int col_2	 = (col_1 == col) ? col_previous : col;
+		double x_1	 = DM_masses[col_1];
+		double x_2	 = DM_masses[col_2];
+		double y_1	 = log10(p_value_grid[row][col_1]);
+		double y_2	 = log10(p_value_grid[row][col_2]);
+		double y	 = log10(p_critical);
+		double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+		if(limit_curve.empty() || limit_curve.back()[1] != sigma)
+			limit_curve.push_back({x, sigma});
+	}
+	else
+	{
+		double mDM = DM_masses[col];
+		int row_1  = (couplings[row] < couplings[row_previous]) ? row : row_previous;
+		int row_2  = (row_1 == row) ? row_previous : row;
+		double x_1 = couplings[row_1];
+		double x_2 = couplings[row_2];
+		double y_1 = log10(p_value_grid[row_1][col]);
+		double y_2 = log10(p_value_grid[row_2][col]);
+		double y   = log10(p_critical);
+		double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+		if(limit_curve.empty() || limit_curve.back()[0] != mDM)
+			limit_curve.push_back({mDM, x});
+	}
+}
+
+void Parameter_Scan::STA_Fill_Gaps()
 {
 	for(unsigned int row = 0; row < couplings.size(); row++)
 	{
@@ -272,6 +306,7 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 		data_set.Generate_Data(DM, solar_model, halo_model);
 		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
 		double p = detector.P_Value(DM, spectrum);
+		p		 = (p < 1.0e-100) ? 0.0 : p;
 
 		DM.Set_Mass(mDM_original);
 		DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
@@ -283,7 +318,7 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 					  << std::endl;
 			libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1);
 		}
-		return ((p < 1.0e-100) ? 0.0 : p);
+		return p;
 	}
 }
 
@@ -335,85 +370,41 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 	std::string direction = "S";
 	int row				  = couplings.size() - 1;
 	int col				  = DM_masses.size() - 1;
-	int row_start		  = row;
-	int col_start		  = col;
 	int row_previous, col_previous;
-	double p_previous = 0.0;
-	double p_critical = 1.0 - certainty_level;
-	while(true)
+	double p_previous					  = 10.0;
+	double p_critical					  = 1.0 - certainty_level;
+	std::vector<int> first_excluded_point = {-1, -1};
+	int first_excluded_point_counter	  = 0;
+
+	while(first_excluded_point_counter < 3)
 	{
 		double p = Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank);
-		// if((p < p_critical && p_previous > p_critical) || (p > p_critical && p_previous < p_critical))
+
+		// Stopping criterion
+		if(p < p_critical && first_excluded_point[0] < 0)
+			first_excluded_point = {row, col};
+		if(row == first_excluded_point[0] && col == first_excluded_point[1])
+			first_excluded_point_counter++;
+
+		// Interpolate at the boundary to find the point where p == p_critical
 		if((p - p_critical) * (p_previous - p_critical) < 0.0)
-		{
-			if(row_previous == row)
-			{
-				double sigma = couplings[row];
-				int col_1	 = (DM_masses[col] < DM_masses[col_previous]) ? col : col_previous;
-				int col_2	 = (col_1 == col) ? col_previous : col;
-				double x_1	 = DM_masses[col_1];
-				double x_2	 = DM_masses[col_2];
-				double y_1	 = log10(p_value_grid[row][col_1]);
-				double y_2	 = log10(p_value_grid[row][col_2]);
-				double y	 = log10(p_critical);
-				double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
-				if(limit_curve.empty() || limit_curve.back()[1] != sigma)
-					limit_curve.push_back({x, sigma});
-			}
-			else
-			{
-				double mDM = DM_masses[col];
-				int row_1  = (couplings[row] < couplings[row_previous]) ? row : row_previous;
-				int row_2  = (row_1 == row) ? row_previous : row;
-				double x_1 = couplings[row_1];
-				double x_2 = couplings[row_2];
-				double y_1 = log10(p_value_grid[row_1][col]);
-				double y_2 = log10(p_value_grid[row_2][col]);
-				double y   = log10(p_critical);
-				double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
-				if(limit_curve.empty() || limit_curve.back()[0] != mDM)
-					limit_curve.push_back({mDM, x});
-			}
-		}
+			STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
 
 		p_previous	 = p;
 		row_previous = row;
 		col_previous = col;
 		if(p < p_critical)
-			Go_Left(row, col, direction);
+			STA_Go_Left(row, col, direction);
+		else if(col == 0 && direction == "S")
+		{
+			direction = "N";
+			STA_Go_Forward(row, col, direction);
+		}
 		else
-		{
-			if(col == 0 && direction == "S")
-			{
-				direction = "N";
-				Go_Forward(row, col, direction);
-			}
-			else
-				Go_Right(row, col, direction);
-		}
-		if(row == row_start && col == col_start)
-			break;
+			STA_Go_Right(row, col, direction);
 	}
-	Fill_STA_Gaps();
+	STA_Fill_Gaps();
 	std::reverse(limit_curve.begin(), limit_curve.end());
-}
-
-std::vector<std::vector<double>> Parameter_Scan::Limit_Curve()
-{
-	std::vector<std::vector<double>> limit;
-	for(unsigned int i = 0; i < DM_masses.size(); i++)
-	{
-		if(p_value_grid.back()[i] < (1.0 - certainty_level))
-		{
-			std::vector<double> interpolation_list;
-			for(unsigned int j = 0; j < couplings.size(); j++)
-				interpolation_list.push_back(p_value_grid[j][i] - (1.0 - certainty_level));
-			libphysica::Interpolation interpolation(couplings, interpolation_list);
-			double coupling_limit = libphysica::Find_Root(interpolation, couplings[0], couplings.back(), 0.01 * couplings[0]);
-			limit.push_back({DM_masses[i], coupling_limit});
-		}
-	}
-	return limit;
 }
 
 void Parameter_Scan::Import_P_Values(const std::string& ID)
@@ -441,7 +432,7 @@ void Parameter_Scan::Import_P_Values(const std::string& ID)
 			p_value_grid[j][i] = table[k++][2];
 }
 
-void Parameter_Scan::Export_P_Values(const std::string& ID, int mpi_rank)
+void Parameter_Scan::Export_Results(const std::string& ID, int mpi_rank)
 {
 	if(mpi_rank == 0)
 	{
@@ -449,10 +440,10 @@ void Parameter_Scan::Export_P_Values(const std::string& ID, int mpi_rank)
 		for(unsigned int i = 0; i < DM_masses.size(); i++)
 			for(unsigned int j = 0; j < couplings.size(); j++)
 				table.push_back({DM_masses[i], couplings[j], p_value_grid[j][i]});
-		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_values.txt", table, {GeV, cm * cm, 1.0});
-		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/p_grid.txt", p_value_grid);
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/P_Values_List.txt", table, {GeV, cm * cm, 1.0});
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/P_Values_Grid.txt", p_value_grid);
 		int CL = std::round(100.0 * certainty_level);
-		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Constraint_" + std::to_string(CL) + ".txt", limit_curve, {GeV, cm * cm});
+		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt", limit_curve, {GeV, cm * cm});
 	}
 }
 
@@ -461,10 +452,14 @@ void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 	if(mpi_rank == 0)
 	{
 		double p_critical = 1.0 - certainty_level;
-		for(int row = 0; row < couplings.size(); row++)
+		std::cout << "\t┌";
+		for(int col = 0; col < DM_masses.size(); col++)
+			std::cout << "─";
+		std::cout << "┐ σ [cm^2]" << std::endl;
+		for(unsigned int row = 0; row < couplings.size(); row++)
 		{
-			std::cout << "\t";
-			for(int col = 0; col < DM_masses.size(); col++)
+			std::cout << "\t┤";
+			for(unsigned int col = 0; col < DM_masses.size(); col++)
 			{
 				double p = p_value_grid[couplings.size() - 1 - row][col];
 				if(row == couplings.size() - 1 - marker_row && col == marker_col)
@@ -476,74 +471,26 @@ void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 				else if(p > p_critical)
 					std::cout << "░";
 			}
+			std::cout << "├";	// ((row == 0 || row == couplings.size() - 1) ? "├" : "│");
+			if(row == 0)
+				std::cout << " " << libphysica::Round(In_Units(couplings.back(), cm * cm));
+			else if(row == couplings.size() - 1)
+				std::cout << " " << libphysica::Round(In_Units(couplings.front(), cm * cm));
 			std::cout << std::endl;
 		}
-		std::cout << std::endl;
-	}
-}
-
-Solar_Reflection_Limit::Solar_Reflection_Limit(unsigned int Nsample, double mMin, double mMax, unsigned int Nmass, double c_min, double c_max, double CL)
-: sample_size(Nsample), coupling_min(c_min), coupling_max(c_max), certainty_level(CL)
-{
-	masses = libphysica::Log_Space(mMin, mMax, Nmass);
-}
-
-double Solar_Reflection_Limit::Upper_Limit(double mass, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
-{
-	double mDM_original		 = DM.mass;
-	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
-	DM.Set_Mass(mass);
-	std::function<double(double)> func = [this, &DM, &detector, &solar_model, &halo_model, mpi_rank](double log_coupling) {
-		DM.Set_Interaction_Parameter(exp(log_coupling), detector.Target_Particles());
-		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
-		double u_min = detector.Minimum_DM_Speed(DM);
-		Simulation_Data data_set(sample_size, u_min);
-		data_set.Generate_Data(DM, solar_model, halo_model);
-		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
-		double p = detector.P_Value(DM, spectrum);
-		if(mpi_rank == 0)
-			std::cout << "p = " << libphysica::Round(p) << std::endl;
-		return p - (1.0 - certainty_level);
-	};
-	double log_coupling_min = log(coupling_min);
-	double log_coupling_max = log(coupling_max);
-	double log_limit		= libphysica::Find_Root(func, log_coupling_min, log_coupling_max, 1.0e-2);
-
-	DM.Set_Mass(mDM_original);
-	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
-	return exp(log_limit);
-}
-
-void Solar_Reflection_Limit::Compute_Limit_Curve(std::string& ID, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
-{
-	std::ofstream f;
-	if(mpi_rank == 0)
-	{
-		int CL = std::round(100.0 * certainty_level);
-		f.open(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt");
-	}
-	for(auto& mass : masses)
-	{
-		double limit = Upper_Limit(mass, DM, detector, solar_model, halo_model, mpi_rank);
-		limits.push_back(limit);
-		if(mpi_rank == 0)
+		std::cout << "\t└";
+		for(unsigned int col = 0; col < DM_masses.size(); col++)
+			std::cout << ((col == 0 || col == DM_masses.size() - 1) ? "┬" : "─");
+		if(DM_masses.size() > 5)
 		{
-			std::cout << mass << "\t" << In_Units(limit, cm * cm) << std::endl;
-			f << mass << "\t" << In_Units(limit, cm * cm) << std::endl;
+			std::cout << "┘ mDM[MeV]\n\t ";
+			for(unsigned int i = 0; i < DM_masses.size() - 1; i++)
+				std::cout
+					<< " ";
+			std::cout << libphysica::Round(In_Units(DM_masses.back(), MeV))
+					  << "\r\t " << libphysica::Round(In_Units(DM_masses.front(), MeV)) << std::endl;
 		}
-	}
-	f.close();
-}
-
-void Solar_Reflection_Limit::Export_Curve(std::string& ID, int mpi_rank)
-{
-	if(mpi_rank == 0)
-	{
-		std::vector<std::vector<double>> data(masses.size(), std::vector<double>(2, 0.0));
-		for(unsigned int i = 0; i < masses.size(); i++)
-			data[i] = {masses[i], limits[i]};
-		int CL = std::round(100.0 * certainty_level);
-		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + ID + "/Reflection_Limit_" + std::to_string(CL) + ".txt", data, {GeV, cm * cm});
+		std::cout << std::endl;
 	}
 }
 

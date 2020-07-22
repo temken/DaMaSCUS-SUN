@@ -13,6 +13,8 @@
 namespace DaMaSCUS_SUN
 {
 
+// 1. Configuration class for input file, which extends the obscura::Configuration class.
+
 class Configuration : public obscura::Configuration
 {
   protected:
@@ -27,6 +29,8 @@ class Configuration : public obscura::Configuration
 	void Print_Summary(int mpi_rank = 0) override;
 };
 
+// 2. 	Class to perform parameter scans in the (m_DM, sigma)-plane to search for equal-p-value contours.
+//		Either a full scan, or more efficiently and targeted via the square tracing algorithm (STA).
 class Parameter_Scan
 {
   private:
@@ -41,10 +45,11 @@ class Parameter_Scan
 
 	double Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
-	void Go_Forward(int& row, int& col, std::string& direction);
-	void Go_Left(int& row, int& col, std::string& direction);
-	void Go_Right(int& row, int& col, std::string& direction);
-	void Fill_STA_Gaps();
+	void STA_Go_Forward(int& row, int& col, std::string& direction);
+	void STA_Go_Left(int& row, int& col, std::string& direction);
+	void STA_Go_Right(int& row, int& col, std::string& direction);
+	void STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical);
+	void STA_Fill_Gaps();
 
   public:
 	Parameter_Scan(Configuration& config);
@@ -53,29 +58,10 @@ class Parameter_Scan
 	void Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 	void Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
-	std::vector<std::vector<double>> Limit_Curve();
-
 	void Print_Grid(int mpi_rank = 0, int index_coupling = -1, int index_mass = -1);
 
 	void Import_P_Values(const std::string& ID);
-	void Export_P_Values(const std::string& ID, int mpi_rank = 0);
-};
-
-class Solar_Reflection_Limit
-{
-  private:
-	unsigned int sample_size;
-	double coupling_min, coupling_max;
-	std::vector<double> masses;
-	std::vector<double> limits;
-	double certainty_level;
-
-  public:
-	Solar_Reflection_Limit(unsigned int Nsample, double mMin, double mMax, unsigned int Nmass, double c_min, double c_max, double CL = 0.95);
-
-	double Upper_Limit(double mass, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
-	void Compute_Limit_Curve(std::string& ID, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
-	void Export_Curve(std::string& ID, int mpi_rank = 0);
+	void Export_Results(const std::string& ID, int mpi_rank = 0);
 };
 
 }	// namespace DaMaSCUS_SUN

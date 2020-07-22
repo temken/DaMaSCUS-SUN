@@ -64,23 +64,23 @@ int main()
 	}
 	Parameter_Scan scan(cfg);
 	// scan.Perform_Full_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
-	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
-	scan.Export_P_Values(cfg.ID, mpi_rank);
 	// scan.Import_P_Values(cfg.ID);
-	scan.Print_Grid(mpi_rank);
-
-	////////////////////////////////////////////////////////////////////////
-	// Limit curve for reflection
-	// Solar_Reflection_Limit limit(cfg.sample_size, cfg.constraints_mass_min, cfg.constraints_mass_max, cfg.constraints_masses, cfg.cross_section_min, cfg.cross_section_max, cfg.constraints_certainty);
-	// limit.Compute_Limit_Curve(cfg.ID, *cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
-	////////////////////////////////////////////////////////////////////////
-
+	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+	scan.Export_Results(cfg.ID, mpi_rank);
+	if(mpi_rank == 0)
+	{
+		int CL = std::round(100.0 * cfg.constraints_certainty);
+		std::cout << "\nFinal reflection constraints (" << CL << "% CL)" << std::endl;
+		scan.Print_Grid(mpi_rank);
+	}
 	// ////////////////////////////////////////////////////////////////////////
-	// // Generate data
+
+	////////////////////////////////////////////////////////////////////////
+	// Generate data
 	// SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, 1000, 50);
 	// unsigned int sample_size = 1000;
-	// // double u_min			 = 0.0;
-	// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
+	// double u_min			 = 0.0;
+	// // double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
 	// Simulation_Data data_set(sample_size, u_min);
 	// // data_set.Configure(1.1 * rSun, 1, 1);
 	// data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
@@ -90,7 +90,7 @@ int main()
 	// double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
 	// if(mpi_rank == 0)
 	// 	std::cout << "p-value = " << libphysica::Round(p) << std::endl;
-	// ////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
 	//Final terminal output
