@@ -19,3 +19,54 @@ int main(int argc, char* argv[])
 	MPI_Finalize();
 	return result;
 }
+
+TEST(TestParameterScan, TestConfiguration)
+{
+	// ARRANGE
+	// ACT & ASSERT
+	Configuration cfg(PROJECT_DIR "tests/config_unittest.cfg", 1);
+	// ASSERT
+	ASSERT_TRUE(cfg.compute_halo_constraints);
+	ASSERT_EQ(cfg.sample_size, 100);
+	ASSERT_DOUBLE_EQ(cfg.cross_section_min, 1.0e-35 * cm * cm);
+	ASSERT_DOUBLE_EQ(cfg.cross_section_max, 1.0e-32 * cm * cm);
+	ASSERT_EQ(cfg.cross_sections, 10);
+}
+
+TEST(TestParameterScan, TestConfigurationSummary)
+{
+	// ARRANGE
+	Configuration cfg(PROJECT_DIR "tests/config_unittest.cfg", 1);
+	// ACT & ASSERT
+	cfg.Print_Summary(0);
+	// ASSERT
+}
+TEST(TestParameterScan, TestSTAScan)
+{
+	// ARRANGE
+	Configuration cfg(PROJECT_DIR "tests/config_unittest.cfg", 1);
+	Solar_Model SSM;
+	// ACT
+	Parameter_Scan scan(cfg);
+	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, 1);
+	// ASSERT
+	ASSERT_GT(scan.limit_curve.size(), 0);
+	for(auto& row : scan.p_value_grid)
+		for(auto& entry : row)
+			ASSERT_GE(entry, 0.0);
+}
+
+TEST(TestParameterScan, TestFullScan)
+{
+	// ARRANGE
+	Configuration cfg(PROJECT_DIR "tests/config_unittest.cfg", 1);
+	Solar_Model SSM;
+	// ACT
+	Parameter_Scan scan(cfg);
+	scan.Perform_Full_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, 1);
+	scan.Print_Grid();
+	// ASSERT
+	for(auto& row : scan.p_value_grid)
+		for(auto& entry : row)
+			ASSERT_GE(entry, 0.0);
+}

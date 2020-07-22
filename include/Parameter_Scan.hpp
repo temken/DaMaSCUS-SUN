@@ -37,11 +37,8 @@ class Parameter_Scan
 	unsigned int counter = 0;
 	std::vector<double> DM_masses;
 	std::vector<double> couplings;
-	std::vector<std::vector<double>> p_value_grid;
 	unsigned int sample_size;
 	double certainty_level;
-
-	std::vector<std::vector<double>> limit_curve;
 
 	double Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
@@ -52,6 +49,8 @@ class Parameter_Scan
 	void STA_Fill_Gaps();
 
   public:
+	std::vector<std::vector<double>> p_value_grid, limit_curve;
+
 	Parameter_Scan(Configuration& config);
 	Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize, double CL);
 

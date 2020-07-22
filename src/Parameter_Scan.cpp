@@ -400,6 +400,11 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 			direction = "N";
 			STA_Go_Forward(row, col, direction);
 		}
+		else if(row == 0 && direction == "E")
+		{
+			direction = "W";
+			STA_Go_Forward(row, col, direction);
+		}
 		else
 			STA_Go_Right(row, col, direction);
 	}
