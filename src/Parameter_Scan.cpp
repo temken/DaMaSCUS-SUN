@@ -326,7 +326,7 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 
 void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
-	int last_excluded_mass_index = DM_masses.size();
+	unsigned int last_excluded_mass_index = DM_masses.size();
 	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
 		int index_coupling = couplings.size() - 1 - i;
@@ -353,14 +353,14 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 			}
 			else if(row_exclusion || j > last_excluded_mass_index + 1)
 			{
-				for(unsigned int k = 0; k < index_mass; k++)
+				for(int k = 0; k < index_mass; k++)
 					p_value_grid[index_coupling][k] = 1.0;
 				break;
 			}
 		}
 		if(!row_exclusion)
 		{
-			for(unsigned int k = 0; k < index_coupling; k++)
+			for(int k = 0; k < index_coupling; k++)
 				for(unsigned int j = 0; j < DM_masses.size(); j++)
 					p_value_grid[k][j] = 1.0;
 			break;
@@ -417,14 +417,14 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 
 void Parameter_Scan::Import_P_Values(const std::string& ID)
 {
-	std::string filepath				   = TOP_LEVEL_DIR "results/" + ID + "/p_values.txt";
+	std::string filepath				   = TOP_LEVEL_DIR "results/" + ID + "/P_Values_List.txt";
 	std::vector<std::vector<double>> table = libphysica::Import_Table(filepath, {GeV, cm * cm, 1.0});
 	// 1. Determine grid dimensions
 	std::vector<double> all_masses;
 	for(unsigned int i = 0; i < table.size(); i++)
 		all_masses.push_back(table[i][0]);
 	std::set<double> mass_set(all_masses.begin(), all_masses.end());
-	unsigned int number_of_masses	 = DM_masses.size();
+	unsigned int number_of_masses	 = mass_set.size();
 	unsigned int number_of_couplings = table.size() / number_of_masses;
 
 	// 2. Assign masses and couplings
@@ -433,6 +433,8 @@ void Parameter_Scan::Import_P_Values(const std::string& ID)
 	for(unsigned int i = 0; i < number_of_couplings; i++)
 		couplings[i] = table[i][1];
 	//3. Assign the p values to the table
+	// filepath	 = TOP_LEVEL_DIR "results/" + ID + "/P_Values_Grid.txt";
+	// p_value_grid = libphysica::Import_Table(filepath);
 	unsigned int k = 0;
 	p_value_grid   = std::vector<std::vector<double>>(number_of_couplings, std::vector<double>(number_of_masses, 0.0));
 	for(unsigned int i = 0; i < number_of_masses; i++)
@@ -461,7 +463,7 @@ void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_col)
 	{
 		double p_critical = 1.0 - certainty_level;
 		std::cout << "\t┌";
-		for(int col = 0; col < DM_masses.size(); col++)
+		for(unsigned int col = 0; col < DM_masses.size(); col++)
 			std::cout << "─";
 		std::cout << "┐ σ [cm^2]" << std::endl;
 		for(unsigned int row = 0; row < couplings.size(); row++)

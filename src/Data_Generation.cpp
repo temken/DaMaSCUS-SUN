@@ -88,7 +88,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				//Receive and increment the data counters
 				MPI_Recv(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_status);
 				unsigned long int smallest_sample_size_old = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
-				for(int i = 0; i < isoreflection_rings; i++)
+				for(unsigned int i = 0; i < isoreflection_rings; i++)
 				{
 					number_of_data_points[i] += local_counter_new[i];
 					local_counter_new[i] = 0;

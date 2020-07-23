@@ -24,7 +24,7 @@
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
-int main()
+int main(int argc, char* argv[])
 {
 	MPI_Init(NULL, NULL);
 	int mpi_processes, mpi_rank;
@@ -45,7 +45,8 @@ int main()
 				  << "MPI processes:\t" << mpi_processes << std::endl;
 
 	// Configuration parameters
-	Configuration cfg(PROJECT_DIR "bin/config.cfg", mpi_rank);
+	Configuration cfg(argv[1], mpi_rank);
+	// Configuration cfg(PROJECT_DIR "bin/config.cfg", mpi_rank);
 	Solar_Model SSM;
 	cfg.Print_Summary(mpi_rank);
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -57,7 +58,7 @@ int main()
 	{
 		std::cout << "Compute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
 		double mDM_min								= cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
-		std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 50);
+		std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 100);
 		std::vector<std::vector<double>> halo_limit = cfg.DM_detector->Upper_Limit_Curve(*cfg.DM, *cfg.DM_distr, DM_masses, cfg.constraints_certainty);
 		int CL										= std::round(100.0 * cfg.constraints_certainty);
 		libphysica::Export_Table(TOP_LEVEL_DIR "results/" + cfg.ID + "/Halo_Limit_" + std::to_string(CL) + ".txt", halo_limit, {GeV, cm * cm});
