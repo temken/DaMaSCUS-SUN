@@ -189,7 +189,7 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM.mass);
+		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
 		return Number_Density_Electron(r) * DM.Sigma_Electron() * v_rel;
 	}
 }
@@ -206,9 +206,8 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	else
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
-		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM.mass);
-		double vDM		= 1.0e-3;	//NEEDS TO BE FIXED FOR LIGHT MEDIATORS
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], vDM) * v_rel;
+		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], DM_speed) * v_rel;
 	}
 }
 
