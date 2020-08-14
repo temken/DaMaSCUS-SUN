@@ -100,12 +100,15 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				else if(smallest_sample_size_old >= min_sample_size_above_threshold)
 					mpi_tag = mpi_status.MPI_TAG;
 
+				//Progress bar
+				if(smallest_sample_size_old < smallest_sample_size)
+				{
+					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, 0, 44, time);
+				}
 				//Pass on the counters, unless you are the very last process.
 				if(mpi_tag != (mpi_rank + 1))
 					MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
-				//Progress bar
-				double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-				libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, 0, 44, time);
 			}
 		}
 	}
