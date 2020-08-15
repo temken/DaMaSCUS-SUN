@@ -303,7 +303,7 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 		Print_Grid(mpi_rank, row, col);
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
+		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 500);
 		Simulation_Data data_set(sample_size, u_min);
 		data_set.Generate_Data(DM, solar_model, halo_model);
 		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);

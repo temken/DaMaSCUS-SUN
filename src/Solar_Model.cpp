@@ -277,9 +277,14 @@ void Solar_Model::Print_Summary(int mpi_rank) const
 
 double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM)
 {
-	double kappa		  = sqrt(mass_target / 2.0 / temperature);
-	double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
-	return relative_speed;
+	double kappa = sqrt(mass_target / 2.0 / temperature);
+	if(v_DM < 1.0e-20)
+		return 2.0 / sqrt(M_PI) / kappa;
+	else
+	{
+		double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
+		return relative_speed;
+	}
 }
 
 }	// namespace DaMaSCUS_SUN
