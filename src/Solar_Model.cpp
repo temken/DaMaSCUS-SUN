@@ -40,7 +40,16 @@ void Solar_Model::Import_Raw_Data()
 	for(unsigned int i = 0; i < 35; i++)
 	{
 		first_line[i] = (i == 0 || i == 1) ? 0.0 : raw_data.front()[i];
-		last_line[i]  = (i == 0 || i == 1) ? ((i == 0) ? mSun : rSun) : raw_data.back()[i];
+		if(i == 0)
+			last_line[i] = mSun;
+		else if(i == 1)
+			last_line[i] = rSun;
+		else if(i == 2)
+			last_line[i] = 5800 * Kelvin;	//temperature of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+		else if(i == 3)
+			last_line[i] = 1.0e-9 * gram / cm / cm / cm;   //mass density of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+		else
+			last_line[i] = raw_data.back()[i];
 	}
 	raw_data.insert(raw_data.begin(), first_line);
 	raw_data.push_back(last_line);
@@ -115,6 +124,7 @@ Solar_Model::Solar_Model()
 	mass					   = libphysica::Interpolation(Create_Interpolation_Table(1));
 	temperature				   = libphysica::Interpolation(Create_Interpolation_Table(3));
 	local_escape_speed_squared = libphysica::Interpolation(Create_Escape_Speed_Table());
+	mass_density			   = libphysica::Interpolation(Create_Interpolation_Table(4));
 
 	// Nuclear abundances
 	obscura::Import_Nuclear_Data();
@@ -149,6 +159,14 @@ double Solar_Model::Mass(double r)
 		return mSun;
 	else
 		return mass(r);
+}
+
+double Solar_Model::Mass_Density(double r)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+		return mass_density(r);
 }
 
 double Solar_Model::Temperature(double r)

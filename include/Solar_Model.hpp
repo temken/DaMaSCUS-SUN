@@ -28,7 +28,7 @@ class Solar_Isotope : public obscura::Isotope
 class Solar_Model
 {
   private:
-	libphysica::Interpolation mass, temperature, local_escape_speed_squared;
+	libphysica::Interpolation mass, temperature, local_escape_speed_squared, mass_density;
 
 	// Auxiliary functions for the data import
 	std::vector<std::vector<double>> raw_data;
@@ -52,6 +52,7 @@ class Solar_Model
 	Solar_Model();
 
 	double Mass(double r);
+	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
 
