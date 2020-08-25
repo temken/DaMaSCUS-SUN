@@ -267,7 +267,7 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 		using_interpolated_rate = true;
 
 		std::vector<double> radii  = libphysica::Linear_Space(0, rSun, N_radius);
-		std::vector<double> speeds = libphysica::Linear_Space(0, 0.3, N_speed);
+		std::vector<double> speeds = libphysica::Linear_Space(0, 0.5, N_speed);
 		std::vector<std::vector<double>> rates;
 		for(auto& radius : radii)
 			for(auto& speed : speeds)
