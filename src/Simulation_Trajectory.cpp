@@ -192,7 +192,7 @@ libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double scattering_angle
 {
 	//Construction of n, the unit vector pointing into the direction of vfinal.
 	libphysica::Vector ev = vel_DM.Normalized();
-	double cosphi		  = libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
+	double cosphi		  = cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
 	double sinphi		  = sqrt(1.0 - cosphi * cosphi);
 	double cosalpha		  = cos(scattering_angle);
 	double sinalpha		  = sqrt(1.0 - cosalpha * cosalpha);
