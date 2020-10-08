@@ -21,6 +21,8 @@ class Configuration : public obscura::Configuration
 	void Import_Parameter_Scan_Parameter();
 
   public:
+	std::string run_mode;
+	unsigned int isoreflection_rings;
 	unsigned int sample_size, cross_sections;
 	double cross_section_min, cross_section_max;
 	bool compute_halo_constraints;

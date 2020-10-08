@@ -37,7 +37,24 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "No 'sample_size' setting in configuration file." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
-
+	try
+	{
+		run_mode = config.lookup("run_mode").c_str();
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'run_mode' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		isoreflection_rings = config.lookup("isoreflection_rings");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'isoreflection_rings' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 	try
 	{
 		cross_section_min = config.lookup("cross_section_min");
@@ -79,6 +96,11 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+	if(run_mode != "Parameter point" && run_mode != "Parameter scan" && run_mode != "Custom")
+	{
+		std::cerr << "Error in Configuration::Import_Parameter_Scan_Parameter(): Run mode " << run_mode << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 void Configuration::Print_Summary(int mpi_rank)
@@ -86,12 +108,17 @@ void Configuration::Print_Summary(int mpi_rank)
 	if(mpi_rank == 0)
 	{
 		Print_Summary_Base(mpi_rank);
-		std::cout << "DaMaSCUS-SUN parameters" << std::endl
-				  << "\tSample size:\t\t\t" << sample_size << std::endl
-				  << "\tCross section (min) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_min, cm * cm)) << std::endl
-				  << "\tCross section (max) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_max, cm * cm)) << std::endl
-				  << "\tCross section steps:\t\t" << cross_sections << std::endl
-				  << SEPARATOR << std::endl;
+		std::cout << "DaMaSCUS-SUN options" << std::endl
+				  << std::endl
+				  << "\tRun mode:\t\t" << run_mode << std::endl
+				  << "\tSample size:\t\t" << sample_size << std::endl;
+		if(run_mode == "Parameter point")
+			std::cout << "\tIsoreflection rings:\t" << isoreflection_rings << std::endl;
+		else if(run_mode == "Parameter scan")
+			std::cout << "\tCross section (min) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_min, cm * cm)) << std::endl
+					  << "\tCross section (max) [cm^2]:\t" << libphysica::Round(In_Units(cross_section_max, cm * cm)) << std::endl
+					  << "\tCross section steps:\t\t" << cross_sections << std::endl;
+		std::cout << SEPARATOR << std::endl;
 	}
 }
 

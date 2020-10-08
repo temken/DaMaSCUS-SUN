@@ -49,10 +49,10 @@ void Reflection_Spectrum::Print_Summary(int mpi_rank)
 	{
 		std::cout << SEPARATOR;
 		Print_Summary_Base(mpi_rank);
-		std::cout << "Total DM entering rate [1/s]:\t\t" << libphysica::Round(In_Units(total_entering_rate, 1.0 / sec)) << std::endl
-				  << "Total reflection rate [1/s]:\t\t" << libphysica::Round(In_Units(total_reflection_rate, 1.0 / sec)) << std::endl
-				  << "Distance from Sun [AU]:\t\t\t" << libphysica::Round(In_Units(distance, AU)) << std::endl
-				  << "Total reflection flux [1/s/cm^2]:\t" << libphysica::Round(In_Units(total_reflection_flux, 1.0 / sec / cm / cm)) << std::endl
+		std::cout << "\tTotal DM entering rate [1/s]:\t\t" << libphysica::Round(In_Units(total_entering_rate, 1.0 / sec)) << std::endl
+				  << "\tTotal reflection rate [1/s]:\t\t" << libphysica::Round(In_Units(total_reflection_rate, 1.0 / sec)) << std::endl
+				  << "\tDistance from Sun [AU]:\t\t\t" << libphysica::Round(In_Units(distance, AU)) << std::endl
+				  << "\tTotal reflection flux [1/s/cm^2]:\t" << libphysica::Round(In_Units(total_reflection_flux, 1.0 / sec / cm / cm)) << std::endl
 				  << SEPARATOR;
 	}
 }
