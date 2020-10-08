@@ -173,7 +173,7 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double
 		std::function<double(double)> cdf = [a](double v) {
 			return libphysica::CDF_Maxwell_Boltzmann(v, a);
 		};
-		double v = libphysica::Inverse_Transform_Sampling(cdf, 0.0, 1.0, PRNG);
+		double v = libphysica::Inverse_Transform_Sampling(cdf, 0.0, 2.0, PRNG);
 		return v * n;
 	}
 }
