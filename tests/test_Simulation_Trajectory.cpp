@@ -110,7 +110,7 @@ TEST(TestSimulationTrajectory, TestScatter)
 	DM.Set_Sigma_Proton(pb);
 	double time = 0.0;
 	libphysica::Vector r({0.25 * rSun, 0.25 * rSun, 0.25 * rSun});
-	libphysica::Vector vel({100 * km / sec, 100 * km / sec, 0.25 * rSun});
+	libphysica::Vector vel({100 * km / sec, 100 * km / sec, 100 * km / sec});
 	Event event(time, r, vel);
 	Solar_Model SSM;
 	Trajectory_Simulator simulator(SSM);

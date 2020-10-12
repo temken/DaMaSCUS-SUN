@@ -53,9 +53,9 @@ TEST(TestSolarModel, TestTemperature)
 	// ARRANGE
 	Solar_Model SSM;
 	// ACT & ASSERT
-	ASSERT_DOUBLE_EQ(SSM.Temperature(0), 1.549e+07 * Kelvin);
-	ASSERT_DOUBLE_EQ(SSM.Temperature(rSun), 7.063e+04 * Kelvin);
-	ASSERT_DOUBLE_EQ(SSM.Temperature(0.96950 * rSun), 1.544e+05 * Kelvin);
+	EXPECT_DOUBLE_EQ(SSM.Temperature(0), 1.549e+07 * Kelvin);
+	EXPECT_DOUBLE_EQ(SSM.Temperature(rSun), 5800.0 * Kelvin);
+	EXPECT_DOUBLE_EQ(SSM.Temperature(0.96950 * rSun), 1.544e+05 * Kelvin);
 }
 
 TEST(TestSolarModel, TestLocalEscapeSpeed)
@@ -156,15 +156,15 @@ TEST(TestSolarModel, TestTotalDMScatteringRate)
 TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
 {
 	// ARRANGE
-	int fixed_seed = 137;
+	int fixed_seed = 998;
 	std::mt19937 PRNG(fixed_seed);
 	Solar_Model SSM;
-	obscura::DM_Particle_SI DM;
+	obscura::DM_Particle_SI DM(0.01);
 	DM.Set_Sigma_Proton(pb);
-	int trials		 = 1000;
-	double tolerance = 0.01;
+	int trials		 = 500;
+	double tolerance = 0.1;
 	// ACT
-	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 50);
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 2000, 2000);
 	// ASSERT
 	for(int i = 0; i < trials; i++)
 	{
