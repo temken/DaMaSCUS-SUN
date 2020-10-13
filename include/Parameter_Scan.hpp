@@ -49,6 +49,7 @@ class Parameter_Scan
 	void STA_Go_Right(int& row, int& col, std::string& direction);
 	void STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical);
 	void STA_Fill_Gaps();
+	bool STA_Is_Point_Within_Bounds(int row, int col);
 
   public:
 	std::vector<std::vector<double>> p_value_grid, limit_curve;

@@ -136,176 +136,6 @@ Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vec
 	p_value_grid = std::vector<std::vector<double>>(couplings.size(), std::vector<double>(DM_masses.size(), -1.0));
 }
 
-void Parameter_Scan::STA_Go_Forward(int& row, int& col, std::string& direction)
-{
-	if(direction == "N")
-	{
-		if(row == couplings.size() - 1)
-			STA_Go_Right(row, col, direction);
-		else
-			row++;
-	}
-	else if(direction == "E")
-	{
-		if(col == DM_masses.size() - 1)
-			STA_Go_Right(row, col, direction);
-		else
-			col++;
-	}
-	else if(direction == "S")
-	{
-		if(row == 0)
-			STA_Go_Right(row, col, direction);
-		else
-			row--;
-	}
-	else if(direction == "W")
-	{
-		if(col == 0)
-			STA_Go_Right(row, col, direction);
-		else
-			col--;
-	}
-}
-
-void Parameter_Scan::STA_Go_Left(int& row, int& col, std::string& direction)
-{
-	if(direction == "N")
-	{
-		if(col == 0)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			col--;
-			direction = "W";
-		}
-	}
-	else if(direction == "E")
-	{
-		if(row == couplings.size() - 1)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			row++;
-			direction = "N";
-		}
-	}
-	else if(direction == "S")
-	{
-		if(col == DM_masses.size() - 1)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			col++;
-			direction = "E";
-		}
-	}
-	else if(direction == "W")
-	{
-		if(row == 0)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			row--;
-			direction = "S";
-		}
-	}
-}
-
-void Parameter_Scan::STA_Go_Right(int& row, int& col, std::string& direction)
-{
-	if(direction == "N")
-	{
-		if(col == DM_masses.size() - 1)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			col++;
-			direction = "E";
-		}
-	}
-	else if(direction == "E")
-	{
-		if(row == 0)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			row--;
-			direction = "S";
-		}
-	}
-	else if(direction == "S")
-	{
-		if(col == 0)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			col--;
-			direction = "W";
-		}
-	}
-	else if(direction == "W")
-	{
-		if(row == couplings.size() - 1)
-			STA_Go_Forward(row, col, direction);
-		else
-		{
-			row++;
-			direction = "N";
-		}
-	}
-}
-
-void Parameter_Scan::STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical)
-{
-	if(row_previous == row)
-	{
-		double sigma = couplings[row];
-		int col_1	 = (DM_masses[col] < DM_masses[col_previous]) ? col : col_previous;
-		int col_2	 = (col_1 == col) ? col_previous : col;
-		double x_1	 = DM_masses[col_1];
-		double x_2	 = DM_masses[col_2];
-		double y_1	 = log10(p_value_grid[row][col_1]);
-		double y_2	 = log10(p_value_grid[row][col_2]);
-		double y	 = log10(p_critical);
-		double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
-		if(limit_curve.empty() || limit_curve.back()[1] != sigma)
-			limit_curve.push_back({x, sigma});
-	}
-	else
-	{
-		double mDM = DM_masses[col];
-		int row_1  = (couplings[row] < couplings[row_previous]) ? row : row_previous;
-		int row_2  = (row_1 == row) ? row_previous : row;
-		double x_1 = couplings[row_1];
-		double x_2 = couplings[row_2];
-		double y_1 = log10(p_value_grid[row_1][col]);
-		double y_2 = log10(p_value_grid[row_2][col]);
-		double y   = log10(p_critical);
-		double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
-		if(limit_curve.empty() || limit_curve.back()[0] != mDM)
-			limit_curve.push_back({mDM, x});
-	}
-}
-
-void Parameter_Scan::STA_Fill_Gaps()
-{
-	for(unsigned int row = 0; row < couplings.size(); row++)
-	{
-		bool excluded = false;
-		for(unsigned int col = 0; col < DM_masses.size(); col++)
-		{
-			double p = p_value_grid[row][col];
-			if(p < 0)
-				p_value_grid[row][col] = excluded ? 0.0 : 1.0;
-			else if(p < 1.0 - certainty_level)
-				excluded = true;
-			else
-				excluded = false;
-		}
-	}
-}
-
 double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
 	if(p_value_grid[row][col] > 0)
@@ -397,49 +227,159 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 
 void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
-	std::string direction = "S";
+	std::string direction = "W";
 	int row				  = couplings.size() - 1;
 	int col				  = DM_masses.size() - 1;
 	int row_previous, col_previous;
 	double p_previous					  = 10.0;
 	double p_critical					  = 1.0 - certainty_level;
-	std::vector<int> first_excluded_point = {-1, -1};
+	std::vector<int> first_excluded_point = {-100, -100};
 	int first_excluded_point_counter	  = 0;
 
 	while(first_excluded_point_counter < 2)
 	{
 		MPI_Barrier(MPI_COMM_WORLD);
-		double p = Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank);
+		double p = STA_Is_Point_Within_Bounds(row, col) ? Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank) : 1.0;
 
-		// Stopping criterion
-		if(p < p_critical && first_excluded_point[0] < 0)
+		// Stopping criteria
+		if(first_excluded_point[0] == -100 && p > p_critical && row == couplings.size() - 1 && col == 0)
+			break;
+		else if(p < p_critical && first_excluded_point[0] == -100)
 			first_excluded_point = {row, col};
 		if(row == first_excluded_point[0] && col == first_excluded_point[1])
 			first_excluded_point_counter++;
 
 		// Interpolate at the boundary to find the point where p == p_critical
-		if(counter > 1 && (p - p_critical) * (p_previous - p_critical) < 0.0)
+		if(counter > 1 && STA_Is_Point_Within_Bounds(row, col) && STA_Is_Point_Within_Bounds(row_previous, col_previous) && (p - p_critical) * (p_previous - p_critical) < 0.0)
 			STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
 		p_previous	 = p;
 		row_previous = row;
 		col_previous = col;
-		if(p < p_critical)
+		if(first_excluded_point[0] == -100)
+			STA_Go_Forward(row, col, direction);
+		else if(p < p_critical)
 			STA_Go_Left(row, col, direction);
-		else if(col == 0 && direction == "S")
-		{
-			direction = "N";
-			STA_Go_Forward(row, col, direction);
-		}
-		else if(row == 0 && direction == "E")
-		{
-			direction = "W";
-			STA_Go_Forward(row, col, direction);
-		}
 		else
 			STA_Go_Right(row, col, direction);
 	}
 	STA_Fill_Gaps();
 	std::reverse(limit_curve.begin(), limit_curve.end());
+}
+
+void Parameter_Scan::STA_Go_Forward(int& row, int& col, std::string& direction)
+{
+	if(direction == "N")
+		row++;
+	else if(direction == "E")
+		col++;
+	else if(direction == "S")
+		row--;
+	else if(direction == "W")
+		col--;
+}
+
+void Parameter_Scan::STA_Go_Left(int& row, int& col, std::string& direction)
+{
+
+	if(direction == "N")
+	{
+		col--;
+		direction = "W";
+	}
+	else if(direction == "E")
+	{
+		row++;
+		direction = "N";
+	}
+	else if(direction == "S")
+	{
+		col++;
+		direction = "E";
+	}
+	else if(direction == "W")
+	{
+		row--;
+		direction = "S";
+	}
+}
+
+void Parameter_Scan::STA_Go_Right(int& row, int& col, std::string& direction)
+{
+	if(direction == "N")
+	{
+		col++;
+		direction = "E";
+	}
+	else if(direction == "E")
+	{
+		row--;
+		direction = "S";
+	}
+	else if(direction == "S")
+	{
+		col--;
+		direction = "W";
+	}
+	else if(direction == "W")
+	{
+		row++;
+		direction = "N";
+	}
+}
+
+void Parameter_Scan::STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical)
+{
+	if(row_previous == row)
+	{
+		double sigma = couplings[row];
+		int col_1	 = (DM_masses[col] < DM_masses[col_previous]) ? col : col_previous;
+		int col_2	 = (col_1 == col) ? col_previous : col;
+		double x_1	 = DM_masses[col_1];
+		double x_2	 = DM_masses[col_2];
+		double y_1	 = log10(p_value_grid[row][col_1]);
+		double y_2	 = log10(p_value_grid[row][col_2]);
+		double y	 = log10(p_critical);
+		double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+		if(limit_curve.empty() || limit_curve.back()[1] != sigma)
+			limit_curve.push_back({x, sigma});
+	}
+	else
+	{
+		double mDM = DM_masses[col];
+		int row_1  = (couplings[row] < couplings[row_previous]) ? row : row_previous;
+		int row_2  = (row_1 == row) ? row_previous : row;
+		double x_1 = couplings[row_1];
+		double x_2 = couplings[row_2];
+		double y_1 = log10(p_value_grid[row_1][col]);
+		double y_2 = log10(p_value_grid[row_2][col]);
+		double y   = log10(p_critical);
+		double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
+		if(limit_curve.empty() || limit_curve.back()[0] != mDM)
+			limit_curve.push_back({mDM, x});
+	}
+}
+
+void Parameter_Scan::STA_Fill_Gaps()
+{
+	for(unsigned int row = 0; row < couplings.size(); row++)
+	{
+		bool excluded = false;
+		for(unsigned int col = 0; col < DM_masses.size(); col++)
+		{
+			double p = p_value_grid[row][col];
+			if(p < 0)
+				p_value_grid[row][col] = excluded ? 0.0 : 1.0;
+			else if(p < 1.0 - certainty_level)
+				excluded = true;
+			else
+				excluded = false;
+		}
+	}
+}
+
+bool Parameter_Scan::STA_Is_Point_Within_Bounds(int row, int col)
+{
+	return row >= 0 && col >= 0 && row < couplings.size() && col < DM_masses.size();
 }
 
 void Parameter_Scan::Import_P_Values(const std::string& ID)
