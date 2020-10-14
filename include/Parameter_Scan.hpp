@@ -51,6 +51,8 @@ class Parameter_Scan
 	void STA_Fill_Gaps();
 	bool STA_Is_Point_Within_Bounds(int row, int col);
 
+	bool Compute_Limit_Curve();
+
   public:
 	std::vector<std::vector<double>> p_value_grid, limit_curve;
 
@@ -58,7 +60,7 @@ class Parameter_Scan
 	Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize, double CL);
 
 	void Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
-	void Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
+	void Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, std::string ID, int mpi_rank = 0);
 
 	void Print_Grid(int mpi_rank = 0, int index_coupling = -1, int index_mass = -1);
 

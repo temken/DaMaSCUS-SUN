@@ -48,7 +48,7 @@ TEST(TestParameterScan, TestSTAScan)
 	Solar_Model SSM;
 	// ACT
 	Parameter_Scan scan(cfg);
-	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, 0);
+	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, "STA_test", 0);
 	// ASSERT
 	ASSERT_GT(scan.limit_curve.size(), 0);
 	for(auto& row : scan.p_value_grid)

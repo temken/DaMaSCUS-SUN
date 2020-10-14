@@ -110,8 +110,8 @@ void Configuration::Print_Summary(int mpi_rank)
 		Print_Summary_Base(mpi_rank);
 		std::cout << "DaMaSCUS-SUN options" << std::endl
 				  << std::endl
-				  << "\tRun mode:\t\t" << run_mode << std::endl
-				  << "\tSample size:\t\t" << sample_size << std::endl;
+				  << "\tRun mode:\t\t\t" << run_mode << std::endl
+				  << "\tSample size:\t\t\t" << sample_size << std::endl;
 		if(run_mode == "Parameter point")
 			std::cout << "\tIsoreflection rings:\t" << isoreflection_rings << std::endl;
 		else if(run_mode == "Parameter scan")
@@ -138,7 +138,7 @@ Parameter_Scan::Parameter_Scan(const std::vector<double>& masses, const std::vec
 
 double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
 {
-	if(p_value_grid[row][col] > 0)
+	if(p_value_grid[row][col] >= 0)
 		return p_value_grid[row][col];
 	else
 	{
@@ -160,7 +160,7 @@ double Parameter_Scan::Compute_p_Value(int row, int col, obscura::DM_Particle& D
 		Print_Grid(mpi_rank, row, col);
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 1000);
+		solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 300, 300);
 		Simulation_Data data_set(sample_size, u_min);
 		data_set.Generate_Data(DM, solar_model, halo_model);
 		Reflection_Spectrum spectrum(data_set, solar_model, halo_model, DM.mass);
@@ -225,8 +225,17 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 	}
 }
 
-void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, std::string ID, int mpi_rank)
 {
+	// Check previous progress
+	std::string filepath = TOP_LEVEL_DIR "results/" + ID + "/P_Values_Grid.txt";
+	if(libphysica::File_Exists(filepath))
+	{
+		std::vector<std::vector<double>> import = libphysica::Import_Table(filepath);
+		if(import.size() == p_value_grid.size())
+			p_value_grid = import;
+	}
+
 	std::string direction = "W";
 	int row				  = couplings.size() - 1;
 	int col				  = DM_masses.size() - 1;
@@ -240,7 +249,7 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 	{
 		MPI_Barrier(MPI_COMM_WORLD);
 		double p = STA_Is_Point_Within_Bounds(row, col) ? Compute_p_Value(row, col, DM, detector, solar_model, halo_model, mpi_rank) : 1.0;
-
+		libphysica::Export_Table(filepath, p_value_grid);
 		// Stopping criteria
 		if(first_excluded_point[0] == -100 && p > p_critical && row == couplings.size() - 1 && col == 0)
 			break;
@@ -250,8 +259,8 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 			first_excluded_point_counter++;
 
 		// Interpolate at the boundary to find the point where p == p_critical
-		if(counter > 1 && STA_Is_Point_Within_Bounds(row, col) && STA_Is_Point_Within_Bounds(row_previous, col_previous) && (p - p_critical) * (p_previous - p_critical) < 0.0)
-			STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
+		// if(counter > 1 && STA_Is_Point_Within_Bounds(row, col) && STA_Is_Point_Within_Bounds(row_previous, col_previous) && (p - p_critical) * (p_previous - p_critical) < 0.0)
+		// 	STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
 		p_previous	 = p;
 		row_previous = row;
 		col_previous = col;
@@ -263,6 +272,45 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 			STA_Go_Right(row, col, direction);
 	}
 	STA_Fill_Gaps();
+	Compute_Limit_Curve();
+}
+
+bool Parameter_Scan::Compute_Limit_Curve()
+{
+	std::string direction = "W";
+	int row				  = couplings.size() - 1;
+	int col				  = DM_masses.size() - 1;
+	int row_previous, col_previous;
+	double p_previous					  = 10.0;
+	double p_critical					  = 1.0 - certainty_level;
+	std::vector<int> first_excluded_point = {-100, -100};
+	int first_excluded_point_counter	  = 0;
+	int count							  = 1;
+	while(first_excluded_point_counter < 2)
+	{
+		MPI_Barrier(MPI_COMM_WORLD);
+		double p = STA_Is_Point_Within_Bounds(row, col) ? p_value_grid[row][col] : 1.0;
+		// Stopping criteria
+		if(first_excluded_point[0] == -100 && p > p_critical && row == couplings.size() - 1 && col == 0)
+			break;
+		else if(p < p_critical && first_excluded_point[0] == -100)
+			first_excluded_point = {row, col};
+		if(row == first_excluded_point[0] && col == first_excluded_point[1])
+			first_excluded_point_counter++;
+
+		// Interpolate at the boundary to find the point where p == p_critical
+		if(count++ > 1 && STA_Is_Point_Within_Bounds(row, col) && STA_Is_Point_Within_Bounds(row_previous, col_previous) && (p - p_critical) * (p_previous - p_critical) < 0.0)
+			STA_Interpolate_Two_Points(row, col, row_previous, col_previous, p_critical);
+		p_previous	 = p;
+		row_previous = row;
+		col_previous = col;
+		if(first_excluded_point[0] == -100)
+			STA_Go_Forward(row, col, direction);
+		else if(p < p_critical)
+			STA_Go_Left(row, col, direction);
+		else
+			STA_Go_Right(row, col, direction);
+	}
 	std::reverse(limit_curve.begin(), limit_curve.end());
 }
 
