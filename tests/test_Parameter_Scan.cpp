@@ -31,6 +31,8 @@ TEST(TestParameterScan, TestConfiguration)
 	EXPECT_DOUBLE_EQ(cfg.cross_section_min, 1.0e-35 * cm * cm);
 	EXPECT_DOUBLE_EQ(cfg.cross_section_max, 1.0e-32 * cm * cm);
 	EXPECT_EQ(cfg.cross_sections, 5);
+	EXPECT_EQ(cfg.interpolation_points, 150);
+	EXPECT_EQ(cfg.isoreflection_rings, 3);
 }
 
 TEST(TestParameterScan, TestConfigurationSummary)
@@ -48,12 +50,14 @@ TEST(TestParameterScan, TestSTAScan)
 	Solar_Model SSM;
 	// ACT
 	Parameter_Scan scan(cfg);
-	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, "STA_test", 0);
+	scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, 0);
+	std::vector<std::vector<double>> limit_curve = scan.Limit_Curve();
+	scan.Print_Grid();
 	// ASSERT
-	ASSERT_GT(scan.limit_curve.size(), 0);
-	for(auto& row : scan.p_value_grid)
-		for(auto& entry : row)
-			ASSERT_GE(entry, 0.0);
+	ASSERT_GT(limit_curve.size(), 0);
+	// for(auto& row : scan.p_value_grid)
+	// 	for(auto& entry : row)
+	// 		ASSERT_GE(entry, 0.0);
 }
 
 TEST(TestParameterScan, TestFullScan)
@@ -64,9 +68,11 @@ TEST(TestParameterScan, TestFullScan)
 	// ACT
 	Parameter_Scan scan(cfg);
 	scan.Perform_Full_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, 1);
+	std::vector<std::vector<double>> limit_curve = scan.Limit_Curve();
 	scan.Print_Grid();
 	// ASSERT
-	for(auto& row : scan.p_value_grid)
-		for(auto& entry : row)
-			ASSERT_GE(entry, 0.0);
+	ASSERT_GT(limit_curve.size(), 0);
+	// for(auto& row : scan.p_value_grid)
+	// 	for(auto& entry : row)
+	// 		ASSERT_GE(entry, 0.0);
 }

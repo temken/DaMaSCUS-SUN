@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 	// Generate data for one parameter point specified in the configuration file.
 	if(cfg.run_mode == "Parameter point")
 	{
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, 1000, 1000);
+		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		double u_min = 0.0;
 		// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
@@ -86,8 +86,8 @@ int main(int argc, char* argv[])
 			libphysica::Export_Table(TOP_LEVEL_DIR "results/" + cfg.ID + "/Halo_Limit_" + std::to_string(CL) + ".txt", halo_limit, {GeV, cm * cm});
 		}
 		Parameter_Scan scan(cfg);
-		scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, cfg.ID, mpi_rank);
-		scan.Export_Results(cfg.ID, mpi_rank);
+		scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+		scan.Export_Results(mpi_rank);
 		if(mpi_rank == 0)
 		{
 			int CL = std::round(100.0 * cfg.constraints_certainty);
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 		std::ofstream f;
 		f.open(TOP_LEVEL_DIR "results/" + cfg.ID + "/Anisotropy.txt");
 		std::vector<double> angles = Isoreflection_Ring_Angles(cfg.isoreflection_rings);
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, 1000, 1000);
+		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		double u_min = 0.0;
 		// std::cout << cfg.DM_detector->Minimum_DM_Speed(*cfg.DM) / km * sec << std::endl;
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);

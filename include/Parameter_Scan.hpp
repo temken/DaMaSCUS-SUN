@@ -22,7 +22,7 @@ class Configuration : public obscura::Configuration
 
   public:
 	std::string run_mode;
-	unsigned int isoreflection_rings;
+	unsigned int isoreflection_rings, interpolation_points;
 	unsigned int sample_size, cross_sections;
 	double cross_section_min, cross_section_max;
 	bool compute_halo_constraints;
@@ -33,39 +33,43 @@ class Configuration : public obscura::Configuration
 
 // 2. 	Class to perform parameter scans in the (m_DM, sigma)-plane to search for equal-p-value contours.
 //		Either a full scan, or more efficiently and targeted via the square tracing algorithm (STA).
+
+double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int rate_interpolation_points = 1000, int mpi_rank = 0);
+
 class Parameter_Scan
 {
   private:
-	unsigned int counter = 0;
+	std::string results_path;
 	std::vector<double> DM_masses;
 	std::vector<double> couplings;
-	unsigned int sample_size;
+	unsigned int sample_size, scattering_rate_interpolation_points;
 	double certainty_level;
+	std::vector<std::vector<double>> p_value_grid;
+	// Check for progress of a previous, incomplete parameter scan to import and continue
+	void Import_P_Values();
 
-	double Compute_p_Value(int row, int col, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
-
-	void STA_Go_Forward(int& row, int& col, std::string& direction);
-	void STA_Go_Left(int& row, int& col, std::string& direction);
-	void STA_Go_Right(int& row, int& col, std::string& direction);
-	void STA_Interpolate_Two_Points(int row, int col, int row_previous, int col_previous, double p_critical);
+	// Square tracing algorithm (STA) functions
+	bool STA_Point_On_Grid(int row, int column);
+	void STA_Go_Forward(int& row, int& column, std::string& STA_direction);
+	void STA_Go_Left(int& row, int& column, std::string& STA_direction);
+	void STA_Go_Right(int& row, int& column, std::string& STA_direction);
 	void STA_Fill_Gaps();
-	bool STA_Is_Point_Within_Bounds(int row, int col);
 
-	bool Compute_Limit_Curve();
+	std::vector<double> Find_Contour_Point(int row, int column, int row_previous, int column_previous, double p_critical);
 
   public:
-	std::vector<std::vector<double>> p_value_grid, limit_curve;
-
+	Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, std::string ID, unsigned int samplesize, unsigned int interpolation_points = 1000, double CL = 0.95);
 	Parameter_Scan(Configuration& config);
-	Parameter_Scan(const std::vector<double>& masses, const std::vector<double>& coupl, unsigned int samplesize, double CL);
 
 	void Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
-	void Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, std::string ID, int mpi_rank = 0);
+	void Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank = 0);
 
-	void Print_Grid(int mpi_rank = 0, int index_coupling = -1, int index_mass = -1);
+	// Compute the excluded contours based on the p_value_grid using STA to find the contour shape.
+	std::vector<std::vector<double>> Limit_Curve();
 
-	void Import_P_Values(const std::string& ID);
-	void Export_Results(const std::string& ID, int mpi_rank = 0);
+	void Print_Grid(int mpi_rank = 0, int marker_row = -1, int marker_column = -1);
+
+	void Export_Results(int mpi_rank = 0);
 };
 
 }	// namespace DaMaSCUS_SUN
