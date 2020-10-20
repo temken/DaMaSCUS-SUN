@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <cmath>
+#include <mpi.h>
 #include <random>
 
 // Headers from libphysica
@@ -14,6 +15,17 @@
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
+
+int main(int argc, char* argv[])
+{
+	int result = 0;
+
+	::testing::InitGoogleTest(&argc, argv);
+	MPI_Init(&argc, &argv);
+	result = RUN_ALL_TESTS();
+	MPI_Finalize();
+	return result;
+}
 
 TEST(TestSolarModel, TestSolarNucleus)
 {

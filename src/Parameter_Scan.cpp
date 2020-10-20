@@ -133,7 +133,7 @@ void Configuration::Print_Summary(int mpi_rank)
 	}
 }
 
-double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int rate_interpolation_points, int mpi_rank)
+double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int rate_interpolation_points)
 {
 	double u_min = detector.Minimum_DM_Speed(DM);
 
@@ -371,7 +371,9 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 						  << std::endl;
 			Print_Grid(mpi_rank, row, column);
 			MPI_Barrier(MPI_COMM_WORLD);
-			p						  = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points, mpi_rank);
+
+			p = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points);
+
 			p_value_grid[row][column] = p;
 			libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
 			if(mpi_rank == 0)
@@ -502,7 +504,9 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 							  << std::endl;
 				Print_Grid(mpi_rank, row, column);
 				MPI_Barrier(MPI_COMM_WORLD);
-				p						  = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points, mpi_rank);
+
+				p = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points);
+
 				p_value_grid[row][column] = p;
 				libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
 				if(mpi_rank == 0)

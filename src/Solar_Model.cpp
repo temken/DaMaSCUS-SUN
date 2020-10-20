@@ -1,6 +1,7 @@
 #include "Solar_Model.hpp"
 
 #include <cmath>
+#include <mpi.h>
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
@@ -264,18 +265,37 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 		using_interpolated_rate = false;
 	else
 	{
+		int mpi_processes, mpi_rank;
+		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
+		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
 		using_interpolated_rate = true;
 
-		std::vector<double> radii  = libphysica::Linear_Space(0, rSun, N_radius);
-		std::vector<double> speeds = libphysica::Linear_Space(0, 0.5, N_speed);
-		std::vector<std::vector<double>> rates;
-		for(auto& radius : radii)
-			for(auto& speed : speeds)
-				rates.push_back({radius, speed, Total_DM_Scattering_Rate_Computed(DM, radius, speed)});
+		unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
+		unsigned int global_N_radius = mpi_processes * local_N_radius;
 
+		std::vector<double> global_radii = libphysica::Linear_Space(0, rSun, global_N_radius);
+		std::vector<double> local_radii(local_N_radius, 0.0);
+
+		// Compute the table in parallel
+		MPI_Scatter(global_radii.data(), local_N_radius, MPI_DOUBLE, local_radii.data(), local_N_radius, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		std::vector<double> speeds = libphysica::Linear_Space(0, 0.5, N_speed);
+		std::vector<double> local_rates;
+		std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
+		for(auto& radius : local_radii)
+			for(auto& speed : speeds)
+				local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
+		MPI_Allgather(local_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, global_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, MPI_COMM_WORLD);
+
+		// Re-organize into a 2D array and interpolate.
+		std::vector<std::vector<double>> rates;
+		int i = 0;
+		for(auto& radius : global_radii)
+			for(auto& speed : speeds)
+				rates.push_back({radius, speed, global_rates[i++]});
 		rate_interpolation = libphysica::Interpolation_2D(rates);
 	}
-}
+}	// namespace DaMaSCUS_SUN
 
 void Solar_Model::Print_Summary(int mpi_rank) const
 {
