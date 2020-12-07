@@ -44,9 +44,7 @@ class Trajectory_Simulator
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
 	libphysica::Vector Sample_Target_Velocity(double r, double mass);
-	double Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope);
-	double Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM);
-	libphysica::Vector New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
+	libphysica::Vector New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
 
   public:
 	std::mt19937 PRNG;

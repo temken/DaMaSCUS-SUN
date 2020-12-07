@@ -5,6 +5,7 @@
 // Headers from libphysica
 #include "Natural_Units.hpp"
 #include "Numerics.hpp"
+#include "Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {
@@ -180,6 +181,138 @@ double DM_Particle_Dark_Photon::Sigma_Nucleus(const obscura::Isotope& target, do
 		}
 	}
 	return sigmatot;
+}
+
+double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM) const
+{
+	double sigmatot = 0.0;
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sigma_Total_Electron(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else
+	{
+		sigmatot = Sigma_Electron();
+		if(FF_DM == "General")
+		{
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+			sigmatot *= pow(q_reference * q_reference + m_dark_photon * m_dark_photon, 2.0) / m_dark_photon / m_dark_photon / (m_dark_photon * m_dark_photon + q2max);
+		}
+	}
+	return sigmatot;
+}
+
+// Scattering angle functions
+double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM)
+{
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(!low_mass)
+		return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM);
+	else if(FF_DM == "Contact")
+		return 0.5;
+	else
+	{
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+		return 2.0 * m2 * (m2 + q2max) / pow(2 * m2 + q2max * (1.0 - cos_alpha), 2.0);
+	}
+}
+double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(double cos_alpha, double vDM)
+{
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(FF_DM == "Contact")
+		return 0.5;
+	else
+	{
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		return 2.0 * m2 * (m2 + q2max) / pow(2 * m2 + q2max * (1.0 - cos_alpha), 2.0);
+	}
+}
+double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM)
+{
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(!low_mass)
+		return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM);
+	else if(FF_DM == "Contact")
+		return (1.0 + cos_alpha) / 2.0;
+	else
+	{
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+		return (1.0 + cos_alpha) * m2 / (2.0 * m2 + q2max * (1.0 - cos_alpha));
+	}
+}
+
+double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(double cos_alpha, double vDM)
+{
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(FF_DM == "Contact")
+		return (1.0 + cos_alpha) / 2.0;
+	else
+	{
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		return (1.0 + cos_alpha) * m2 / (2.0 * m2 + q2max * (1.0 - cos_alpha));
+	}
+}
+
+double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(const obscura::Isotope& target, double vDM, std::mt19937& PRNG)
+{
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(!low_mass)
+		return Sample_Scattering_Angle_Nucleus_Base(target, vDM, PRNG);
+	else if(FF_DM == "Contact")
+	{
+		double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+		return 2.0 * xi - 1.0;
+	}
+	else
+	{
+		double xi	 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+		return (m2 * (2.0 * xi - 1.0) + q2max * xi) / (m2 + q2max * xi);
+	}
+}
+
+double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(double vDM, std::mt19937& PRNG)
+{
+	double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+	if(FF_DM != "Contact" && FF_DM != "General")
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	else if(FF_DM == "Contact")
+		return 2.0 * xi - 1.0;
+	else
+	{
+		double m2	 = m_dark_photon * m_dark_photon;
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		return (m2 * (2.0 * xi - 1.0) + q2max * xi) / (m2 + q2max * xi);
+	}
 }
 
 void DM_Particle_Dark_Photon::Print_Summary(int MPI_rank) const

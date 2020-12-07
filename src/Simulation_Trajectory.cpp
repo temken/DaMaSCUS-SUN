@@ -178,28 +178,17 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double
 	}
 }
 
-double Trajectory_Simulator::Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope)
-{
-	return acos(libphysica::Sample_Uniform(PRNG, -1.0, 1.0));
-}
-
-double Trajectory_Simulator::Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM)
-{
-	return acos(libphysica::Sample_Uniform(PRNG, -1.0, 1.0));
-}
-
-libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
+libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
 {
 	//Construction of n, the unit vector pointing into the direction of vfinal.
-	libphysica::Vector ev = vel_DM.Normalized();
-	double cosphi		  = cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
-	double sinphi		  = sqrt(1.0 - cosphi * cosphi);
-	double cosalpha		  = cos(scattering_angle);
-	double sinalpha		  = sqrt(1.0 - cosalpha * cosalpha);
-	double aux			  = sqrt(1.0 - pow(ev[2], 2.0));
-	libphysica::Vector n({cosalpha * ev[0] + (sinalpha * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
-						  cosalpha * ev[1] + (sinalpha * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
-						  cosalpha * ev[2] + aux * cosphi * sinalpha});
+	libphysica::Vector ev		= vel_DM.Normalized();
+	double cosphi				= cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
+	double sinphi				= sqrt(1.0 - cosphi * cosphi);
+	double sin_scattering_angle = sqrt(1.0 - cos_scattering_angle * cos_scattering_angle);
+	double aux					= sqrt(1.0 - pow(ev[2], 2.0));
+	libphysica::Vector n({cos_scattering_angle * ev[0] + (sin_scattering_angle * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
+						  cos_scattering_angle * ev[1] + (sin_scattering_angle * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
+						  cos_scattering_angle * ev[2] + aux * cosphi * sin_scattering_angle});
 	double relative_speed = (vel_target - vel_DM).Norm();
 
 	return target_mass * relative_speed / (target_mass + DM_mass) * n + (DM_mass * vel_DM + target_mass * vel_target) / (target_mass + DM_mass);
@@ -221,14 +210,10 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	libphysica::Vector vel_target = Sample_Target_Velocity(r, target_mass);
 
 	// 2. Sample the scattering angle
-	double scattering_angle;
-	if(target_index == -1)
-		scattering_angle = Sample_Scattering_Angle_Electron(DM);
-	else
-		scattering_angle = Sample_Scattering_Angle_Nucleus(DM, solar_model.target_isotopes[target_index]);
+	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(v, PRNG) : DM.Sample_Scattering_Angle_Nucleus(solar_model.target_isotopes[target_index], v, PRNG);
 
 	// 3. Construct the final DM velocity
-	current_event.velocity = New_DM_Velocity(scattering_angle, DM.mass, target_mass, current_event.velocity, vel_target);
+	current_event.velocity = New_DM_Velocity(cos_alpha, DM.mass, target_mass, current_event.velocity, vel_target);
 }
 
 void Trajectory_Simulator::Toggle_Trajectory_Saving(unsigned int max_trajectories)

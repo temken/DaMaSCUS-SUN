@@ -50,6 +50,15 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	virtual double Sigma_Proton() const override;
 	virtual double Sigma_Electron() const override;
 	virtual double Sigma_Nucleus(const obscura::Isotope& target, double vDM) const override;
+	virtual double Sigma_Total_Electron(double vDM) const override;
+
+	// Scattering angle functions
+	virtual double PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM) override;
+	virtual double PDF_Scattering_Angle_Electron(double cos_alpha, double vDM) override;
+	virtual double CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM) override;
+	virtual double CDF_Scattering_Angle_Electron(double cos_alpha, double vDM) override;
+	virtual double Sample_Scattering_Angle_Nucleus(const obscura::Isotope& target, double vDM, std::mt19937& PRNG) override;
+	virtual double Sample_Scattering_Angle_Electron(double vDM, std::mt19937& PRNG) override;
 
 	virtual void Print_Summary(int MPI_rank = 0) const override;
 };

@@ -137,7 +137,6 @@ void Configuration::Import_Parameter_Scan_Parameter()
 
 void Configuration::Construct_DM_Particle()
 {
-	std::cout << "USE THIS" << std::endl;
 	double DM_mass, DM_spin, DM_fraction;
 	bool DM_light;
 	//3.1 General properties
