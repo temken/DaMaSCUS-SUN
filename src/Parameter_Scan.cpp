@@ -9,6 +9,7 @@
 #include "Natural_Units.hpp"
 #include "Utilities.hpp"
 
+#include "Dark_Photon.hpp"
 #include "Data_Generation.hpp"
 #include "Reflection_Spectrum.hpp"
 
@@ -21,8 +22,30 @@ using namespace libphysica::natural_units;
 // 1. Configuration class for input file, which extends the obscura::Configuration class.
 
 Configuration::Configuration(std::string cfg_filename, int MPI_rank)
-: obscura::Configuration(cfg_filename, MPI_rank)
 {
+	cfg_file	 = cfg_filename;
+	results_path = "./";
+	// cfg_file = cfg_filename;
+
+	// 1. Read the cfg file.
+	Read_Config_File();
+
+	// 2. Find the run ID, create a folder and copy the cfg file.
+	Initialize_Result_Folder(MPI_rank);
+
+	// 3. DM particle
+	Construct_DM_Particle();
+
+	// 4. DM Distribution
+	Construct_DM_Distribution();
+
+	// 5. DM-detection experiment
+	Construct_DM_Detector();
+
+	// 6. Computation of exclusion limits
+	Initialize_Parameters();
+
+	// 7. DaMaSCUS specific parameters
 	Import_Parameter_Scan_Parameter();
 }
 
@@ -110,6 +133,123 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "Error in Configuration::Import_Parameter_Scan_Parameter(): Run mode " << run_mode << " not recognized." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+}
+
+void Configuration::Construct_DM_Particle()
+{
+	std::cout << "USE THIS" << std::endl;
+	double DM_mass, DM_spin, DM_fraction;
+	bool DM_light;
+	//3.1 General properties
+	try
+	{
+		DM_mass = config.lookup("DM_mass");
+		DM_mass *= GeV;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'DM_mass' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		DM_spin = config.lookup("DM_spin");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'DM_spin' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		DM_fraction = config.lookup("DM_fraction");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'DM_fraction' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	try
+	{
+		DM_light = config.lookup("DM_light");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'DM_light' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	//3.2 DM interactions
+	std::string DM_interaction;
+	try
+	{
+		DM_interaction = config.lookup("DM_interaction").c_str();
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'DM_interaction' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	//3.2.1 SI and SD
+	if(DM_interaction == "SI" || DM_interaction == "SD")
+		Configuration::Construct_DM_Particle_Standard(DM_interaction);
+	else if(DM_interaction == "Dark photon")
+		Configuration::Construct_DM_Particle_Dark_Photon();
+	else
+	{
+		std::cerr << "Error in DaMaSCUS_SUN::Configuration::Construct_DM_Particle(): 'DM_interaction' setting " << DM_interaction << " in configuration file not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	DM->Set_Mass(DM_mass);
+	DM->Set_Spin(DM_spin);
+	DM->Set_Fractional_Density(DM_fraction);
+	DM->Set_Low_Mass_Mode(DM_light);
+}
+
+void Configuration::Construct_DM_Particle_Dark_Photon()
+{
+	DM = new DM_Particle_Dark_Photon();
+
+	//DM form factor
+	std::string DM_form_factor;
+	double DM_mediator_mass = -1.0;
+	try
+	{
+		DM_form_factor = config.lookup("DM_form_factor").c_str();
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "Error in DaMaSCUS_SUN::Configuration::Construct_DM_Particle_DP(): No 'DM_form_factor' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	if(DM_form_factor == "General")
+	{
+		try
+		{
+			DM_mediator_mass = config.lookup("DM_mediator_mass");
+			DM_mediator_mass *= MeV;
+		}
+		catch(const SettingNotFoundException& nfex)
+		{
+			std::cerr << "Error in Configuration::Construct_DM_Particle_DP(): No 'DM_mediator_mass' setting in configuration file." << std::endl;
+			std::exit(EXIT_FAILURE);
+		}
+	}
+	dynamic_cast<DM_Particle_Dark_Photon*>(DM)->Set_FormFactor_DM(DM_form_factor, DM_mediator_mass);
+	double DM_cross_section_electron;
+	try
+	{
+		DM_cross_section_electron = config.lookup("DM_cross_section_electron");
+		DM_cross_section_electron *= cm * cm;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "Error in Configuration::Construct_DM_Particle_DP(): No 'DM_cross_section_electron' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	DM->Set_Interaction_Parameter(DM_cross_section_electron, "Electrons");
 }
 
 void Configuration::Print_Summary(int mpi_rank)

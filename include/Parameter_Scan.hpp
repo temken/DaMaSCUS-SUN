@@ -20,6 +20,9 @@ class Configuration : public obscura::Configuration
   protected:
 	void Import_Parameter_Scan_Parameter();
 
+	virtual void Construct_DM_Particle() override;
+	void Construct_DM_Particle_Dark_Photon();
+
   public:
 	std::string run_mode;
 	unsigned int isoreflection_rings, interpolation_points;
