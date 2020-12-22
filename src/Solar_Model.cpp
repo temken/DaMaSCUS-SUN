@@ -209,7 +209,7 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 	else
 	{
 		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
-		return Number_Density_Electron(r) * DM.Sigma_Electron() * v_rel;
+		return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
 	}
 }
 
