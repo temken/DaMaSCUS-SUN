@@ -43,7 +43,7 @@ class Trajectory_Simulator
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
-	libphysica::Vector Sample_Target_Velocity(double r, double mass);
+	libphysica::Vector Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM);
 	libphysica::Vector New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
 
   public:

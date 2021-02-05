@@ -159,28 +159,47 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 	}
 }
 
-libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double mass)
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM)
 {
-	if(r > rSun)
+	// Sampling algorithm taken from Romano & Walsh, "An improved target velocity sampling algorithm for free gas elastic scattering"
+	double kappa = sqrt(target_mass / 2.0 / temperature);
+	double vDM	 = vel_DM.Norm();
+	// 1. Sample target speed vT and mu = cos alpha
+	double y  = kappa * vDM;
+	double x  = y;
+	double mu = 1.0;
+	while(sqrt(x * x + y * y - 2.0 * x * y * mu) / (x + y) < libphysica::Sample_Uniform(PRNG, 0.0, 1.0))
 	{
-		std::cerr << "Error in Trajectory_Simulator::Sample_Target_Velocity(): r > rSun." << std::endl;
-		std::exit(EXIT_FAILURE);
+		mu			= libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
+		double xi_1 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+		if(xi_1 < 2.0 / (sqrt(M_PI) * y + 2.0))
+		{
+			double xi_2 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_3 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double z	= -log(xi_2 * xi_3);
+			x			= sqrt(z);
+		}
+		else
+		{
+			double xi_2 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_3 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_4 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double z	= -log(xi_2) - pow(cos(M_PI / 2.0 * xi_3), 2.0) * log(xi_4);
+			x			= sqrt(z);
+		}
 	}
-	else
-	{
-		// 1. Sample direction
-		double phi			 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
-		double costheta		 = libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
-		libphysica::Vector n = libphysica::Spherical_Coordinates(1.0, acos(costheta), phi);
-		// 2. Sample speed
-		double temperature				  = solar_model.Temperature(r);
-		double a						  = sqrt(temperature / mass);
-		std::function<double(double)> cdf = [a](double v) {
-			return libphysica::CDF_Maxwell_Boltzmann(v, a);
-		};
-		double v = libphysica::Inverse_Transform_Sampling(cdf, 0.0, 2.0, PRNG);
-		return v * n;
-	}
+	// 2. Construct the target velocity vel_T
+	double vT						  = x / kappa;
+	double cos_theta				  = mu;
+	libphysica::Vector unit_vector_DM = vel_DM.Normalized();
+	double cosphi					  = cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
+	double sinphi					  = sqrt(1.0 - cosphi * cosphi);
+	double sin_theta				  = sqrt(1.0 - cos_theta * cos_theta);
+	double aux						  = sqrt(1.0 - pow(unit_vector_DM[2], 2.0));
+	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + (sin_theta * (-unit_vector_DM[0] * unit_vector_DM[2] * cosphi + unit_vector_DM[1] * sinphi)) / aux,
+									  cos_theta * unit_vector_DM[1] + (sin_theta * (-unit_vector_DM[1] * unit_vector_DM[2] * cosphi - unit_vector_DM[0] * sinphi)) / aux,
+									  cos_theta * unit_vector_DM[2] + aux * cosphi * sin_theta});
+	return vT * unit_vector_T;
 }
 
 libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
@@ -212,7 +231,7 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	else
 		target_mass = solar_model.target_isotopes[target_index].mass;
 
-	libphysica::Vector vel_target = Sample_Target_Velocity(r, target_mass);
+	libphysica::Vector vel_target = Sample_Target_Velocity(solar_model.Temperature(r), target_mass, current_event.velocity);
 
 	// 2. Sample the scattering angle
 	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(v, PRNG) : DM.Sample_Scattering_Angle_Nucleus(solar_model.target_isotopes[target_index], v, PRNG);
