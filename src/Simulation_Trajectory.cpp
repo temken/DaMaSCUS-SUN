@@ -74,6 +74,7 @@ Trajectory_Simulator::Trajectory_Simulator(const Solar_Model& model, unsigned lo
 	std::random_device rd;
 	PRNG.seed(rd());
 }
+
 bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f)
 {
 	// 1. Define a equation-of-motion-solver in the orbital plane
@@ -91,12 +92,16 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		double r_after = particle_propagator.Current_Radius();
 		double v_after = particle_propagator.Current_Speed();
 
-		if(save_trajectories && time_steps % 40 == 0)
+		if(save_trajectories && time_steps % 20 == 0)
 		{
-			Event event = particle_propagator.Event_In_3D();
+			Event event	 = particle_propagator.Event_In_3D();
+			double r	 = event.Radius();
+			double v	 = event.Speed();
+			double vesc2 = solar_model.Local_Escape_Speed(r) * solar_model.Local_Escape_Speed(r);
+			double E	 = 1.0 / DM.mass * (v * v - vesc2);
 			f << In_Units(event.time, sec) << "\t"
 			  << In_Units(event.position[0], km) << "\t" << In_Units(event.position[1], km) << "\t" << In_Units(event.position[2], km) << "\t"
-			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << std::endl;
+			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << "\t" << In_Units(E, eV) << std::endl;
 		}
 
 		// Check for scatterings and reflection
