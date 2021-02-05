@@ -44,6 +44,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 
 	// Configure the simulator
 	Trajectory_Simulator simulator(solar_model, maximum_free_time_steps, maximum_number_of_scatterings, initial_and_final_radius);
+	// simulator.Toggle_Trajectory_Saving(50);
 	if(fixed_seed != 0)
 		simulator.Fix_PRNG_Seed(fixed_seed);
 
@@ -101,7 +102,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 					mpi_tag = mpi_status.MPI_TAG;
 
 				//Progress bar
-				if(smallest_sample_size_old < smallest_sample_size && mpi_rank == 0)
+				if(smallest_sample_size_old < smallest_sample_size && mpi_rank % 4 == 0)
 				{
 					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
 					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, 0, 44, time);
