@@ -37,7 +37,7 @@ class Configuration : public obscura::Configuration
 // 2. 	Class to perform parameter scans in the (m_DM, sigma)-plane to search for equal-p-value contours.
 //		Either a full scan, or more efficiently and targeted via the square tracing algorithm (STA).
 
-double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int rate_interpolation_points = 1000);
+double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int rate_interpolation_points = 1000, int mpi_rank = 0);
 
 class Parameter_Scan
 {
