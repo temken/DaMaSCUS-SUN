@@ -54,7 +54,6 @@ int main(int argc, char* argv[])
 	// Generate data for one parameter point specified in the configuration file.
 	if(cfg.run_mode == "Parameter point")
 	{
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		double u_min = 0.0;
 		// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
@@ -66,6 +65,7 @@ int main(int argc, char* argv[])
 					  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
 					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
 					  << std::endl;
+		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
 		data_set.Print_Summary(mpi_rank);
 		Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, 0);
@@ -98,37 +98,6 @@ int main(int argc, char* argv[])
 	// Run some custom code
 	else
 	{
-		// Test isotropy
-		if(mpi_rank == 0)
-			std::cout << "Test isotropy of reflection flux." << std::endl;
-		std::ofstream f;
-		f.open(TOP_LEVEL_DIR "results/" + cfg.ID + "/Anisotropy.txt");
-		std::vector<double> angles = Isoreflection_Ring_Angles(cfg.isoreflection_rings);
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
-		double u_min = 0.0;
-		// std::cout << cfg.DM_detector->Minimum_DM_Speed(*cfg.DM) / km * sec << std::endl;
-		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
-		if(mpi_rank == 0)
-			std::cout << "Generate data..." << std::endl
-					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << "\t\t"
-					  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
-					  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
-					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
-					  << std::endl;
-
-		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
-		data_set.Print_Summary(mpi_rank);
-		if(mpi_rank == 0)
-		{
-			for(unsigned int ring = 0; ring < cfg.isoreflection_rings; ring++)
-			{
-				Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, ring);
-				double total_rate = cfg.DM_detector->DM_Signals_Total(*cfg.DM, spectrum) / (0.1 * kg * year);
-				f << angles[ring] << "\t" << spectrum.Average_Speed() / km * sec << "\t" << In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec) << "\t" << In_Units(total_rate, 1.0 / gram / day) << std::endl;			  //<< "\t" << In_Units(total_rate_Xe, 1.0 / gram / day) << std::endl;
-				std::cout << angles[ring] << "\t" << spectrum.Average_Speed() / km * sec << "\t" << In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec) << "\t" << In_Units(total_rate, 1.0 / gram / day) << std::endl;	  //<< "\t" << In_Units(total_rate_Xe, 1.0 / gram / day) << std::endl;
-			}
-		}
-		f.close();
 	}
 
 	////////////////////////////////////////////////////////////////////////

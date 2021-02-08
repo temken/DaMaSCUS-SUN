@@ -176,7 +176,7 @@ TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
 	int trials		 = 500;
 	double tolerance = 0.1;
 	// ACT
-	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 2000, 2000);
+	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 1000);
 	// ASSERT
 	for(int i = 0; i < trials; i++)
 	{
