@@ -77,7 +77,6 @@ void DM_Particle_Dark_Photon::Set_FormFactor_DM(std::string ff, double mMed)
 {
 	if(ff == "Contact" || ff == "Electric-Dipole" || ff == "Long-Range" || ff == "General")
 		FF_DM = ff;
-
 	else
 	{
 		std::cerr << "Error in obscura::DM_Particle_Dark_Photon::Set_FormFactor_DM(): Form factor " << ff << " not recognized." << std::endl;
