@@ -12,6 +12,9 @@
 
 #include "Solar_Model.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 // 1. Event class
 struct Event
 {
@@ -44,5 +47,7 @@ extern void Hyperbolic_Kepler_Shift(Event& event, double R_final);
 
 // 4. Equiareal isoreflection rings
 extern std::vector<double> Isoreflection_Ring_Angles(unsigned int number_of_rings);
+
+}	// namespace DaMaSCUS_SUN
 
 #endif

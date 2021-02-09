@@ -9,6 +9,9 @@
 // Headers from obscura
 #include "Astronomy.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
@@ -36,9 +39,9 @@ bool Trajectory_Result::Particle_Captured() const
 	return r < rSun || final_event.Speed() < vesc;
 }
 
-void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int MPI_rank)
+void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank)
 {
-	if(MPI_rank == 0)
+	if(mpi_rank == 0)
 	{
 		std::cout << SEPARATOR
 				  << "Trajectory result summary" << std::endl
@@ -71,6 +74,7 @@ Trajectory_Simulator::Trajectory_Simulator(const Solar_Model& model, unsigned lo
 	std::random_device rd;
 	PRNG.seed(rd());
 }
+
 bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f)
 {
 	// 1. Define a equation-of-motion-solver in the orbital plane
@@ -88,12 +92,16 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		double r_after = particle_propagator.Current_Radius();
 		double v_after = particle_propagator.Current_Speed();
 
-		if(save_trajectories && time_steps % 40 == 0)
+		if(save_trajectories && time_steps % 20 == 0)
 		{
-			Event event = particle_propagator.Event_In_3D();
+			Event event	 = particle_propagator.Event_In_3D();
+			double r	 = event.Radius();
+			double v	 = event.Speed();
+			double vesc2 = solar_model.Local_Escape_Speed(r) * solar_model.Local_Escape_Speed(r);
+			double E	 = 1.0 / DM.mass * (v * v - vesc2);
 			f << In_Units(event.time, sec) << "\t"
 			  << In_Units(event.position[0], km) << "\t" << In_Units(event.position[1], km) << "\t" << In_Units(event.position[2], km) << "\t"
-			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << std::endl;
+			  << In_Units(event.velocity[0], km / sec) << "\t" << In_Units(event.velocity[1], km / sec) << "\t" << In_Units(event.velocity[2], km / sec) << "\t" << In_Units(E, eV) << std::endl;
 		}
 
 		// Check for scatterings and reflection
@@ -101,7 +109,11 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		bool reflection = false;
 		if(r_after < rSun)
 		{
-			minus_log_xi -= particle_propagator.time_step * solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
+			double total_rate	 = solar_model.Total_DM_Scattering_Rate(DM, r_after, v_after);
+			double time_step_max = 0.1 / total_rate;
+			if(particle_propagator.time_step > time_step_max)
+				particle_propagator.time_step = time_step_max;
+			minus_log_xi -= particle_propagator.time_step * total_rate;
 			if(minus_log_xi < 0.0)
 				scattering = true;
 		}
@@ -147,52 +159,60 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 	}
 }
 
-libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double r, double mass)
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM)
 {
-	if(r > rSun)
+	// Sampling algorithm taken from Romano & Walsh, "An improved target velocity sampling algorithm for free gas elastic scattering"
+	double kappa = sqrt(target_mass / 2.0 / temperature);
+	double vDM	 = vel_DM.Norm();
+	// 1. Sample target speed vT and mu = cos alpha
+	double y  = kappa * vDM;
+	double x  = y;
+	double mu = 1.0;
+	while(sqrt(x * x + y * y - 2.0 * x * y * mu) / (x + y) < libphysica::Sample_Uniform(PRNG, 0.0, 1.0))
 	{
-		std::cerr << "Error in Trajectory_Simulator::Sample_Target_Velocity(): r > rSun." << std::endl;
-		std::exit(EXIT_FAILURE);
+		mu			= libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
+		double xi_1 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+		if(xi_1 < 2.0 / (sqrt(M_PI) * y + 2.0))
+		{
+			double xi_2 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_3 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double z	= -log(xi_2 * xi_3);
+			x			= sqrt(z);
+		}
+		else
+		{
+			double xi_2 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_3 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double xi_4 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double z	= -log(xi_2) - pow(cos(M_PI / 2.0 * xi_3), 2.0) * log(xi_4);
+			x			= sqrt(z);
+		}
 	}
-	else
-	{
-		// 1. Sample direction
-		double phi			 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
-		double costheta		 = libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
-		libphysica::Vector n = libphysica::Spherical_Coordinates(1.0, acos(costheta), phi);
-		// 2. Sample speed
-		double temperature				  = solar_model.Temperature(r);
-		double a						  = sqrt(temperature / mass);
-		std::function<double(double)> cdf = [a](double v) {
-			return libphysica::CDF_Maxwell_Boltzmann(v, a);
-		};
-		double v = libphysica::Inverse_Transform_Sampling(cdf, 0.0, 1.0, PRNG);
-		return v * n;
-	}
+	// 2. Construct the target velocity vel_T
+	double vT						  = x / kappa;
+	double cos_theta				  = mu;
+	libphysica::Vector unit_vector_DM = vel_DM.Normalized();
+	double cosphi					  = cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
+	double sinphi					  = sqrt(1.0 - cosphi * cosphi);
+	double sin_theta				  = sqrt(1.0 - cos_theta * cos_theta);
+	double aux						  = sqrt(1.0 - pow(unit_vector_DM[2], 2.0));
+	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + (sin_theta * (-unit_vector_DM[0] * unit_vector_DM[2] * cosphi + unit_vector_DM[1] * sinphi)) / aux,
+									  cos_theta * unit_vector_DM[1] + (sin_theta * (-unit_vector_DM[1] * unit_vector_DM[2] * cosphi - unit_vector_DM[0] * sinphi)) / aux,
+									  cos_theta * unit_vector_DM[2] + aux * cosphi * sin_theta});
+	return vT * unit_vector_T;
 }
 
-double Trajectory_Simulator::Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope)
-{
-	return acos(libphysica::Sample_Uniform(PRNG, -1.0, 1.0));
-}
-
-double Trajectory_Simulator::Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM)
-{
-	return acos(libphysica::Sample_Uniform(PRNG, -1.0, 1.0));
-}
-
-libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
+libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
 {
 	//Construction of n, the unit vector pointing into the direction of vfinal.
-	libphysica::Vector ev = vel_DM.Normalized();
-	double cosphi		  = libphysica::Sample_Uniform(PRNG, -1.0, 1.0);
-	double sinphi		  = sqrt(1.0 - cosphi * cosphi);
-	double cosalpha		  = cos(scattering_angle);
-	double sinalpha		  = sqrt(1.0 - cosalpha * cosalpha);
-	double aux			  = sqrt(1.0 - pow(ev[2], 2.0));
-	libphysica::Vector n({cosalpha * ev[0] + (sinalpha * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
-						  cosalpha * ev[1] + (sinalpha * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
-						  cosalpha * ev[2] + aux * cosphi * sinalpha});
+	libphysica::Vector ev		= vel_DM.Normalized();
+	double cosphi				= cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
+	double sinphi				= sqrt(1.0 - cosphi * cosphi);
+	double sin_scattering_angle = sqrt(1.0 - cos_scattering_angle * cos_scattering_angle);
+	double aux					= sqrt(1.0 - pow(ev[2], 2.0));
+	libphysica::Vector n({cos_scattering_angle * ev[0] + (sin_scattering_angle * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
+						  cos_scattering_angle * ev[1] + (sin_scattering_angle * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
+						  cos_scattering_angle * ev[2] + aux * cosphi * sin_scattering_angle});
 	double relative_speed = (vel_target - vel_DM).Norm();
 
 	return target_mass * relative_speed / (target_mass + DM_mass) * n + (DM_mass * vel_DM + target_mass * vel_target) / (target_mass + DM_mass);
@@ -211,17 +231,13 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	else
 		target_mass = solar_model.target_isotopes[target_index].mass;
 
-	libphysica::Vector vel_target = Sample_Target_Velocity(r, target_mass);
+	libphysica::Vector vel_target = Sample_Target_Velocity(solar_model.Temperature(r), target_mass, current_event.velocity);
 
 	// 2. Sample the scattering angle
-	double scattering_angle;
-	if(target_index == -1)
-		scattering_angle = Sample_Scattering_Angle_Electron(DM);
-	else
-		scattering_angle = Sample_Scattering_Angle_Nucleus(DM, solar_model.target_isotopes[target_index]);
+	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(v, PRNG) : DM.Sample_Scattering_Angle_Nucleus(solar_model.target_isotopes[target_index], v, PRNG);
 
 	// 3. Construct the final DM velocity
-	current_event.velocity = New_DM_Velocity(scattering_angle, DM.mass, target_mass, current_event.velocity, vel_target);
+	current_event.velocity = New_DM_Velocity(cos_alpha, DM.mass, target_mass, current_event.velocity, vel_target);
 }
 
 void Trajectory_Simulator::Toggle_Trajectory_Saving(unsigned int max_trajectories)
@@ -276,6 +292,9 @@ Free_Particle_Propagator::Free_Particle_Propagator(const Event& event)
 	phi				 = 0.0;
 	v_radial		 = (radius == 0) ? event.Speed() : event.position.Dot(event.velocity) / radius;
 	angular_momentum = (event.position.Cross(event.velocity)).Dot(axis_z);
+
+	//3. Error tolerances
+	error_tolerances = {1.0 * km, 1.0e-3 * km / sec, 1.0e-7};
 }
 
 double Free_Particle_Propagator::dr_dt(double v)
@@ -328,6 +347,7 @@ void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)
 	double radius_4	  = radius + 25.0 / 216.0 * k_r[0] + 1408.0 / 2565.0 * k_r[2] + 2197.0 / 4101.0 * k_r[3] - 1.0 / 5.0 * k_r[4];
 	double v_radial_4 = v_radial + 25.0 / 216.0 * k_v[0] + 1408.0 / 2565.0 * k_v[2] + 2197.0 / 4101.0 * k_v[3] - 1.0 / 5.0 * k_v[4];
 	double phi_4	  = phi + 25.0 / 216.0 * k_p[0] + 1408.0 / 2565.0 * k_p[2] + 2197.0 / 4101.0 * k_p[3] - 1.0 / 5.0 * k_p[4];
+
 	double radius_5	  = radius + 16.0 / 135.0 * k_r[0] + 6656.0 / 12825.0 * k_r[2] + 28561.0 / 56430.0 * k_r[3] - 9.0 / 50.0 * k_r[4] + 2.0 / 55.0 * k_r[5];
 	double v_radial_5 = v_radial + 16.0 / 135.0 * k_v[0] + 6656.0 / 12825.0 * k_v[2] + 28561.0 / 56430.0 * k_v[3] - 9.0 / 50.0 * k_v[4] + 2.0 / 55.0 * k_v[5];
 	double phi_5	  = phi + 16.0 / 135.0 * k_p[0] + 6656.0 / 12825.0 * k_p[2] + 28561.0 / 56430.0 * k_p[3] - 9.0 / 50.0 * k_p[4] + 2.0 / 55.0 * k_p[5];
@@ -339,7 +359,6 @@ void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)
 		deltas.push_back(0.84 * pow(error_tolerances[i] / errors[i], 1.0 / 4.0));
 	double delta		 = *std::min_element(std::begin(deltas), std::end(deltas));
 	double time_step_new = delta * time_step;
-	time_step_new		 = std::max(time_step_min, std::min(time_step_new, time_step_max));
 
 	// Check if errors fall below the tolerance
 	if(errors[0] < error_tolerances[0] && errors[1] < error_tolerances[1] && errors[2] < error_tolerances[2])
@@ -383,3 +402,5 @@ Event Free_Particle_Propagator::Event_In_3D()
 
 	return Event(time, xNew, vNew);
 }
+
+}	// namespace DaMaSCUS_SUN

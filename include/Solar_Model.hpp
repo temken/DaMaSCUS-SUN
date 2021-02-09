@@ -9,6 +9,9 @@
 #include "DM_Particle.hpp"
 #include "Target_Nucleus.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 // 1. Nuclear targets in the Sun
 class Solar_Isotope : public obscura::Isotope
 {
@@ -25,7 +28,7 @@ class Solar_Isotope : public obscura::Isotope
 class Solar_Model
 {
   private:
-	libphysica::Interpolation mass, temperature, local_escape_speed_squared;
+	libphysica::Interpolation mass, temperature, local_escape_speed_squared, mass_density;
 
 	// Auxiliary functions for the data import
 	std::vector<std::vector<double>> raw_data;
@@ -49,6 +52,7 @@ class Solar_Model
 	Solar_Model();
 
 	double Mass(double r);
+	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
 
@@ -62,12 +66,12 @@ class Solar_Model
 	double Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed);
 
 	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed);
-	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned N_speed);
+	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed);
 
-	void Print_Summary(int MPI_rank = 0) const;
+	void Print_Summary(int mpi_rank = 0) const;
 };
 
 // 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
 extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM);
-
+}	// namespace DaMaSCUS_SUN
 #endif

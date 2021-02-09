@@ -6,6 +6,7 @@
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"
 
+using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
 // 1. Event class

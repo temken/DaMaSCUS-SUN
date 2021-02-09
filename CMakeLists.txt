@@ -19,14 +19,15 @@ set(EXTERNAL_DIR  ${PROJECT_SOURCE_DIR}/external)
 
 #External projects
 find_package(MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
 
 include(FetchContent)
 # obscura
-set(LIBPHYSICA_DIR   ${EXTERNAL_DIR}/obscura)
+set(OBSCURA_DIR   ${EXTERNAL_DIR}/obscura)
 FetchContent_Declare(obscura
   GIT_REPOSITORY  https://github.com/temken/obscura.git
-  GIT_TAG         origin/master
-  SOURCE_DIR     "${LIBPHYSICA_DIR}"
+  GIT_TAG         origin/dev
+  SOURCE_DIR     "${OBSCURA_DIR}"
   CMAKE_ARGS     "-DCMAKE_BUILD_TYPE=Release -DCODE_COVERAGE=OFF" )
 FetchContent_GetProperties(obscura)
 if(NOT obscura_POPULATED)
@@ -62,7 +63,7 @@ configure_file(
   ${GENERATED_DIR}/version.hpp )
 
 # Source and include directories
-include_directories( ${INCLUDE_DIR} )
+include_directories( ${INCLUDE_DIR} ${MPI_INCLUDE_PATH})
 add_subdirectory( ${SRC_DIR} )
 
 # Code Coverage Configuration

@@ -1,6 +1,7 @@
 #include "Solar_Model.hpp"
 
 #include <cmath>
+#include <mpi.h>
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
@@ -8,6 +9,9 @@
 #include "Utilities.hpp"
 
 #include "version.hpp"
+
+namespace DaMaSCUS_SUN
+{
 
 using namespace libphysica::natural_units;
 // 1. Nuclear targets in the Sun
@@ -37,7 +41,16 @@ void Solar_Model::Import_Raw_Data()
 	for(unsigned int i = 0; i < 35; i++)
 	{
 		first_line[i] = (i == 0 || i == 1) ? 0.0 : raw_data.front()[i];
-		last_line[i]  = (i == 0 || i == 1) ? ((i == 0) ? mSun : rSun) : raw_data.back()[i];
+		if(i == 0)
+			last_line[i] = mSun;
+		else if(i == 1)
+			last_line[i] = rSun;
+		else if(i == 2)
+			last_line[i] = 5800 * Kelvin;	//temperature of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+		else if(i == 3)
+			last_line[i] = 1.0e-9 * gram / cm / cm / cm;   //mass density of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+		else
+			last_line[i] = raw_data.back()[i];
 	}
 	raw_data.insert(raw_data.begin(), first_line);
 	raw_data.push_back(last_line);
@@ -112,12 +125,14 @@ Solar_Model::Solar_Model()
 	mass					   = libphysica::Interpolation(Create_Interpolation_Table(1));
 	temperature				   = libphysica::Interpolation(Create_Interpolation_Table(3));
 	local_escape_speed_squared = libphysica::Interpolation(Create_Escape_Speed_Table());
+	mass_density			   = libphysica::Interpolation(Create_Interpolation_Table(4));
 
 	// Nuclear abundances
 	obscura::Import_Nuclear_Data();
-	std::vector<int> Zs						   = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
-	std::vector<double> As					   = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 20.0, 23.0, 24.0, 27.0, 28.0, 31.0, 32.0, 35.0, 40.0, 39.0, 40.0, 45.0, 48.0, 51.0, 52.0, 55.0, 56.0, 59.0, 58.0};
-	std::vector<unsigned int> included_targets = {0, 1, 7, 26};
+	std::vector<int> Zs	   = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
+	std::vector<double> As = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0};
+	// std::vector<int> included_targets = {0, 1, 7, 26};
+	std::vector<int> included_targets = libphysica::Range(Zs.size());
 	for(auto& target_index : included_targets)
 	{
 		int Z = Zs[target_index];
@@ -145,6 +160,14 @@ double Solar_Model::Mass(double r)
 		return mSun;
 	else
 		return mass(r);
+}
+
+double Solar_Model::Mass_Density(double r)
+{
+	if(r > rSun)
+		return 0.0;
+	else
+		return mass_density(r);
 }
 
 double Solar_Model::Temperature(double r)
@@ -185,8 +208,8 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM.mass);
-		return Number_Density_Electron(r) * DM.Sigma_Electron() * v_rel;
+		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
+		return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
 	}
 }
 
@@ -202,9 +225,8 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	else
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
-		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM.mass);
-		double vDM		= 1.0e-3;	//NEEDS TO BE FIXED FOR LIGHT MEDIATORS
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], vDM) * v_rel;
+		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], DM_speed) * v_rel;
 	}
 }
 
@@ -237,28 +259,47 @@ double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& 
 		return rate_interpolation(r, DM_speed);
 }
 
-void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned N_speed)
+void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
 {
 	if(N_radius == 0 || N_speed == 0)
 		using_interpolated_rate = false;
 	else
 	{
+		int mpi_processes, mpi_rank;
+		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
+		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
 		using_interpolated_rate = true;
 
-		std::vector<double> radii  = libphysica::Linear_Space(0, rSun, N_radius);
-		std::vector<double> speeds = libphysica::Linear_Space(0, 0.3, N_speed);
-		std::vector<std::vector<double>> rates;
-		for(auto& radius : radii)
-			for(auto& speed : speeds)
-				rates.push_back({radius, speed, Total_DM_Scattering_Rate_Computed(DM, radius, speed)});
+		unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
+		unsigned int global_N_radius = mpi_processes * local_N_radius;
 
+		std::vector<double> global_radii = libphysica::Linear_Space(0, rSun, global_N_radius);
+		std::vector<double> local_radii(local_N_radius, 0.0);
+
+		// Compute the table in parallel
+		MPI_Scatter(global_radii.data(), local_N_radius, MPI_DOUBLE, local_radii.data(), local_N_radius, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		std::vector<double> speeds = libphysica::Linear_Space(0, 0.5, N_speed);
+		std::vector<double> local_rates;
+		std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
+		for(auto& radius : local_radii)
+			for(auto& speed : speeds)
+				local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
+		MPI_Allgather(local_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, global_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, MPI_COMM_WORLD);
+
+		// Re-organize into a 2D array and interpolate.
+		std::vector<std::vector<double>> rates;
+		int i = 0;
+		for(auto& radius : global_radii)
+			for(auto& speed : speeds)
+				rates.push_back({radius, speed, global_rates[i++]});
 		rate_interpolation = libphysica::Interpolation_2D(rates);
 	}
-}
+}	// namespace DaMaSCUS_SUN
 
-void Solar_Model::Print_Summary(int MPI_rank) const
+void Solar_Model::Print_Summary(int mpi_rank) const
 {
-	if(MPI_rank == 0)
+	if(mpi_rank == 0)
 	{
 		std::cout << SEPARATOR
 				  << "Solar model:\t\t" << name << std::endl
@@ -267,14 +308,21 @@ void Solar_Model::Print_Summary(int MPI_rank) const
 				  << "Isotope\tZ\tA\tAbund.[%]\tSpin\t<sp>\t<sn>"
 				  << SEPARATOR_LINE;
 		for(auto& isotope : target_isotopes)
-			isotope.Print_Summary(MPI_rank);
+			isotope.Print_Summary(mpi_rank);
 		std::cout << SEPARATOR;
 	}
 }
 
 double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM)
 {
-	double kappa		  = sqrt(mass_target / 2.0 / temperature);
-	double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
-	return relative_speed;
+	double kappa = sqrt(mass_target / 2.0 / temperature);
+	if(v_DM < 1.0e-20)
+		return 2.0 / sqrt(M_PI) / kappa;
+	else
+	{
+		double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
+		return relative_speed;
+	}
 }
+
+}	// namespace DaMaSCUS_SUN

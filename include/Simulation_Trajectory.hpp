@@ -13,6 +13,9 @@
 #include "Simulation_Utilities.hpp"
 #include "Solar_Model.hpp"
 
+namespace DaMaSCUS_SUN
+{
+
 // 1. Result of one trajectory
 struct Trajectory_Result
 {
@@ -25,7 +28,7 @@ struct Trajectory_Result
 	bool Particle_Free() const;
 	bool Particle_Captured() const;
 
-	void Print_Summary(Solar_Model& solar_model, unsigned int MPI_rank = 0);
+	void Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank = 0);
 };
 
 // 2. Simulator
@@ -40,10 +43,8 @@ class Trajectory_Simulator
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
-	libphysica::Vector Sample_Target_Velocity(double r, double mass);
-	double Sample_Scattering_Angle_Nucleus(obscura::DM_Particle& DM, Solar_Isotope& isotope);
-	double Sample_Scattering_Angle_Electron(obscura::DM_Particle& DM);
-	libphysica::Vector New_DM_Velocity(double scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
+	libphysica::Vector Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM);
+	libphysica::Vector New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
 
   public:
 	std::mt19937 PRNG;
@@ -71,9 +72,7 @@ class Free_Particle_Propagator
 	double dr_dt(double v);
 	double dv_dt(double r, double mass);
 	double dphi_dt(double r);
-	std::vector<double> error_tolerances = {1.0 * libphysica::natural_units::km, 1.0e-3 * libphysica::natural_units::km / libphysica::natural_units::sec, 1.0e-7};
-	double time_step_min				 = 1.0e-6 * libphysica::natural_units::sec;
-	double time_step_max				 = 1.0e2 * libphysica::natural_units::sec;
+	std::vector<double> error_tolerances;
 
   public:
 	double time_step = 0.1 * libphysica::natural_units::sec;
@@ -88,5 +87,7 @@ class Free_Particle_Propagator
 
 	Event Event_In_3D();
 };
+
+}	// namespace DaMaSCUS_SUN
 
 #endif

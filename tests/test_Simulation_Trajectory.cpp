@@ -9,6 +9,7 @@
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"
 
+using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
@@ -109,7 +110,7 @@ TEST(TestSimulationTrajectory, TestScatter)
 	DM.Set_Sigma_Proton(pb);
 	double time = 0.0;
 	libphysica::Vector r({0.25 * rSun, 0.25 * rSun, 0.25 * rSun});
-	libphysica::Vector vel({100 * km / sec, 100 * km / sec, 0.25 * rSun});
+	libphysica::Vector vel({100 * km / sec, 100 * km / sec, 100 * km / sec});
 	Event event(time, r, vel);
 	Solar_Model SSM;
 	Trajectory_Simulator simulator(SSM);
