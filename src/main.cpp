@@ -68,10 +68,46 @@ int main(int argc, char* argv[])
 		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
 		data_set.Print_Summary(mpi_rank);
-		Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, 0);
-		spectrum.Print_Summary(mpi_rank);
-		double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
-		libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1, mpi_rank);
+		if(cfg.isoreflection_rings == 1)
+		{
+			Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, 0);
+			spectrum.Print_Summary(mpi_rank);
+			std::function<double(double)> func = [&spectrum, &cfg](double v) {
+				return spectrum.Differential_DM_Flux(v, cfg.DM->mass);
+			};
+			std::vector<double> speeds = libphysica::Linear_Space(spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 300);
+			if(mpi_rank == 0)
+				libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux.txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+			double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
+			libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1, mpi_rank);
+		}
+		else
+		{
+			std::ofstream f;
+			f.open(cfg.results_path + "/Detection_Rate.txt");
+			std::vector<double> isoreflection_angles = Isoreflection_Ring_Angles(cfg.isoreflection_rings);
+			if(mpi_rank == 0)
+				std::cout << "Theta [deg]\t<u> [km/sec]\tDM flux [cm^-2 sec^-1]\tSignal rate [g^-1 day^-1]" << std::endl;
+
+			for(unsigned int ring = 0; ring < cfg.isoreflection_rings; ring++)
+			{
+				Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, ring);
+				std::function<double(double)> func = [&spectrum, &cfg](double v) {
+					return spectrum.Differential_DM_Flux(v, cfg.DM->mass);
+				};
+				std::vector<double> speeds = libphysica::Linear_Space(spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 300);
+				if(mpi_rank == 0)
+					libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux_" + std::to_string(ring) + ".txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+
+				double total_rate = cfg.DM_detector->DM_Signal_Rate_Total(*cfg.DM, spectrum);
+				if(mpi_rank == 0)
+				{
+					f << isoreflection_angles[ring] << "\t" << spectrum.Average_Speed() / km * sec << "\t" << In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec) << "\t" << In_Units(total_rate, 1.0 / gram / day) << std::endl;
+					std::cout << libphysica::Round(isoreflection_angles[ring] / deg) << "\t\t" << libphysica::Round(In_Units(spectrum.Average_Speed(), km / sec)) << "\t\t" << libphysica::Round(In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec)) << "\t\t\t" << libphysica::Round(In_Units(total_rate, 1.0 / gram / day)) << std::endl;
+				}
+			}
+			f.close();
+		}
 	}
 	//Perform a parameter scan to compute exclusion limits
 	else if(cfg.run_mode == "Parameter scan")
