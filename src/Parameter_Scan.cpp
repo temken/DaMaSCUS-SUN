@@ -128,6 +128,15 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+	try
+	{
+		perform_full_scan = config.lookup("perform_full_scan");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'perform_full_scan' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 	if(run_mode != "Parameter point" && run_mode != "Parameter scan" && run_mode != "Custom")
 	{
 		std::cerr << "Error in Configuration::Import_Parameter_Scan_Parameter(): Run mode " << run_mode << " not recognized." << std::endl;

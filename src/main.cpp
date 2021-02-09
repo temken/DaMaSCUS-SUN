@@ -122,7 +122,10 @@ int main(int argc, char* argv[])
 			libphysica::Export_Table(TOP_LEVEL_DIR "results/" + cfg.ID + "/Halo_Limit_" + std::to_string(CL) + ".txt", halo_limit, {GeV, cm * cm});
 		}
 		Parameter_Scan scan(cfg);
-		scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+		if(cfg.perform_full_scan)
+			scan.Perform_Full_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
+		else
+			scan.Perform_STA_Scan(*cfg.DM, *cfg.DM_detector, SSM, *cfg.DM_distr, mpi_rank);
 		scan.Export_Results(mpi_rank);
 		if(mpi_rank == 0)
 		{
