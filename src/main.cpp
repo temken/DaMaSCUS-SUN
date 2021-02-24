@@ -6,14 +6,8 @@
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
+#include "Numerics.hpp"
 #include "Utilities.hpp"
-
-// Headers from obscura
-#include "Astronomy.hpp"
-#include "Configuration.hpp"
-#include "DM_Distribution.hpp"
-#include "DM_Particle_Standard.hpp"
-#include "Experiments.hpp"
 
 #include "Data_Generation.hpp"
 #include "Parameter_Scan.hpp"
@@ -97,11 +91,9 @@ int main(int argc, char* argv[])
 				};
 				std::vector<double> speeds = libphysica::Linear_Space(spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 300);
 				if(mpi_rank == 0)
-					libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux_" + std::to_string(ring) + ".txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
-
-				double total_rate = cfg.DM_detector->DM_Signal_Rate_Total(*cfg.DM, spectrum);
-				if(mpi_rank == 0)
 				{
+					libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux_" + std::to_string(ring) + ".txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+					double total_rate = cfg.DM_detector->DM_Signal_Rate_Total(*cfg.DM, spectrum);
 					f << isoreflection_angles[ring] << "\t" << spectrum.Average_Speed() / km * sec << "\t" << In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec) << "\t" << In_Units(total_rate, 1.0 / gram / day) << std::endl;
 					std::cout << libphysica::Round(isoreflection_angles[ring] / deg) << "\t\t" << libphysica::Round(In_Units(spectrum.Average_Speed(), km / sec)) << "\t\t" << libphysica::Round(In_Units(spectrum.Total_DM_Flux(cfg.DM->mass), 1.0 / cm / cm / sec)) << "\t\t\t" << libphysica::Round(In_Units(total_rate, 1.0 / gram / day)) << std::endl;
 				}

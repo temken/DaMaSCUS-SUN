@@ -1,0 +1,1 @@
+This folder contains all generated result files after running DaMaSCUS-SUN.

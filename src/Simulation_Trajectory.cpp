@@ -189,30 +189,35 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperatu
 		}
 	}
 	// 2. Construct the target velocity vel_T
-	double vT						  = x / kappa;
-	double cos_theta				  = mu;
+	double vT		 = x / kappa;
+	double cos_theta = mu;
+	double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+	double phi		 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+	double cos_phi	 = cos(phi);
+	double sin_phi	 = sin(phi);
+
 	libphysica::Vector unit_vector_DM = vel_DM.Normalized();
-	double cosphi					  = cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
-	double sinphi					  = sqrt(1.0 - cosphi * cosphi);
-	double sin_theta				  = sqrt(1.0 - cos_theta * cos_theta);
 	double aux						  = sqrt(1.0 - pow(unit_vector_DM[2], 2.0));
-	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + (sin_theta * (-unit_vector_DM[0] * unit_vector_DM[2] * cosphi + unit_vector_DM[1] * sinphi)) / aux,
-									  cos_theta * unit_vector_DM[1] + (sin_theta * (-unit_vector_DM[1] * unit_vector_DM[2] * cosphi - unit_vector_DM[0] * sinphi)) / aux,
-									  cos_theta * unit_vector_DM[2] + aux * cosphi * sin_theta});
+	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + sin_theta / aux * (unit_vector_DM[0] * unit_vector_DM[2] * cos_phi - unit_vector_DM[1] * sin_phi),
+									  cos_theta * unit_vector_DM[1] + sin_theta / aux * (unit_vector_DM[1] * unit_vector_DM[2] * cos_phi + unit_vector_DM[0] * sin_phi),
+									  cos_theta * unit_vector_DM[2] - aux * cos_phi * sin_theta});
+
 	return vT * unit_vector_T;
 }
 
 libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
 {
 	//Construction of n, the unit vector pointing into the direction of vfinal.
-	libphysica::Vector ev		= vel_DM.Normalized();
-	double cosphi				= cos(libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI));
-	double sinphi				= sqrt(1.0 - cosphi * cosphi);
 	double sin_scattering_angle = sqrt(1.0 - cos_scattering_angle * cos_scattering_angle);
-	double aux					= sqrt(1.0 - pow(ev[2], 2.0));
-	libphysica::Vector n({cos_scattering_angle * ev[0] + (sin_scattering_angle * (-ev[0] * ev[2] * cosphi + ev[1] * sinphi)) / aux,
-						  cos_scattering_angle * ev[1] + (sin_scattering_angle * (-ev[1] * ev[2] * cosphi - ev[0] * sinphi)) / aux,
-						  cos_scattering_angle * ev[2] + aux * cosphi * sin_scattering_angle});
+	double phi					= libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+	double cos_phi				= cos(phi);
+	double sin_phi				= sin(phi);
+
+	libphysica::Vector ev = vel_DM.Normalized();
+	double aux			  = sqrt(1.0 - pow(ev[2], 2.0));
+	libphysica::Vector n({cos_scattering_angle * ev[0] + sin_scattering_angle / aux * (ev[0] * ev[2] * cos_phi - ev[1] * sin_phi),
+						  cos_scattering_angle * ev[1] + sin_scattering_angle / aux * (ev[1] * ev[2] * cos_phi + ev[0] * sin_phi),
+						  cos_scattering_angle * ev[2] - aux * cos_phi * sin_scattering_angle});
 	double relative_speed = (vel_target - vel_DM).Norm();
 
 	return target_mass * relative_speed / (target_mass + DM_mass) * n + (DM_mass * vel_DM + target_mass * vel_target) / (target_mass + DM_mass);
@@ -304,12 +309,12 @@ double Free_Particle_Propagator::dr_dt(double v)
 
 double Free_Particle_Propagator::dv_dt(double r, double mass)
 {
-	return pow(angular_momentum, 2) / pow(r, 3) - G_Newton * mass / pow(r, 2);
+	return angular_momentum * angular_momentum / r / r / r - G_Newton * mass / r / r;
 }
 
 double Free_Particle_Propagator::dphi_dt(double r)
 {
-	return angular_momentum / pow(r, 2);
+	return angular_momentum / r / r;
 }
 
 void Free_Particle_Propagator::Runge_Kutta_45_Step(double mass)

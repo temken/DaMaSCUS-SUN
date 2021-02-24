@@ -25,7 +25,6 @@ Configuration::Configuration(std::string cfg_filename, int MPI_rank)
 {
 	cfg_file	 = cfg_filename;
 	results_path = "./";
-	// cfg_file = cfg_filename;
 
 	// 1. Read the cfg file.
 	Read_Config_File();
@@ -556,6 +555,74 @@ void Parameter_Scan::Perform_STA_Scan(obscura::DM_Particle& DM, obscura::DM_Dete
 	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
 }
 
+void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
+{
+	Import_P_Values();
+	double mDM_original		 = DM.mass;
+	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
+
+	double p_critical					  = 1.0 - certainty_level;
+	unsigned int counter				  = 0;
+	unsigned int last_excluded_mass_index = DM_masses.size();
+	for(unsigned int i = 0; i < couplings.size(); i++)
+	{
+		int row			   = couplings.size() - 1 - i;
+		bool row_exclusion = false;
+		for(unsigned int j = 0; j < DM_masses.size(); j++)
+		{
+			MPI_Barrier(MPI_COMM_WORLD);
+			int column = DM_masses.size() - 1 - j;
+			DM.Set_Mass(DM_masses[column]);
+			DM.Set_Interaction_Parameter(couplings[row], detector.Target_Particles());
+			double u_min = detector.Minimum_DM_Speed(DM);
+			double p;
+			if(p_value_grid[row][column] >= 0)
+				p = p_value_grid[row][column];
+			else
+			{
+				if(mpi_rank == 0)
+					std::cout << std::endl
+							  << ++counter << ")\t"
+							  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
+							  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
+							  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
+							  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
+							  << std::endl;
+				Print_Grid(mpi_rank, row, column);
+				MPI_Barrier(MPI_COMM_WORLD);
+
+				p = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points, mpi_rank);
+
+				p_value_grid[row][column] = p;
+				libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
+				if(mpi_rank == 0)
+				{
+					std::cout << std::endl
+							  << std::endl;
+					libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1);
+				}
+			}
+
+			if(p < p_critical)
+			{
+				row_exclusion			 = true;
+				last_excluded_mass_index = j;
+			}
+		}
+		if(!row_exclusion)
+		{
+			for(int k = 0; k < row; k++)
+				for(unsigned int j = 0; j < DM_masses.size(); j++)
+					p_value_grid[k][j] = 1.0;
+			break;
+		}
+	}
+	libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
+
+	DM.Set_Mass(mDM_original);
+	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
+}
+
 void Parameter_Scan::Print_Grid(int mpi_rank, int marker_row, int marker_column)
 {
 	if(mpi_rank == 0)
@@ -616,80 +683,6 @@ void Parameter_Scan::Export_Results(int mpi_rank)
 		std::vector<std::vector<double>> limit_contour = Limit_Curve();
 		libphysica::Export_Table(results_path + "Reflection_Limit_" + std::to_string(CL) + ".txt", limit_contour, {GeV, cm * cm});
 	}
-}
-
-void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Detector& detector, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, int mpi_rank)
-{
-	Import_P_Values();
-	double mDM_original		 = DM.mass;
-	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
-
-	double p_critical					  = 1.0 - certainty_level;
-	unsigned int counter				  = 0;
-	unsigned int last_excluded_mass_index = DM_masses.size();
-	for(unsigned int i = 0; i < couplings.size(); i++)
-	{
-		int row			   = couplings.size() - 1 - i;
-		bool row_exclusion = false;
-		for(unsigned int j = 0; j < DM_masses.size(); j++)
-		{
-			MPI_Barrier(MPI_COMM_WORLD);
-			int column = DM_masses.size() - 1 - j;
-			DM.Set_Mass(DM_masses[column]);
-			DM.Set_Interaction_Parameter(couplings[row], detector.Target_Particles());
-			double u_min = detector.Minimum_DM_Speed(DM);
-			double p;
-			if(p_value_grid[row][column] >= 0)
-				p = p_value_grid[row][column];
-			else
-			{
-				if(mpi_rank == 0)
-					std::cout << std::endl
-							  << ++counter << ")\t"
-							  << "m_DM [MeV]:\t" << libphysica::Round(In_Units(DM.mass, MeV)) << "\t\t"
-							  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
-							  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
-							  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(DM.Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
-							  << std::endl;
-				Print_Grid(mpi_rank, row, column);
-				MPI_Barrier(MPI_COMM_WORLD);
-
-				p = Compute_p_Value(sample_size, DM, detector, solar_model, halo_model, scattering_rate_interpolation_points, mpi_rank);
-
-				p_value_grid[row][column] = p;
-				libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
-				if(mpi_rank == 0)
-				{
-					std::cout << std::endl
-							  << std::endl;
-					libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1);
-				}
-			}
-
-			if(p < p_critical)
-			{
-				row_exclusion			 = true;
-				last_excluded_mass_index = j;
-			}
-			else if(row_exclusion || j > last_excluded_mass_index + 1)
-			{
-				for(int k = 0; k < column; k++)
-					p_value_grid[row][k] = 1.0;
-				break;
-			}
-		}
-		if(!row_exclusion)
-		{
-			for(int k = 0; k < row; k++)
-				for(unsigned int j = 0; j < DM_masses.size(); j++)
-					p_value_grid[k][j] = 1.0;
-			break;
-		}
-	}
-	libphysica::Export_Table(results_path + "P_Values_Grid.txt", p_value_grid);
-
-	DM.Set_Mass(mDM_original);
-	DM.Set_Interaction_Parameter(coupling_original, detector.Target_Particles());
 }
 
 }	// namespace DaMaSCUS_SUN

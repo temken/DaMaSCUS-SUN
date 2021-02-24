@@ -109,7 +109,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 
 	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
 
-	unsigned int sample_size = 10;
+	unsigned int sample_size = 50;
 
 	// ACT
 	Simulation_Data data_set(sample_size);
@@ -117,7 +117,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	data_set.Generate_Data(DM, SSM, SHM);
 
 	// ASSERT
-	ASSERT_GT(data_set.Capture_Ratio(), 0.0);
+	ASSERT_GE(data_set.Capture_Ratio(), 0.0);
 }
 
 TEST(TestDataGeneration, TestDataSetReflectionRatio)
