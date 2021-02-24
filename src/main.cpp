@@ -6,14 +6,8 @@
 
 // Headers from libphysica
 #include "Natural_Units.hpp"
+#include "Numerics.hpp"
 #include "Utilities.hpp"
-
-// Headers from obscura
-#include "Astronomy.hpp"
-#include "Configuration.hpp"
-#include "DM_Distribution.hpp"
-#include "DM_Particle_Standard.hpp"
-#include "Experiments.hpp"
 
 #include "Data_Generation.hpp"
 #include "Parameter_Scan.hpp"
