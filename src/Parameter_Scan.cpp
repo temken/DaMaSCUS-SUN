@@ -25,7 +25,6 @@ Configuration::Configuration(std::string cfg_filename, int MPI_rank)
 {
 	cfg_file	 = cfg_filename;
 	results_path = "./";
-	// cfg_file = cfg_filename;
 
 	// 1. Read the cfg file.
 	Read_Config_File();
