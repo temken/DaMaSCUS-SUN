@@ -5,15 +5,15 @@
 # DaMaSCUS-SUN
 
 [![DOI](https://zenodo.org/badge/263334878.svg)](https://zenodo.org/badge/latestdoi/263334878)
+[![arXiv](https://img.shields.io/badge/arXiv-2102.12483-B31B1B.svg)](https://arxiv.org/abs/2102.12483)
 
 <!-- <a href="http://ascl.net/XXX"><img src="https://img.shields.io/badge/ascl-XXX-blue.svg?colorB=262255" alt="ascl:XXX" /></a> -->
-<!-- [![arXiv](https://img.shields.io/badge/arXiv-2102.xxxx-B31B1B.svg)](https://arxiv.org/abs/2102.xxxx) -->
 
 Dark Matter Simulation Code for Underground Scatterings - Sun Edition
 
 <img width="350" src="https://user-images.githubusercontent.com/29034913/108851182-73c1b500-75e4-11eb-94fd-11b93a3af0ae.png">
 
-DaMaSCUS-SUN is a Monte Carlo tool simulating the process of solar reflection of dark matter (DM) particles as described in detail in [this publication](https://arxiv.org/abs/2102.xxxx).
+DaMaSCUS-SUN is a Monte Carlo tool simulating the process of solar reflection of dark matter (DM) particles as described in detail in [this publication](https://arxiv.org/abs/2102.12483).
 
 ## General Notes
 
@@ -23,7 +23,7 @@ DaMaSCUS-SUN is a Monte Carlo tool simulating the process of solar reflection of
 - DaMaSCUS-SUN is written in C++ and built with CMake.
 - The code is fully parallelized with MPI and can run on HPC clusters.
 
-For more physics details, we refer to the [paper](https://arxiv.org/abs/2102.xxxx).
+For more physics details, we refer to the [paper](https://arxiv.org/abs/2102.12483).
 
 <details><summary>Repository content</summary>
 <p>
@@ -305,7 +305,7 @@ If you decide to use this code, please cite the latest archived version,
 
 as well as the original publications,
 
-> Emken, T. , **Solar reflection of light dark matter with heavy mediators**, [[arXiv:2102.xxxx]](https://arxiv.org/abs/2102.xxxx).
+> Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
 
 </p>
 </details>
