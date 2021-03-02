@@ -4,10 +4,9 @@
 
 # DaMaSCUS-SUN
 
+<a href="https://ascl.net/2102.018"><img src="https://img.shields.io/badge/ascl-2102.018-blue.svg?colorB=262255" alt="ascl:2102.018" /></a>
 [![DOI](https://zenodo.org/badge/263334878.svg)](https://zenodo.org/badge/latestdoi/263334878)
 [![arXiv](https://img.shields.io/badge/arXiv-2102.12483-B31B1B.svg)](https://arxiv.org/abs/2102.12483)
-
-<!-- <a href="http://ascl.net/XXX"><img src="https://img.shields.io/badge/ascl-XXX-blue.svg?colorB=262255" alt="ascl:XXX" /></a> -->
 
 Dark Matter Simulation Code for Underground Scatterings - Sun Edition
 
@@ -301,7 +300,7 @@ A number of parameters need to be specified and they are described here.
 
 If you decide to use this code, please cite the latest archived version,
 
-> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) Astrophysics Source Code Library, record [[ascl:XXXX]](https://ascl.net/XXXX), [[DOI:10.5281/zenodo.4559874]](https://doi.org/10.5281/zenodo.4559874)
+> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559874]](https://doi.org/10.5281/zenodo.4559874)
 
 as well as the original publications,
 
