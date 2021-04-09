@@ -182,6 +182,23 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(local_escape_speed_squared(r));
 }
 
+double Solar_Model::Debye_Screening_Scale_Squared(double r)
+{
+	if(r <= rSun)
+	{
+		double T			 = Temperature(r);
+		double debye_scale_2 = 4.0 * M_PI * aEM / T * Number_Density_Electron(r);
+		for(unsigned int i = 0; i < target_isotopes.size(); i++)
+			debye_scale_2 += 4.0 * M_PI * aEM / T * Number_Density_Nucleus(r, i) * target_isotopes[i].Z;
+		return debye_scale_2;
+	}
+	else
+	{
+		std::cerr << "Error in Solar_Model::Debye_Screening_Scale(): r/rSun = " << r / rSun << " is outside the Sun." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+}
+
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 {
 	if(nucleus_index >= target_isotopes.size())

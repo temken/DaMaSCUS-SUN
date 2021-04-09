@@ -55,6 +55,7 @@ class Solar_Model
 	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
+	double Debye_Screening_Scale_Squared(double r);
 
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);
