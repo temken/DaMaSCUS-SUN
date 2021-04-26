@@ -1,8 +1,7 @@
 #include "Reflection_Spectrum.hpp"
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {

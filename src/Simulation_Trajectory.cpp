@@ -3,11 +3,9 @@
 #include <algorithm>
 #include <cmath>
 
-// Headers from libphysica
-#include "Statistics.hpp"
+#include "libphysica/Statistics.hpp"
 
-// Headers from obscura
-#include "Astronomy.hpp"
+#include "obscura/Astronomy.hpp"
 
 namespace DaMaSCUS_SUN
 {

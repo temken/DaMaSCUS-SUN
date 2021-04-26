@@ -2,10 +2,9 @@
 
 #include <iostream>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Numerics.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Numerics.hpp"
+#include "libphysica/Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {

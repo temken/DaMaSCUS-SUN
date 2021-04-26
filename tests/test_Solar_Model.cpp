@@ -4,12 +4,10 @@
 #include <mpi.h>
 #include <random>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Statistics.hpp"
 
-// Headers from obscura
-#include "DM_Particle_Standard.hpp"
+#include "obscura/DM_Particle_Standard.hpp"
 
 #include "Solar_Model.hpp"
 

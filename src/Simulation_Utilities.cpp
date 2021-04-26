@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-// Headers from libphysica
-#include "Statistics.hpp"
+#include "libphysica/Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {

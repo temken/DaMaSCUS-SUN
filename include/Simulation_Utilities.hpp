@@ -3,12 +3,10 @@
 
 #include <random>
 
-// Headers from libphysica
-#include "Linear_Algebra.hpp"
-#include "Natural_Units.hpp"
+#include "libphysica/Linear_Algebra.hpp"
+#include "libphysica/Natural_Units.hpp"
 
-// Headers from obscura
-#include "DM_Distribution.hpp"
+#include "obscura/DM_Distribution.hpp"
 
 #include "Solar_Model.hpp"
 

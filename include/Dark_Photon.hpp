@@ -1,9 +1,8 @@
 #ifndef __Dark_Photon_hpp_
 #define __Dark_Photon_hpp_
 
-// Headers from obscura
-#include "DM_Particle.hpp"
-#include "Target_Nucleus.hpp"
+#include "obscura/DM_Particle.hpp"
+#include "obscura/Target_Nucleus.hpp"
 
 namespace DaMaSCUS_SUN
 {

@@ -3,8 +3,7 @@
 #include "gtest/gtest.h"
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include "libphysica/Natural_Units.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;

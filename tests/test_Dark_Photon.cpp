@@ -1,11 +1,10 @@
 #include "gtest/gtest.h"
 
-#include <random>
-
 #include "Dark_Photon.hpp"
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include <random>
+
+#include "libphysica/Natural_Units.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;

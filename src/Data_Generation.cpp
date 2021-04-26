@@ -4,12 +4,10 @@
 #include <chrono>
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Utilities.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Utilities.hpp"
 
-// Headers from obscura
-#include "Astronomy.hpp"
+#include "obscura/Astronomy.hpp"
 
 namespace DaMaSCUS_SUN
 {

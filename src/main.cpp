@@ -4,10 +4,9 @@
 #include <iostream>
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Numerics.hpp"
-#include "Utilities.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Numerics.hpp"
+#include "libphysica/Utilities.hpp"
 
 #include "Data_Generation.hpp"
 #include "Parameter_Scan.hpp"

@@ -5,9 +5,8 @@
 #include <mpi.h>
 #include <set>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Utilities.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Utilities.hpp"
 
 #include "Dark_Photon.hpp"
 #include "Data_Generation.hpp"

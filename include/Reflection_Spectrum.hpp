@@ -1,11 +1,9 @@
 #ifndef __Reflection_Spectrum_hpp__
 #define __Reflection_Spectrum_hpp__
 
-// Headers from libphysica
-#include "Numerics.hpp"
+#include "libphysica/Numerics.hpp"
 
-// Headers from obscura
-#include "DM_Distribution.hpp"
+#include "obscura/DM_Distribution.hpp"
 
 #include "Data_Generation.hpp"
 #include "Solar_Model.hpp"
