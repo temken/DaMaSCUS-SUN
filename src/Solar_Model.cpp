@@ -3,6 +3,7 @@
 #include <cmath>
 #include <mpi.h>
 
+#include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
 #include "libphysica/Statistics.hpp"
 #include "libphysica/Utilities.hpp"
@@ -143,8 +144,8 @@ Solar_Model::Solar_Model()
 		}
 		else
 		{
-			obscura::Element element = obscura::Get_Element(Z);
-			for(const auto& isotope : element.isotopes)
+			obscura::Nucleus nucleus = obscura::Get_Nucleus(Z);
+			for(const auto& isotope : nucleus.isotopes)
 				target_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass), isotope.abundance));
 		}
 	}
@@ -241,7 +242,7 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
 		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], DM_speed) * v_rel;
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
 	}
 }
 

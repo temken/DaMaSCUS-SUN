@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 
 #include "obscura/Astronomy.hpp"
@@ -237,7 +238,7 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	libphysica::Vector vel_target = Sample_Target_Velocity(solar_model.Temperature(r), target_mass, current_event.velocity);
 
 	// 2. Sample the scattering angle
-	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(v, PRNG) : DM.Sample_Scattering_Angle_Nucleus(solar_model.target_isotopes[target_index], v, PRNG);
+	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(PRNG, v, r) : DM.Sample_Scattering_Angle_Nucleus(PRNG, solar_model.target_isotopes[target_index], v, r);
 
 	// 3. Construct the final DM velocity
 	current_event.velocity = New_DM_Velocity(cos_alpha, DM.mass, target_mass, current_event.velocity, vel_target);

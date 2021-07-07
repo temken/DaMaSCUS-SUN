@@ -3,9 +3,10 @@
 #include "gtest/gtest.h"
 #include <mpi.h>
 
+#include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
 
-#include "obscura/DM_Distribution.hpp"
+#include "obscura/DM_Halo_Models.hpp"
 #include "obscura/DM_Particle_Standard.hpp"
 
 using namespace DaMaSCUS_SUN;

@@ -5,7 +5,7 @@
 #include <mpi.h>
 
 #include "libphysica/Natural_Units.hpp"
-#include "libphysica/Numerics.hpp"
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Utilities.hpp"
 
 #include "Data_Generation.hpp"

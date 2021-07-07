@@ -20,13 +20,14 @@ set(EXTERNAL_DIR  ${PROJECT_SOURCE_DIR}/external)
 #External projects
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
+find_package(Boost 1.65  REQUIRED )
 
 include(FetchContent)
 # obscura
 set(OBSCURA_DIR   ${EXTERNAL_DIR}/obscura)
 FetchContent_Declare(obscura
   GIT_REPOSITORY  https://github.com/temken/obscura.git
-  GIT_TAG         origin/master
+  GIT_TAG         origin/dev
   SOURCE_DIR     "${OBSCURA_DIR}"
   CMAKE_ARGS     "-DCMAKE_BUILD_TYPE=Release -DCODE_COVERAGE=OFF" )
 FetchContent_GetProperties(obscura)

@@ -5,6 +5,7 @@
 #include <mpi.h>
 
 #include "libphysica/Natural_Units.hpp"
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Utilities.hpp"
 
 #include "obscura/Astronomy.hpp"

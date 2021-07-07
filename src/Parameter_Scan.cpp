@@ -6,6 +6,7 @@
 #include <set>
 
 #include "libphysica/Natural_Units.hpp"
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Utilities.hpp"
 
 #include "Dark_Photon.hpp"

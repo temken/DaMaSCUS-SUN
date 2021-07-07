@@ -31,7 +31,12 @@ jobs:
     # MPI
     - name: Install MPI
       run: sudo apt-get install openmpi-bin libopenmpi-dev
-    
+
+    # BOOST
+    - name: Install boost
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -yq libboost-all-dev
+
     # CODECOV
     - name: Install codecov
       shell: bash

@@ -5,6 +5,7 @@
 
 #include "libphysica/Natural_Units.hpp"
 
+#include "obscura/DM_Halo_Models.hpp"
 #include "obscura/DM_Particle_Standard.hpp"
 
 using namespace DaMaSCUS_SUN;
