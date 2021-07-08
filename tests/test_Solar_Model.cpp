@@ -170,6 +170,7 @@ TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
 	std::mt19937 PRNG(fixed_seed);
 	Solar_Model SSM;
 	obscura::DM_Particle_SI DM(0.01);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(pb);
 	int trials		 = 500;
 	double tolerance = 0.1;

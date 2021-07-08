@@ -31,6 +31,7 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 
 	double mDM = 0.1;
 	obscura::DM_Particle_SI DM(mDM);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1e-1 * pb);
 
 	solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);

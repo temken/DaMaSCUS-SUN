@@ -43,6 +43,7 @@ TEST(TestDataGeneration, TestGenerateData)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -81,6 +82,7 @@ TEST(TestDataGeneration, TestDataFreeRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0e-100 * pb);
 	DM.Set_Sigma_Electron(1.0e-100 * pb);
 
@@ -103,6 +105,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -126,6 +129,7 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -148,6 +152,7 @@ TEST(TestDataGeneration, TestSpeedFunctions)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
