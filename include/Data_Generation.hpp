@@ -3,12 +3,10 @@
 
 #include <vector>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Statistics.hpp"
 
-// Headers from obscura
-#include "DM_Particle.hpp"
+#include "obscura/DM_Particle.hpp"
 
 #include "Simulation_Trajectory.hpp"
 

@@ -3,10 +3,10 @@
 #include <cmath>
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
-#include "Utilities.hpp"
+#include "libphysica/Integration.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Statistics.hpp"
+#include "libphysica/Utilities.hpp"
 
 #include "version.hpp"
 
@@ -79,7 +79,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Escape_Speed_Table()
 			else
 				return Mass(x) / x / x;
 		};
-		double integral	 = libphysica::Integrate(integrand, r, rSun, 1.e30);
+		double integral	 = (r < rSun) ? libphysica::Integrate(integrand, r, rSun) : mSun * (1.0 / r - 1.0 / rSun);
 		table_vesc[i][0] = r;
 		table_vesc[i][1] = 2.0 * G_Newton * mSun / rSun * (1.0 + rSun / mSun * integral);
 	}
@@ -144,8 +144,8 @@ Solar_Model::Solar_Model()
 		}
 		else
 		{
-			obscura::Element element = obscura::Get_Element(Z);
-			for(const auto& isotope : element.isotopes)
+			obscura::Nucleus nucleus = obscura::Get_Nucleus(Z);
+			for(const auto& isotope : nucleus.isotopes)
 				target_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass), isotope.abundance));
 		}
 	}
@@ -180,6 +180,23 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(2 * G_Newton * mSun / r);
 	else
 		return sqrt(local_escape_speed_squared(r));
+}
+
+double Solar_Model::Debye_Screening_Scale_Squared(double r)
+{
+	if(r <= rSun)
+	{
+		double T			 = Temperature(r);
+		double debye_scale_2 = 4.0 * M_PI * aEM / T * Number_Density_Electron(r);
+		for(unsigned int i = 0; i < target_isotopes.size(); i++)
+			debye_scale_2 += 4.0 * M_PI * aEM / T * Number_Density_Nucleus(r, i) * target_isotopes[i].Z;
+		return debye_scale_2;
+	}
+	else
+	{
+		std::cerr << "Error in Solar_Model::Debye_Screening_Scale(): r/rSun = " << r / rSun << " is outside the Sun." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
@@ -225,7 +242,7 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
 		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Nucleus(target_isotopes[nucleus_index], DM_speed) * v_rel;
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
 	}
 }
 

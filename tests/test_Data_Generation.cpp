@@ -3,11 +3,10 @@
 #include "gtest/gtest.h"
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include "libphysica/Natural_Units.hpp"
 
-// Headers from obscura
-#include "DM_Particle_Standard.hpp"
+#include "obscura/DM_Halo_Models.hpp"
+#include "obscura/DM_Particle_Standard.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
@@ -44,6 +43,7 @@ TEST(TestDataGeneration, TestGenerateData)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -82,6 +82,7 @@ TEST(TestDataGeneration, TestDataFreeRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(0.01 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0e-100 * pb);
 	DM.Set_Sigma_Electron(1.0e-100 * pb);
 
@@ -104,6 +105,7 @@ TEST(TestDataGeneration, TestDataSetCaptureRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -127,6 +129,7 @@ TEST(TestDataGeneration, TestDataSetReflectionRatio)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 
@@ -149,6 +152,7 @@ TEST(TestDataGeneration, TestSpeedFunctions)
 	obscura::Standard_Halo_Model SHM;
 
 	obscura::DM_Particle_SI DM(1.0 * GeV);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1.0 * pb);
 	DM.Set_Sigma_Electron(1.0 * pb);
 

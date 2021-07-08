@@ -1,13 +1,11 @@
 #ifndef __Solar_Model_hpp_
 #define __Solar_Model_hpp_
 
-// Headers from libphysica
-#include "Linear_Algebra.hpp"
-#include "Numerics.hpp"
+#include "libphysica/Linear_Algebra.hpp"
+#include "libphysica/Numerics.hpp"
 
-// Headers from obscura
-#include "DM_Particle.hpp"
-#include "Target_Nucleus.hpp"
+#include "obscura/DM_Particle.hpp"
+#include "obscura/Target_Nucleus.hpp"
 
 namespace DaMaSCUS_SUN
 {
@@ -55,6 +53,7 @@ class Solar_Model
 	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
+	double Debye_Screening_Scale_Squared(double r);
 
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);

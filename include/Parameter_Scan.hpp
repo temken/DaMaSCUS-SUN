@@ -3,10 +3,9 @@
 
 #include <vector>
 
-// Headers from obscura
-#include "Configuration.hpp"
-#include "DM_Particle.hpp"
-#include "Direct_Detection.hpp"
+#include "obscura/Configuration.hpp"
+#include "obscura/DM_Particle.hpp"
+#include "obscura/Direct_Detection.hpp"
 
 #include "Solar_Model.hpp"
 

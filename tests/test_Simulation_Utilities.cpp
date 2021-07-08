@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-// Headers from obscura
-#include "Astronomy.hpp"
+#include "obscura/Astronomy.hpp"
+#include "obscura/DM_Halo_Models.hpp"
 
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"

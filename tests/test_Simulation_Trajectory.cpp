@@ -1,10 +1,9 @@
 #include "gtest/gtest.h"
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include "libphysica/Natural_Units.hpp"
 
-// Headers from obscura
-#include "DM_Particle_Standard.hpp"
+#include "obscura/DM_Halo_Models.hpp"
+#include "obscura/DM_Particle_Standard.hpp"
 
 #include "Simulation_Trajectory.hpp"
 #include "Simulation_Utilities.hpp"

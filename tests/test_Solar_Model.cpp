@@ -4,12 +4,10 @@
 #include <mpi.h>
 #include <random>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Statistics.hpp"
 
-// Headers from obscura
-#include "DM_Particle_Standard.hpp"
+#include "obscura/DM_Particle_Standard.hpp"
 
 #include "Solar_Model.hpp"
 
@@ -75,7 +73,7 @@ TEST(TestSolarModel, TestLocalEscapeSpeed)
 	// ARRANGE
 	Solar_Model SSM;
 	// ACT & ASSERT
-	ASSERT_NEAR(SSM.Local_Escape_Speed(0), 1384.6 * km / sec, 0.1 * km / sec);
+	ASSERT_NEAR(SSM.Local_Escape_Speed(0), 1384.13 * km / sec, 0.1 * km / sec);
 	ASSERT_DOUBLE_EQ(SSM.Local_Escape_Speed(rSun), sqrt(2.0 * G_Newton * mSun / rSun));
 	ASSERT_DOUBLE_EQ(SSM.Local_Escape_Speed(2.0 * rSun), sqrt(2.0 * G_Newton * mSun / 2.0 / rSun));
 }
@@ -172,6 +170,7 @@ TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
 	std::mt19937 PRNG(fixed_seed);
 	Solar_Model SSM;
 	obscura::DM_Particle_SI DM(0.01);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(pb);
 	int trials		 = 500;
 	double tolerance = 0.1;

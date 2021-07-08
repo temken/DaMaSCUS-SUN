@@ -1,9 +1,8 @@
 #ifndef __Dark_Photon_hpp_
 #define __Dark_Photon_hpp_
 
-// Headers from obscura
-#include "DM_Particle.hpp"
-#include "Target_Nucleus.hpp"
+#include "obscura/DM_Particle.hpp"
+#include "obscura/Target_Nucleus.hpp"
 
 namespace DaMaSCUS_SUN
 {
@@ -43,22 +42,23 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	virtual void Set_Sigma_Electron(double sigma) override;
 
 	// Differential cross sections with nuclear isotopes, elements, and electrons
-	virtual double dSigma_dq2_Nucleus(double q, const obscura::Isotope& target, double vDM) const override;
-	virtual double dSigma_dq2_Electron(double q, double vDM) const override;
+	virtual double dSigma_dq2_Nucleus(double q, const obscura::Isotope& target, double vDM, double r = -1.0) const override;
+	virtual double dSigma_dq2_Electron(double q, double vDM, double r = -1.0) const override;
 
 	// Total cross sections with nuclear isotopes, elements, and electrons
 	virtual double Sigma_Proton() const override;
 	virtual double Sigma_Electron() const override;
-	virtual double Sigma_Nucleus(const obscura::Isotope& target, double vDM) const override;
-	virtual double Sigma_Total_Electron(double vDM) const override;
+
+	virtual double Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r = -1.0) const override;
+	virtual double Sigma_Total_Electron(double vDM, double r = -1.0) const override;
 
 	// Scattering angle functions
-	virtual double PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM) override;
-	virtual double PDF_Scattering_Angle_Electron(double cos_alpha, double vDM) override;
-	virtual double CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM) override;
-	virtual double CDF_Scattering_Angle_Electron(double cos_alpha, double vDM) override;
-	virtual double Sample_Scattering_Angle_Nucleus(const obscura::Isotope& target, double vDM, std::mt19937& PRNG) override;
-	virtual double Sample_Scattering_Angle_Electron(double vDM, std::mt19937& PRNG) override;
+	virtual double PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r = -1.0) override;
+	virtual double PDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r = -1.0) override;
+	virtual double CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r = -1.0) override;
+	virtual double CDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r = -1.0) override;
+	virtual double Sample_Scattering_Angle_Nucleus(std::mt19937& PRNG, const obscura::Isotope& target, double vDM, double r = -1.0) override;
+	virtual double Sample_Scattering_Angle_Electron(std::mt19937& PRNG, double vDM, double r = -1.0) override;
 
 	virtual void Print_Summary(int MPI_rank = 0) const override;
 };

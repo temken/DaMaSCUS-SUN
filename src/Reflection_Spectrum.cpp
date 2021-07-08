@@ -1,8 +1,8 @@
 #include "Reflection_Spectrum.hpp"
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
-#include "Statistics.hpp"
+#include "libphysica/Natural_Units.hpp"
+#include "libphysica/Special_Functions.hpp"
+#include "libphysica/Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {
@@ -48,7 +48,7 @@ void Reflection_Spectrum::Print_Summary(int mpi_rank)
 	if(mpi_rank == 0)
 	{
 		std::cout << SEPARATOR;
-		Print_Summary_Base(mpi_rank);
+		Print_Summary_Base();
 		std::cout << "\tTotal DM entering rate [1/s]:\t\t" << libphysica::Round(In_Units(total_entering_rate, 1.0 / sec)) << std::endl
 				  << "\tTotal reflection rate [1/s]:\t\t" << libphysica::Round(In_Units(total_reflection_rate, 1.0 / sec)) << std::endl
 				  << "\tDistance from Sun [AU]:\t\t\t" << libphysica::Round(In_Units(distance, AU)) << std::endl

@@ -2,8 +2,10 @@
 
 #include <cmath>
 
-// Headers from libphysica
-#include "Statistics.hpp"
+#include "libphysica/Special_Functions.hpp"
+#include "libphysica/Statistics.hpp"
+
+#include "obscura/DM_Halo_Models.hpp"
 
 namespace DaMaSCUS_SUN
 {

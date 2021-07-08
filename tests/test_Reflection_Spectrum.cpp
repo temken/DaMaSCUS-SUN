@@ -3,12 +3,11 @@
 #include "gtest/gtest.h"
 #include <mpi.h>
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include "libphysica/Integration.hpp"
+#include "libphysica/Natural_Units.hpp"
 
-// Headers from obscura
-#include "DM_Distribution.hpp"
-#include "DM_Particle_Standard.hpp"
+#include "obscura/DM_Halo_Models.hpp"
+#include "obscura/DM_Particle_Standard.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
@@ -32,6 +31,7 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 
 	double mDM = 0.1;
 	obscura::DM_Particle_SI DM(mDM);
+	DM.Set_Low_Mass_Mode(true);
 	DM.Set_Sigma_Proton(1e-1 * pb);
 
 	solar_model.Interpolate_Total_DM_Scattering_Rate(DM, 100, 50);
@@ -48,7 +48,7 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 	std::function<double(double)> pdf = [&spectrum](double v) {
 		return spectrum.PDF_Speed(v);
 	};
-	double norm = libphysica::Integrate(pdf, spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 1e-3);
+	double norm = libphysica::Integrate(pdf, spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed());
 	EXPECT_NEAR(norm, 1.0, 1e-3);
 
 	double flux_1 = spectrum.Differential_DM_Flux(v);

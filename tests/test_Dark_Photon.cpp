@@ -1,11 +1,10 @@
 #include "gtest/gtest.h"
 
-#include <random>
-
 #include "Dark_Photon.hpp"
 
-// Headers from libphysica
-#include "Natural_Units.hpp"
+#include <random>
+
+#include "libphysica/Natural_Units.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
@@ -183,18 +182,18 @@ TEST(TestDarkPhoton, TestScatteringAngleSampling)
 	std::mt19937 PRNG(rd());
 
 	// ACT & ASSERT
-	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(vDM, PRNG), 1.0);
-	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(vDM, PRNG), -1.0);
-	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), 1.0);
-	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), -1.0);
 	DM.Set_Low_Mass_Mode(true);
-	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), 1.0);
-	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), -1.0);
 	DM.Set_FormFactor_DM("General", GeV);
-	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(vDM, PRNG), 1.0);
-	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(vDM, PRNG), -1.0);
-	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), 1.0);
-	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(target, vDM, PRNG), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), -1.0);
 }
 
 TEST(TestDarkPhoton, TestPrintSummary)
