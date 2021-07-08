@@ -48,7 +48,28 @@ The included folders are:
 Before we can install DaMaSCUS-SUN, we need to make sure that a few dependencies are taken care of.
 
 - [CMake](https://cmake.org/): DaMaSCUS-SUN as well as the libraries libphysica and obscura are built with CMake.
+- [boost](https://www.boost.org/): For numerical integration (used by libphysica).
 - [libconfig](https://github.com/hyperrealm/libconfig): For the configuration files, DaMaSCUS-SUN uses the libconfig library (required version at least 1.6). 
+- [libphysica](https://github.com/temken/libphysica): Automatically downloaded to */external/obscura/external/*, compiled, and linked by CMake.
+- [obscura](https://github.com/temken/obscura): Automatically downloaded to */external/*, compiled, and linked by CMake.
+- [open MPI](https://www.open-mpi.org/): For the parallelization DaMaSCUS-SUN uses the open Message Passing Interface (MPI). Open MPI can be installed on Macs using [homebrew](https://brew.sh/):
+
+
+<details><summary>Installation of boost</summary>
+<p>
+
+```
+>brew install boost
+```
+
+or alternatively with APT:
+
+```
+>sudo apt-get install libboost-all-dev
+```
+
+</p>
+</details>
 
 <details><summary>Installation of libconfig</summary>
 <p>
@@ -79,10 +100,6 @@ Alternatively, it can be built from the source files via
 
 </p>
 </details>
-
-- [libphysica](https://github.com/temken/libphysica): Automatically downloaded to */external/obscura/external/*, compiled, and linked by CMake.
-- [obscura](https://github.com/temken/obscura): Automatically downloaded to */external/*, compiled, and linked by CMake.
-- [open MPI](https://www.open-mpi.org/): For the parallelization DaMaSCUS-SUN uses the open Message Passing Interface (MPI). Open MPI can be installed on Macs using [homebrew](https://brew.sh/):
 
 <details><summary>Installation of open MPI</summary>
 <p>
@@ -176,8 +193,8 @@ In the configuration file, the user decides what scenario of solar reflection to
 A number of parameters need to be specified and they are described here.
 
 
-|Note, that the handling of the input files by libconfig is sensitive to the data type. For example, a DM mass of 1 GeV has to be set as "1.0", **not** "1".|
-|---|
+| Note, that the handling of the input files by libconfig is sensitive to the data type. For example, a DM mass of 1 GeV has to be set as "1.0", **not** "1". |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 1. First of all, it makes sense to give the simulation run a unique ID. All results will be saved under */results/identifier/*.
 
@@ -302,7 +319,22 @@ If you decide to use this code, please cite the latest archived version,
 
 > Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559874]](https://doi.org/10.5281/zenodo.4559874)
 
-as well as the original publications,
+Bibtex entry:
+
+```
+@software{DaMaSCUSsun,
+  author = {Emken, Timon},
+  title = {{Dark Matter Simulation Code for Underground Scatterings - Sun Edition~(DaMaSCUS-SUN) [Code, v0.1.0]}},
+  year         = {2021},
+  publisher    = {Zenodo},
+  version      = {v0.1.0},
+  doi          = {DOI:10.5281/zenodo.4559874},
+  url          = {https://doi.org/10.5281/zenodo.4559874},
+  howpublished={Astrophysics Source Code Library record \href{https://ascl.net/2102.018}{[ascl:2102.018]}. The code can be found under \url{https://github.com/temken/damascus-sun}. Version 0.1.0 is archived as \href{https://doi.org/10.5281/zenodo.4559874}{DOI:10.5281/zenodo.4559874}}
+}
+```
+
+As well as the original publications,
 
 > Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
 
@@ -314,7 +346,7 @@ as well as the original publications,
 
 The author of DaMaSCUS-SUN is Timon Emken.
 
-For questions, bug reports or other suggestions please contact Timon Emken (emken@chalmers.se).
+For questions, bug reports or other suggestions please contact Timon Emken ([timon.emken@fysik.su.se](mailto:timon.emken@fysik.su.se)).
 </p>
 </details>
 
