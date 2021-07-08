@@ -48,7 +48,7 @@ TEST(TestReflectionSpectrum, TestSpectrum)
 	std::function<double(double)> pdf = [&spectrum](double v) {
 		return spectrum.PDF_Speed(v);
 	};
-	double norm = libphysica::Integrate(pdf, spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 1e-3);
+	double norm = libphysica::Integrate(pdf, spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed());
 	EXPECT_NEAR(norm, 1.0, 1e-3);
 
 	double flux_1 = spectrum.Differential_DM_Flux(v);

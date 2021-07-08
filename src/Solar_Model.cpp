@@ -79,7 +79,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Escape_Speed_Table()
 			else
 				return Mass(x) / x / x;
 		};
-		double integral	 = libphysica::Integrate(integrand, r, rSun, 1.e30);
+		double integral	 = (r < rSun) ? libphysica::Integrate(integrand, r, rSun) : mSun * (1.0 / r - 1.0 / rSun);
 		table_vesc[i][0] = r;
 		table_vesc[i][1] = 2.0 * G_Newton * mSun / rSun * (1.0 + rSun / mSun * integral);
 	}

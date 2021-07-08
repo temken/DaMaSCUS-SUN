@@ -135,7 +135,7 @@ double DM_Particle_Dark_Photon::dSigma_dq2_Nucleus(double q, const obscura::Isot
 {
 	double nuclear_form_factor = (low_mass) ? 1.0 : target.Helm_Form_Factor(q);
 	double mu				   = libphysica::Reduced_Mass(mass, mProton);
-	return Sigma_Proton() / 4.0 / mu / mu / vDM / vDM * FormFactor2_DM(q) * nuclear_form_factor * target.Z * target.Z;
+	return Sigma_Proton() / 4.0 / mu / mu / vDM / vDM * FormFactor2_DM(q) * nuclear_form_factor * nuclear_form_factor * target.Z * target.Z;
 }
 
 double DM_Particle_Dark_Photon::dSigma_dq2_Electron(double q, double vDM, double r) const
