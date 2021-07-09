@@ -187,7 +187,8 @@ double Solar_Model::Debye_Screening_Scale_Squared(double r)
 	if(r <= rSun)
 	{
 		double T			 = Temperature(r);
-		double debye_scale_2 = 4.0 * M_PI * aEM / T * Number_Density_Electron(r);
+		double debye_scale_2 = 0.0;
+		// double debye_scale_2 = 4.0 * M_PI * aEM / T * Number_Density_Electron(r);
 		for(unsigned int i = 0; i < target_isotopes.size(); i++)
 			debye_scale_2 += 4.0 * M_PI * aEM / T * Number_Density_Nucleus(r, i) * target_isotopes[i].Z;
 		return debye_scale_2;
