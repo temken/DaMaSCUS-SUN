@@ -4,6 +4,8 @@
 #include "obscura/DM_Particle.hpp"
 #include "obscura/Target_Nucleus.hpp"
 
+#include "Solar_Model.hpp"
+
 namespace DaMaSCUS_SUN
 {
 
@@ -18,6 +20,8 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	std::string FF_DM;
 	double m_dark_photon;
 	double FormFactor2_DM(double q) const;
+
+	Solar_Model SSM;
 
   public:
 	// Constructors

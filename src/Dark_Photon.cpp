@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
 #include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
@@ -44,8 +45,6 @@ double DM_Particle_Dark_Photon::FormFactor2_DM(double q) const
 		FF = (q_reference * q_reference + m_dark_photon * m_dark_photon) / (q * q + m_dark_photon * m_dark_photon);
 	else if(FF_DM == "Long-Range")
 		FF = q_reference * q_reference / q / q;
-	else if(FF_DM == "Electric-Dipole")
-		FF = q_reference / q;
 	else
 	{
 		std::cerr << "Error in obscura::DM_Particle_Dark_Photon::FormFactor2_DM(): Form factor " << FF_DM << "not recognized." << std::endl;
@@ -74,7 +73,7 @@ double DM_Particle_Dark_Photon::Get_Epsilon()
 // Dark matter form factor
 void DM_Particle_Dark_Photon::Set_FormFactor_DM(std::string ff, double mMed)
 {
-	if(ff == "Contact" || ff == "Electric-Dipole" || ff == "Long-Range" || ff == "General")
+	if(ff == "Contact" || ff == "Long-Range" || ff == "General")
 		FF_DM = ff;
 	else
 	{
@@ -170,44 +169,53 @@ double DM_Particle_Dark_Photon::Sigma_Electron() const
 
 double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r)
 {
-	double sigmatot = 0.0;
-	if(FF_DM != "Contact" && FF_DM != "General")
-	{
-		std::cerr << "Error in obscura::DM_Particle_Dark_Photon::Sigma_Nucleus(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	else if(!low_mass)
+	double mu_p		= libphysica::Reduced_Mass(mass, mProton);
+	double mu_N		= libphysica::Reduced_Mass(mass, target.mass);
+	double q2max	= 4.0 * pow(mu_N * vDM, 2.0);
+	double sigmatot = Sigma_Proton() * mu_N * mu_N / mu_p / mu_p * target.Z * target.Z;
+
+	if(FF_DM == "Contact" && !low_mass)
 		sigmatot = Sigma_Total_Nucleus_Base(target, vDM, r);
-	else
+	else if(FF_DM == "General")
 	{
-		double mu_p = libphysica::Reduced_Mass(mass, mProton);
-		double mu_N = libphysica::Reduced_Mass(mass, target.mass);
-		sigmatot	= Sigma_Proton() * mu_N * mu_N / mu_p / mu_p * target.Z * target.Z;
-		if(FF_DM == "General")
-		{
-			double q2max = 4.0 * pow(mu_N * vDM, 2.0);
+		if(low_mass)
 			sigmatot *= pow(q_reference * q_reference + m_dark_photon * m_dark_photon, 2.0) / m_dark_photon / m_dark_photon / (m_dark_photon * m_dark_photon + q2max);
+		else
+			sigmatot = Sigma_Total_Nucleus_Base(target, vDM, r);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		if(low_mass)
+		{
+			double k_debye_2 = SSM.Debye_Screening_Scale_Squared(r);
+			sigmatot *= std::pow(q_reference, 4.0) / k_debye_2 / (k_debye_2 + q2max);
+		}
+		else
+		{
+			// Account for Debye screening
+			double q2min						= 1.0e-10 * eV;
+			double k_debye_2					= SSM.Debye_Screening_Scale_Squared(r);
+			std::function<double(double)> dodq2 = [this, &target, vDM, r, k_debye_2](double q2) {
+				// The q2 * q2 cancels with the DM form factor in the differential cross section
+				return dSigma_dq2_Nucleus(sqrt(q2), target, vDM, r) * q2 * q2 / std::pow(q2 + k_debye_2, 2.0);
+			};
+			sigmatot = libphysica::Integrate(dodq2, q2min, q2max);
 		}
 	}
+
 	return sigmatot;
 }
 
 double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r)
 {
-	double sigmatot = 0.0;
-	if(FF_DM != "Contact" && FF_DM != "General")
+	double sigmatot = Sigma_Electron();
+	double q2max	= 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+	if(FF_DM == "General")
+		sigmatot *= pow(q_reference * q_reference + m_dark_photon * m_dark_photon, 2.0) / m_dark_photon / m_dark_photon / (m_dark_photon * m_dark_photon + q2max);
+	else if(FF_DM == "Long-Range")
 	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::Sigma_Total_Electron(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	else
-	{
-		sigmatot = Sigma_Electron();
-		if(FF_DM == "General")
-		{
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-			sigmatot *= pow(q_reference * q_reference + m_dark_photon * m_dark_photon, 2.0) / m_dark_photon / m_dark_photon / (m_dark_photon * m_dark_photon + q2max);
-		}
+		double k_debye_2 = SSM.Debye_Screening_Scale_Squared(r);
+		sigmatot *= std::pow(q_reference, 4.0) / k_debye_2 / (k_debye_2 + q2max);
 	}
 	return sigmatot;
 }

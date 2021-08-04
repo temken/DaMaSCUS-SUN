@@ -6,6 +6,8 @@
 
 #include "libphysica/Natural_Units.hpp"
 
+#include "obscura/Target_Nucleus.hpp"
+
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
 
@@ -119,16 +121,50 @@ TEST(TestDarkPhoton, TestFormFactors)
 	double mMed = GeV;
 	//ACT & ASSERT
 	double dodq2 = DM.dSigma_dq2_Electron(q, vDM);
-	std::cout << dodq2 << std::endl;
 	DM.Set_FormFactor_DM("Contact");
 	EXPECT_DOUBLE_EQ(DM.dSigma_dq2_Electron(q, vDM), dodq2);
-	DM.Set_FormFactor_DM("Electric-Dipole");
-	EXPECT_DOUBLE_EQ(DM.dSigma_dq2_Electron(q, vDM), pow(qref / q, 2.0) * dodq2);
 	DM.Set_FormFactor_DM("General", mMed);
 	EXPECT_DOUBLE_EQ(DM.dSigma_dq2_Electron(q, vDM), pow((qref * qref + mMed * mMed) / (q * q + mMed * mMed), 2.0) * dodq2);
-
 	DM.Set_FormFactor_DM("Long-Range");
 	EXPECT_DOUBLE_EQ(DM.dSigma_dq2_Electron(q, vDM), pow((qref * qref + mMed * mMed) / qref / qref, 2.0) * pow(qref / q, 4.0) * dodq2);
+}
+
+TEST(TestDarkPhoton, TestSigmaTotalGeneralNucleus)
+{
+	// ARRANGE
+	double mDM	   = 100 * MeV;
+	double vDM	   = 1e-3;
+	double r	   = 0.5 * rSun;
+	double sigma_p = pb;
+	DM_Particle_Dark_Photon DM(mDM, sigma_p);
+	auto target = obscura::Get_Isotope(2, 4);
+	// ACT
+	double sigma_contact = DM.Sigma_Total_Nucleus(target, vDM, r);
+	DM.Set_FormFactor_DM("General", 1e6);
+	DM.Set_Sigma_Proton(sigma_p);
+	double sigma_general = DM.Sigma_Total_Nucleus(target, vDM, r);
+	double tol			 = 1e-6 * sigma_general;
+	// ASSERT
+	EXPECT_NEAR(sigma_contact, sigma_general, tol);
+}
+
+TEST(TestDarkPhoton, TestSigmaTotalGeneralElectron)
+{
+	// ARRANGE
+	double mDM	   = 100 * MeV;
+	double vDM	   = 1e-3;
+	double r	   = 0.5 * rSun;
+	double sigma_e = pb;
+	DM_Particle_Dark_Photon DM(mDM, pb);
+	DM.Set_Sigma_Electron(sigma_e);
+	// ACT
+	double sigma_contact = DM.Sigma_Total_Electron(vDM, r);
+	DM.Set_FormFactor_DM("General", 1e6);
+	DM.Set_Sigma_Electron(sigma_e);
+	double sigma_general = DM.Sigma_Total_Electron(vDM, r);
+	double tol			 = 1e-6 * sigma_general;
+	// ASSERT
+	EXPECT_NEAR(sigma_contact, sigma_general, tol);
 }
 
 TEST(TestDarkPhoton, TestScatteringAnglePDF)
