@@ -132,6 +132,7 @@ Solar_Model::Solar_Model()
 	std::vector<int> Zs				  = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
 	std::vector<double> As			  = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0};
 	std::vector<int> included_targets = libphysica::Range(Zs.size());
+	// std::vector<int> included_targets = {0, 1, 2, 7, 26};
 	for(auto& target_index : included_targets)
 	{
 		int Z = Zs[target_index];
@@ -222,8 +223,17 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
-		return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
+		// double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
+		// return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
+
+		double kappa   = std::sqrt(mElectron / 2.0 / Temperature(r));
+		auto integrand = [kappa, r, DM_speed, &DM](double vT, double cos_a) {
+			double v_rel = std::sqrt(DM_speed * DM_speed + vT * vT - 2.0 * DM_speed * vT * cos_a);
+			double sigma = DM.Sigma_Total_Electron(v_rel, r);
+			double pdf	 = 2.0 * M_PI * vT * vT * std::pow(kappa * kappa / M_PI, 1.5) * std::exp(-kappa * kappa * vT * vT);
+			return sigma * v_rel * pdf;
+		};
+		return Number_Density_Electron(r) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
 	}
 }
 
@@ -238,9 +248,20 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 		return 0.0;
 	else
 	{
+		// double m_target = target_isotopes[nucleus_index].mass;
+		// double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
+		// return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
+
 		double m_target = target_isotopes[nucleus_index].mass;
-		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
+		double kappa	= std::sqrt(m_target / 2.0 / Temperature(r));
+		auto target		= target_isotopes[nucleus_index];
+		auto integrand	= [kappa, r, DM_speed, &DM, &target](double vT, double cos_a) {
+			 double v_rel = std::sqrt(DM_speed * DM_speed + vT * vT - 2.0 * DM_speed * vT * cos_a);
+			 double sigma = DM.Sigma_Total_Nucleus(target, v_rel, r);
+			 double pdf	  = 2.0 * M_PI * vT * vT * std::pow(kappa * kappa / M_PI, 1.5) * std::exp(-kappa * kappa * vT * vT);
+			 return sigma * v_rel * pdf;
+		};
+		return Number_Density_Nucleus(r, nucleus_index) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
 	}
 }
 
