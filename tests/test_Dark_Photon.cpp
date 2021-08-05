@@ -184,6 +184,9 @@ TEST(TestDarkPhoton, TestScatteringAnglePDF)
 	DM.Set_FormFactor_DM("General", keV);
 	EXPECT_LT(DM.PDF_Scattering_Angle_Nucleus(-0.9, target, vDM), DM.PDF_Scattering_Angle_Nucleus(0.9, target, vDM));
 	EXPECT_LT(DM.PDF_Scattering_Angle_Electron(-0.9, vDM), DM.PDF_Scattering_Angle_Electron(0.9, vDM));
+	DM.Set_FormFactor_DM("Long-Range");
+	EXPECT_LT(DM.PDF_Scattering_Angle_Nucleus(-0.9, target, vDM), DM.PDF_Scattering_Angle_Nucleus(0.9, target, vDM));
+	EXPECT_LT(DM.PDF_Scattering_Angle_Electron(-0.9, vDM), DM.PDF_Scattering_Angle_Electron(0.9, vDM));
 }
 
 TEST(TestDarkPhoton, TestScatteringAngleCDF)
@@ -226,6 +229,11 @@ TEST(TestDarkPhoton, TestScatteringAngleSampling)
 	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);
 	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), -1.0);
 	DM.Set_FormFactor_DM("General", GeV);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), -1.0);
+	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);
+	EXPECT_GT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), -1.0);
+	DM.Set_FormFactor_DM("Long-Range");
 	EXPECT_LT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), 1.0);
 	EXPECT_GT(DM.Sample_Scattering_Angle_Electron(PRNG, vDM), -1.0);
 	EXPECT_LT(DM.Sample_Scattering_Angle_Nucleus(PRNG, target, vDM), 1.0);

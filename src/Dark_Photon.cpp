@@ -223,112 +223,159 @@ double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r)
 // Scattering angle functions
 double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r)
 {
-	if(FF_DM != "Contact" && FF_DM != "General")
+	if(FF_DM == "Contact")
 	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
+		if(low_mass)
+			return 0.5;
+		else
+			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
-	else if(!low_mass)
-		return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM);
-	else if(FF_DM == "Contact")
-		return 0.5;
-	else
+	else if(FF_DM == "General")
 	{
-		double m2	 = m_dark_photon * m_dark_photon;
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-		return 2.0 * m2 * (m2 + q2max) / pow(2 * m2 + q2max * (1.0 - cos_alpha), 2.0);
+		if(low_mass)
+		{
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / m_dark_photon / m_dark_photon;
+			return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
+		}
+		else
+			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		if(low_mass)
+		{
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+			return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
+		}
+		else
+			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
 }
 double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
 {
-	if(FF_DM != "Contact" && FF_DM != "General")
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	else if(FF_DM == "Contact")
+	if(FF_DM == "Contact")
 		return 0.5;
-	else
+	else if(FF_DM == "General")
 	{
-		double m2	 = m_dark_photon * m_dark_photon;
 		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		return 2.0 * m2 * (m2 + q2max) / pow(2 * m2 + q2max * (1.0 - cos_alpha), 2.0);
+		double x	 = q2max / m_dark_photon / m_dark_photon;
+		return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+		return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
 	}
 }
 double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r)
 {
-	if(FF_DM != "Contact" && FF_DM != "General")
+	if(FF_DM == "Contact")
 	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
+		if(low_mass)
+			return (1.0 + cos_alpha) / 2.0;
+		else
+			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
-	else if(!low_mass)
-		return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM);
-	else if(FF_DM == "Contact")
-		return (1.0 + cos_alpha) / 2.0;
-	else
+	else if(FF_DM == "General")
 	{
-		double m2	 = m_dark_photon * m_dark_photon;
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-		return (1.0 + cos_alpha) * m2 / (2.0 * m2 + q2max * (1.0 - cos_alpha));
+		if(low_mass)
+		{
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / m_dark_photon / m_dark_photon;
+			return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
+		}
+		else
+			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		if(low_mass)
+		{
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+			return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
+		}
+		else
+			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
 }
 
 double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
 {
-	if(FF_DM != "Contact" && FF_DM != "General")
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	else if(FF_DM == "Contact")
+	if(FF_DM == "Contact")
 		return (1.0 + cos_alpha) / 2.0;
-	else
+	else if(FF_DM == "General")
 	{
-		double m2	 = m_dark_photon * m_dark_photon;
 		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		return (1.0 + cos_alpha) * m2 / (2.0 * m2 + q2max * (1.0 - cos_alpha));
+		double x	 = q2max / m_dark_photon / m_dark_photon;
+		return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+		return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
 	}
 }
 
 double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(std::mt19937& PRNG, const obscura::Isotope& target, double vDM, double r)
 {
-	if(FF_DM != "Contact" && FF_DM != "General")
+	if(FF_DM == "Contact")
 	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
+		if(low_mass)
+		{
+			double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			return 2.0 * xi - 1.0;
+		}
+		else
+			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
 	}
-	else if(!low_mass)
-		return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
-	else if(FF_DM == "Contact")
+	else if(FF_DM == "General")
 	{
-		double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-		return 2.0 * xi - 1.0;
+		if(low_mass)
+		{
+			double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / m_dark_photon / m_dark_photon;
+			return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
+		}
+		else
+			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
 	}
-	else
+	else if(FF_DM == "Long-Range")
 	{
-		double xi	 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-		double m2	 = m_dark_photon * m_dark_photon;
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-		return (m2 * (2.0 * xi - 1.0) + q2max * xi) / (m2 + q2max * xi);
+		if(low_mass)
+		{
+			double xi	 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
+			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
+			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+			return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
+		}
+		else
+			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
 	}
 }
 
 double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(std::mt19937& PRNG, double vDM, double r)
 {
 	double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-	if(FF_DM != "Contact" && FF_DM != "General")
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(): Divergence in the IR." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	else if(FF_DM == "Contact")
+	if(FF_DM == "Contact")
 		return 2.0 * xi - 1.0;
-	else
+	else if(FF_DM == "General")
 	{
-		double m2	 = m_dark_photon * m_dark_photon;
 		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		return (m2 * (2.0 * xi - 1.0) + q2max * xi) / (m2 + q2max * xi);
+		double x	 = q2max / m_dark_photon / m_dark_photon;
+		return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
+	}
+	else if(FF_DM == "Long-Range")
+	{
+		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
+		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
+		return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
 	}
 }
 
