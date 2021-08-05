@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "libphysica/Integration.hpp"
 #include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 
@@ -207,7 +208,59 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperatu
 	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + sin_theta / aux * (unit_vector_DM[0] * unit_vector_DM[2] * cos_phi - unit_vector_DM[1] * sin_phi),
 									  cos_theta * unit_vector_DM[1] + sin_theta / aux * (unit_vector_DM[1] * unit_vector_DM[2] * cos_phi + unit_vector_DM[0] * sin_phi),
 									  cos_theta * unit_vector_DM[2] - aux * cos_phi * sin_theta});
+	return vT * unit_vector_T;
+}
 
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity_2(double r, obscura::DM_Particle& DM, int target_index, const libphysica::Vector& vel_DM)
+{
+	double temperature = solar_model.Temperature(r);
+	double v_DM		   = vel_DM.Norm();
+	double target_mass = (target_index == -1) ? mElectron : solar_model.target_isotopes[target_index].mass;
+	double kappa	   = sqrt(target_mass / 2.0 / temperature);
+	double v_r_min	   = std::max(0.0, v_DM - 4.0 / kappa);
+	double v_r_max	   = v_DM + 4.0 / kappa;
+
+	auto G = [this, &DM, target_index, r](double v_r) {
+		auto integrand = [this, &DM, target_index, r](double v) {
+			double sigma;
+			if(target_index == -1)
+				sigma = DM.Sigma_Total_Electron(v, r);
+			else
+				sigma = DM.Sigma_Total_Nucleus(solar_model.target_isotopes[target_index], v, r);
+			return v * sigma;
+		};
+		return libphysica::Integrate(integrand, 0.0, v_r);
+	};
+
+	double G_min = G(v_r_min);
+	double G_max = G(v_r_max);
+
+	double mu = 2.0;
+	double v_target;
+	while(std::fabs(mu) > 1.0)
+	{
+		double G_prime = G_min + libphysica::Sample_Uniform(PRNG, 0.0, 1.0) * (G_max - G_min);
+
+		auto func = [&G, G_prime](double v) {
+			return G(v) - G_prime;
+		};
+		double v_rel = libphysica::Find_Root(func, v_r_min, v_r_max, 1.0e-5);
+		v_target	 = 1.0 / kappa * std::sqrt(log(1.0 / libphysica::Sample_Uniform(PRNG, 0.0, 1.0)));
+		mu			 = (v_target * v_target + v_DM * v_DM - v_rel * v_rel) / (2.0 * v_target * v_DM);
+	}
+	// 2. Construct the target velocity vel_T
+	double vT		 = v_target;
+	double cos_theta = mu;
+	double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+	double phi		 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+	double cos_phi	 = cos(phi);
+	double sin_phi	 = sin(phi);
+
+	libphysica::Vector unit_vector_DM = vel_DM.Normalized();
+	double aux						  = sqrt(1.0 - pow(unit_vector_DM[2], 2.0));
+	libphysica::Vector unit_vector_T({cos_theta * unit_vector_DM[0] + sin_theta / aux * (unit_vector_DM[0] * unit_vector_DM[2] * cos_phi - unit_vector_DM[1] * sin_phi),
+									  cos_theta * unit_vector_DM[1] + sin_theta / aux * (unit_vector_DM[1] * unit_vector_DM[2] * cos_phi + unit_vector_DM[0] * sin_phi),
+									  cos_theta * unit_vector_DM[2] - aux * cos_phi * sin_theta});
 	return vT * unit_vector_T;
 }
 
@@ -236,6 +289,7 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 		target_mass = solar_model.target_isotopes[target_index].mass;
 
 	libphysica::Vector vel_target = Sample_Target_Velocity(solar_model.Temperature(r), target_mass, current_event.velocity);
+	// libphysica::Vector vel_target = Sample_Target_Velocity_2(r, DM, target_index, current_event.velocity);
 
 	// 2. Sample the scattering angle
 	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(PRNG, v, r) : DM.Sample_Scattering_Angle_Nucleus(PRNG, solar_model.target_isotopes[target_index], v, r);

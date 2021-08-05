@@ -43,6 +43,7 @@ class Trajectory_Simulator
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
 	libphysica::Vector Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM);
+	libphysica::Vector Sample_Target_Velocity_2(double r, obscura::DM_Particle& DM, int target_index, const libphysica::Vector& vel_DM);
 	libphysica::Vector New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
 
   public:

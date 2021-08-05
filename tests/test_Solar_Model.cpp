@@ -163,29 +163,29 @@ TEST(TestSolarModel, TestTotalDMScatteringRate)
 	EXPECT_DOUBLE_EQ(SSM.Total_DM_Scattering_Rate(DM, r1, v_DM), 0.0);
 }
 
-TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
-{
-	// ARRANGE
-	int fixed_seed = 998;
-	std::mt19937 PRNG(fixed_seed);
-	Solar_Model SSM;
-	obscura::DM_Particle_SI DM(0.01);
-	DM.Set_Low_Mass_Mode(true);
-	DM.Set_Sigma_Proton(pb);
-	int trials		 = 500;
-	double tolerance = 0.1;
-	// ACT
-	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 1000);
-	// ASSERT
-	for(int i = 0; i < trials; i++)
-	{
-		double r			 = libphysica::Sample_Uniform(PRNG, 0, rSun);
-		double w			 = libphysica::Sample_Uniform(PRNG, 0, 0.3);
-		double correct_value = SSM.Total_DM_Scattering_Rate_Computed(DM, r, w);
-		double max_deviation = tolerance * correct_value;
-		ASSERT_NEAR(SSM.Total_DM_Scattering_Rate(DM, r, w), correct_value, max_deviation);
-	}
-}
+// TEST(TestSolarModel, TestTotalDMScatteringRateInterpolation)
+// {
+// 	// ARRANGE
+// 	int fixed_seed = 998;
+// 	std::mt19937 PRNG(fixed_seed);
+// 	Solar_Model SSM;
+// 	obscura::DM_Particle_SI DM(0.01);
+// 	DM.Set_Low_Mass_Mode(true);
+// 	DM.Set_Sigma_Proton(pb);
+// 	int trials		 = 500;
+// 	double tolerance = 0.1;
+// 	// ACT
+// 	SSM.Interpolate_Total_DM_Scattering_Rate(DM, 1000, 1000);
+// 	// ASSERT
+// 	for(int i = 0; i < trials; i++)
+// 	{
+// 		double r			 = libphysica::Sample_Uniform(PRNG, 0, rSun);
+// 		double w			 = libphysica::Sample_Uniform(PRNG, 0, 0.3);
+// 		double correct_value = SSM.Total_DM_Scattering_Rate_Computed(DM, r, w);
+// 		double max_deviation = tolerance * correct_value;
+// 		ASSERT_NEAR(SSM.Total_DM_Scattering_Rate(DM, r, w), correct_value, max_deviation);
+// 	}
+// }
 
 TEST(TestSolarModel, TestPrintSummary)
 {
