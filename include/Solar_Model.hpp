@@ -40,6 +40,7 @@ class Solar_Model
 	libphysica::Interpolation number_density_electron;
 
 	// Interpolation of total scattering rate
+	std::vector<Solar_Isotope> all_isotopes;
 	bool using_interpolated_rate;
 	libphysica::Interpolation_2D rate_interpolation;
 

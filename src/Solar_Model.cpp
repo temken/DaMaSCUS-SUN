@@ -103,7 +103,7 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table(unsign
 std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electron()
 {
 	std::vector<std::vector<double>> table(raw_data.size(), std::vector<double>(2, 0.0));
-	for(auto& isotope : target_isotopes)
+	for(auto& isotope : all_isotopes)
 	{
 		for(unsigned int i = 0; i < raw_data.size(); i++)
 		{
@@ -129,11 +129,9 @@ Solar_Model::Solar_Model()
 
 	// Nuclear abundances
 	obscura::Import_Nuclear_Data();
-	std::vector<int> Zs				  = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
-	std::vector<double> As			  = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0};
-	std::vector<int> included_targets = libphysica::Range(Zs.size());
-	// std::vector<int> included_targets = {0, 1, 2, 7, 26};
-	for(auto& target_index : included_targets)
+	std::vector<int> Zs	   = {1, 2, 2, 6, 6, 7, 7, 8, 8, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
+	std::vector<double> As = {1.0, 4.0, 3.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0};
+	for(auto& target_index : libphysica::Range(Zs.size()))
 	{
 		int Z = Zs[target_index];
 		if(target_index < 10)
@@ -141,17 +139,24 @@ Solar_Model::Solar_Model()
 			double A				 = As[target_index];
 			obscura::Isotope isotope = obscura::Get_Isotope(Z, A);
 			isotope.abundance		 = 1.0;
-			target_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass)));
+			all_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass)));
 		}
 		else
 		{
 			obscura::Nucleus nucleus = obscura::Get_Nucleus(Z);
 			for(const auto& isotope : nucleus.isotopes)
-				target_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass), isotope.abundance));
+				all_isotopes.push_back(Solar_Isotope(isotope, Create_Number_Density_Table(target_index, isotope.mass), isotope.abundance));
 		}
 	}
 	// Electron number density
 	number_density_electron = libphysica::Interpolation(Create_Number_Density_Table_Electron());
+	// Include only a subset of targets
+	// std::vector<int> included_target_indices = {};
+	std::vector<int> included_target_indices = {0, 1, 2, 7, 54};
+	// std::vector<int> included_target_indices = libphysica::Range(all_isotopes.size());
+	std::cout << all_isotopes.size() << std::endl;
+	for(auto& index : included_target_indices)
+		target_isotopes.push_back(all_isotopes[index]);
 }
 
 double Solar_Model::Mass(double r)
