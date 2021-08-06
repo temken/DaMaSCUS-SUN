@@ -252,7 +252,13 @@ double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(double cos_alpha, c
 		else
 			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
+
 double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
 {
 	if(FF_DM == "Contact")
@@ -269,7 +275,13 @@ double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(double cos_alpha, 
 		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
 		return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
 	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
+
 double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r)
 {
 	if(FF_DM == "Contact")
@@ -301,6 +313,11 @@ double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(double cos_alpha, c
 		else
 			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
 	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
@@ -318,6 +335,11 @@ double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(double cos_alpha, 
 		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
 		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
 		return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
+	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 }
 
@@ -358,6 +380,11 @@ double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(std::mt19937& PR
 		else
 			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
 	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(std::mt19937& PRNG, double vDM, double r)
@@ -376,6 +403,11 @@ double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(std::mt19937& P
 		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
 		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
 		return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
+	}
+	else
+	{
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 }
 
@@ -402,4 +434,5 @@ void DM_Particle_Dark_Photon::Print_Summary(int MPI_rank) const
 			<< "----------------------------------------" << std::endl;
 	}
 }
+
 }	// namespace DaMaSCUS_SUN
