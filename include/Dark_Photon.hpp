@@ -41,9 +41,13 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	virtual void Set_Sigma_Proton(double sigma) override;
 	virtual void Set_Sigma_Electron(double sigma) override;
 
-	// Differential cross sections with nuclear isotopes, elements, and electrons
+	// Differential cross sections for nuclear targets
 	virtual double dSigma_dq2_Nucleus(double q, const obscura::Isotope& target, double vDM, double r = -1.0) const override;
+
+	// Differential cross section for electron targets
 	virtual double dSigma_dq2_Electron(double q, double vDM, double r = -1.0) const override;
+	virtual double d2Sigma_dq2_dEe_Ionization(double q, double Ee, double vDM, obscura::Atomic_Electron& shell) const override;
+	virtual double d2Sigma_dq2_dEe_Crystal(double q, double Ee, double vDM, obscura::Crystal& crystal) const override;
 
 	// Total cross sections with nuclear isotopes, elements, and electrons
 	virtual double Sigma_Proton() const override;
