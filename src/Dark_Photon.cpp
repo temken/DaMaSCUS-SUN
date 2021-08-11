@@ -130,7 +130,7 @@ void DM_Particle_Dark_Photon::Set_Sigma_Electron(double sigma)
 	epsilon = (q_reference * q_reference + m_dark_photon * m_dark_photon) / 4.0 / libphysica::Reduced_Mass(mass, mElectron) * sqrt(sigma / M_PI / aEM / alpha_dark);
 }
 
-// Differential cross sections with nuclear isotopes, elements, and electrons
+// Differential cross sections for nuclear targets
 double DM_Particle_Dark_Photon::dSigma_dq2_Nucleus(double q, const obscura::Isotope& target, double vDM, double r) const
 {
 	double nuclear_form_factor = (low_mass) ? 1.0 : target.Helm_Form_Factor(q);
@@ -138,10 +138,21 @@ double DM_Particle_Dark_Photon::dSigma_dq2_Nucleus(double q, const obscura::Isot
 	return Sigma_Proton() / 4.0 / mu / mu / vDM / vDM * FormFactor2_DM(q) * nuclear_form_factor * nuclear_form_factor * target.Z * target.Z;
 }
 
+// Differential cross section for electron targets
 double DM_Particle_Dark_Photon::dSigma_dq2_Electron(double q, double vDM, double r) const
 {
 	double mu = libphysica::Reduced_Mass(mass, mElectron);
 	return Sigma_Electron() / 4.0 / mu / mu / vDM / vDM * FormFactor2_DM(q);
+}
+
+double DM_Particle_Dark_Photon::d2Sigma_dq2_dEe_Ionization(double q, double Ee, double vDM, obscura::Atomic_Electron& shell) const
+{
+	return 1.0 / 4.0 / Ee * dSigma_dq2_Electron(q, vDM) * shell.Ionization_Form_Factor(q, Ee);
+}
+
+double DM_Particle_Dark_Photon::d2Sigma_dq2_dEe_Crystal(double q, double Ee, double vDM, obscura::Crystal& crystal) const
+{
+	return 2.0 * aEM * mElectron * mElectron / q / q / q * dSigma_dq2_Electron(q, vDM) * crystal.Crystal_Form_Factor(q, Ee);
 }
 
 // Total cross sections with nuclear isotopes, elements, and electrons
@@ -157,7 +168,7 @@ double DM_Particle_Dark_Photon::Sigma_Electron() const
 	return 16.0 * M_PI * aEM * alpha_dark * epsilon * epsilon * mu * mu / pow((q_reference * q_reference + m_dark_photon * m_dark_photon), 2.0);
 }
 
-double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r) const
+double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r)
 {
 	double sigmatot = 0.0;
 	if(FF_DM != "Contact" && FF_DM != "General")
@@ -181,7 +192,7 @@ double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& targ
 	return sigmatot;
 }
 
-double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r) const
+double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r)
 {
 	double sigmatot = 0.0;
 	if(FF_DM != "Contact" && FF_DM != "General")
