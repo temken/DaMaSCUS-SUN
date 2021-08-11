@@ -227,7 +227,7 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity_2(double r, obsc
 				sigma = DM.Sigma_Total_Electron(v, r);
 			else
 				sigma = DM.Sigma_Total_Nucleus(solar_model.target_isotopes[target_index], v, r);
-			return v * sigma;
+			return v * v * sigma;
 		};
 		return libphysica::Integrate(integrand, 0.0, v_r);
 	};
