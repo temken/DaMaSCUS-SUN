@@ -154,7 +154,6 @@ Solar_Model::Solar_Model()
 	// std::vector<int> included_target_indices = {};
 	std::vector<int> included_target_indices = {0, 1, 2, 7, 54};
 	// std::vector<int> included_target_indices = libphysica::Range(all_isotopes.size());
-	std::cout << all_isotopes.size() << std::endl;
 	for(auto& index : included_target_indices)
 		target_isotopes.push_back(all_isotopes[index]);
 }
