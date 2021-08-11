@@ -157,7 +157,7 @@ double DM_Particle_Dark_Photon::Sigma_Electron() const
 	return 16.0 * M_PI * aEM * alpha_dark * epsilon * epsilon * mu * mu / pow((q_reference * q_reference + m_dark_photon * m_dark_photon), 2.0);
 }
 
-double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r) const
+double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r)
 {
 	double sigmatot = 0.0;
 	if(FF_DM != "Contact" && FF_DM != "General")
@@ -181,7 +181,7 @@ double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& targ
 	return sigmatot;
 }
 
-double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r) const
+double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r)
 {
 	double sigmatot = 0.0;
 	if(FF_DM != "Contact" && FF_DM != "General")
