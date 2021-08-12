@@ -57,6 +57,7 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	virtual double Sigma_Proton() const override;
 	virtual double Sigma_Electron() const override;
 
+	virtual bool Is_Sigma_Total_V_Dependent() const override;
 	virtual double Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r = -1.0) override;
 	virtual double Sigma_Total_Electron(double vDM, double r = -1.0) override;
 
