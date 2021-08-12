@@ -166,7 +166,8 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 	}
 }
 
-libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM)
+// Target velocity sampling via constant cross section algorithm
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity_CXS(double temperature, double target_mass, const libphysica::Vector& vel_DM)
 {
 	// Sampling algorithm taken from Romano & Walsh, "An improved target velocity sampling algorithm for free gas elastic scattering"
 	double kappa = sqrt(target_mass / 2.0 / temperature);
@@ -211,7 +212,8 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperatu
 	return vT * unit_vector_T;
 }
 
-libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity_2(double r, obscura::DM_Particle& DM, int target_index, const libphysica::Vector& vel_DM)
+// Target velocity sampling via Relative Velocity Sampling
+libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity_RVS(double r, obscura::DM_Particle& DM, int target_index, const libphysica::Vector& vel_DM)
 {
 	double temperature = solar_model.Temperature(r);
 	double v_DM		   = vel_DM.Norm();
@@ -288,8 +290,11 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	else
 		target_mass = solar_model.target_isotopes[target_index].mass;
 
-	// libphysica::Vector vel_target = Sample_Target_Velocity(solar_model.Temperature(r), target_mass, current_event.velocity);
-	libphysica::Vector vel_target = Sample_Target_Velocity_2(r, DM, target_index, current_event.velocity);
+	libphysica::Vector vel_target;
+	if(DM.Is_Sigma_Total_V_Dependent())
+		vel_target = Sample_Target_Velocity_RVS(r, DM, target_index, current_event.velocity);
+	else
+		vel_target = Sample_Target_Velocity_CXS(solar_model.Temperature(r), target_mass, current_event.velocity);
 
 	// 2. Sample the scattering angle
 	double cos_alpha = (target_index == -1) ? DM.Sample_Scattering_Angle_Electron(PRNG, v, r) : DM.Sample_Scattering_Angle_Nucleus(PRNG, solar_model.target_isotopes[target_index], v, r);

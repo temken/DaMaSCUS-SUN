@@ -225,10 +225,8 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 {
 	if(r > rSun)
 		return 0.0;
-	else
+	else if(DM.Is_Sigma_Total_V_Dependent())
 	{
-		// double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
-		// return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
 
 		double kappa   = std::sqrt(mElectron / 2.0 / Temperature(r));
 		auto integrand = [kappa, r, DM_speed, &DM](double vT, double cos_a) {
@@ -238,6 +236,11 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 			return sigma * v_rel * pdf;
 		};
 		return Number_Density_Electron(r) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
+	}
+	else
+	{
+		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
+		return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
 	}
 }
 
@@ -250,12 +253,8 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	}
 	else if(r > rSun)
 		return 0.0;
-	else
+	else if(DM.Is_Sigma_Total_V_Dependent())
 	{
-		// double m_target = target_isotopes[nucleus_index].mass;
-		// double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
-		// return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
-
 		double m_target = target_isotopes[nucleus_index].mass;
 		double kappa	= std::sqrt(m_target / 2.0 / Temperature(r));
 		auto target		= target_isotopes[nucleus_index];
@@ -266,6 +265,12 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 			 return sigma * v_rel * pdf;
 		};
 		return Number_Density_Nucleus(r, nucleus_index) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
+	}
+	else
+	{
+		double m_target = target_isotopes[nucleus_index].mass;
+		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
+		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
 	}
 }
 
