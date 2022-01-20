@@ -142,11 +142,11 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 		double total_rate	 = std::accumulate(rate_nuclei.begin(), rate_nuclei.end(), rate_electron);
 
 		double xi = libphysica::Sample_Uniform(PRNG);
-		//Electron
+		// Electron
 		double sum = rate_electron / total_rate;
 		if(sum > xi)
 			return -1;
-		//Nuclei
+		// Nuclei
 		for(unsigned int i = 0; i < solar_model.target_isotopes.size(); i++)
 		{
 			sum += rate_nuclei[i] / total_rate;
@@ -206,17 +206,10 @@ libphysica::Vector Trajectory_Simulator::Sample_Target_Velocity(double temperatu
 
 libphysica::Vector Trajectory_Simulator::New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target)
 {
-	//Construction of n, the unit vector pointing into the direction of vfinal.
-	double sin_scattering_angle = sqrt(1.0 - cos_scattering_angle * cos_scattering_angle);
-	double phi					= libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
-	double cos_phi				= cos(phi);
-	double sin_phi				= sin(phi);
+	// Construction of n, the unit vector pointing into the direction of vfinal.
+	double phi			 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+	libphysica::Vector n = libphysica::Spherical_Coordinates(1.0, acos(cos_scattering_angle), phi, vel_DM);
 
-	libphysica::Vector ev = vel_DM.Normalized();
-	double aux			  = sqrt(1.0 - pow(ev[2], 2.0));
-	libphysica::Vector n({cos_scattering_angle * ev[0] + sin_scattering_angle / aux * (ev[0] * ev[2] * cos_phi - ev[1] * sin_phi),
-						  cos_scattering_angle * ev[1] + sin_scattering_angle / aux * (ev[1] * ev[2] * cos_phi + ev[0] * sin_phi),
-						  cos_scattering_angle * ev[2] - aux * cos_phi * sin_scattering_angle});
 	double relative_speed = (vel_target - vel_DM).Norm();
 
 	return target_mass * relative_speed / (target_mass + DM_mass) * n + (DM_mass * vel_DM + target_mass * vel_target) / (target_mass + DM_mass);
@@ -297,7 +290,7 @@ Free_Particle_Propagator::Free_Particle_Propagator(const Event& event)
 	v_radial		 = (radius == 0) ? event.Speed() : event.position.Dot(event.velocity) / radius;
 	angular_momentum = (event.position.Cross(event.velocity)).Dot(axis_z);
 
-	//3. Error tolerances
+	// 3. Error tolerances
 	error_tolerances = {1.0 * km, 1.0e-3 * km / sec, 1.0e-7};
 }
 
