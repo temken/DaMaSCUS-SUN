@@ -31,11 +31,11 @@ bool Trajectory_Result::Particle_Free() const
 	return number_of_scatterings == 0;
 }
 
-bool Trajectory_Result::Particle_Captured() const
+bool Trajectory_Result::Particle_Captured(Solar_Model& solar_model) const
 {
 	double r	= final_event.Radius();
-	double vesc = sqrt(2 * G_Newton * mSun / r);
-	return r < rSun || final_event.Speed() < vesc;
+	double vesc = solar_model.Local_Escape_Speed(r);
+	return final_event.Speed() < vesc;
 }
 
 void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank)
@@ -50,7 +50,7 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi
 				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
 				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
 				  << "Free particle:\t\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
-				  << "Captured:\t\t[" << (Particle_Captured() ? "x" : " ") << "]" << std::endl
+				  << "Captured:\t\t[" << (Particle_Captured(solar_model) ? "x" : " ") << "]" << std::endl
 				  << "Reflection:\t\t[" << (Particle_Reflected() ? "x" : " ") << "]";
 
 		if(Particle_Reflected())
@@ -90,6 +90,13 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 		particle_propagator.Runge_Kutta_45_Step(solar_model.Mass(r_before));
 		double r_after = particle_propagator.Current_Radius();
 		double v_after = particle_propagator.Current_Speed();
+
+		if(v_after > v_max)
+		{
+			std::cerr << "\nWarning in Propagate_Freely(): DM speed exceeds the maximum of v_max = " << v_max << std::endl
+					  << "\tAbort simulation." << std::endl;
+			return false;
+		}
 
 		if(save_trajectories && time_steps % 20 == 0)
 		{

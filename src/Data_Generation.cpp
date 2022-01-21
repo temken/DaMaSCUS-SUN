@@ -63,7 +63,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 		number_of_trajectories++;
 		average_number_of_scatterings = 1.0 / number_of_trajectories * ((number_of_trajectories - 1) * average_number_of_scatterings + trajectory.number_of_scatterings);
 
-		if(trajectory.Particle_Captured())
+		if(trajectory.Particle_Captured(solar_model))
 			number_of_captured_particles++;
 		else
 		{
@@ -71,6 +71,9 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				number_of_free_particles++;
 			else if(trajectory.Particle_Reflected())
 				number_of_reflected_particles++;
+			else
+				continue;
+
 			Hyperbolic_Kepler_Shift(trajectory.final_event, 1.0 * AU);
 			double v_final = trajectory.final_event.Speed();
 			if(trajectory.number_of_scatterings >= minimum_number_of_scatterings && v_final > KDE_boundary_correction_factor * minimum_speed_threshold)

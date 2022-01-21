@@ -24,7 +24,7 @@ struct Trajectory_Result
 
 	bool Particle_Reflected() const;
 	bool Particle_Free() const;
-	bool Particle_Captured() const;
+	bool Particle_Captured(Solar_Model& solar_model) const;
 
 	void Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank = 0);
 };
@@ -37,6 +37,7 @@ class Trajectory_Simulator
 
 	unsigned int saved_trajectories, saved_trajectories_max;
 	bool save_trajectories = false;
+	double v_max		   = 0.75;
 
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
