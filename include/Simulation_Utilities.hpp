@@ -38,10 +38,6 @@ struct Event
 };
 
 // 2. Generator of initial conditions
-extern double PDF_Initial_Speed(double v, obscura::DM_Distribution& halo_model, Solar_Model& solar_model);
-extern double PDF_Cos_Theta(double cos_theta, double v, obscura::DM_Distribution& halo_model);
-extern Event Initial_Conditions_Corrected(obscura::DM_Distribution& halo_model, Solar_Model& solar_model, std::mt19937& PRNG);
-
 extern Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& model, std::mt19937& PRNG);
 
 // 3. Analytically propagate a particle at event on a hyperbolic Kepler orbit to a radius R (without passing the periapsis)
