@@ -145,10 +145,10 @@ TEST(TestSimulationUtilities, TestInitialConditions)
 	Solar_Model SSM;
 
 	obscura::Standard_Halo_Model SHM;
-	SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
+	// SHM.Set_Observer_Velocity(libphysica::Vector({0, 0, 0}));
 
-	double R_distance	= 500 * AU;
-	unsigned int trials = 100;
+	double R_distance	= 1000 * AU;
+	unsigned int trials = 1000;
 	// ACT & ASSERT
 	for(unsigned int i = 0; i < trials; i++)
 	{
@@ -191,7 +191,7 @@ TEST(TestSimulationUtilities, TestHyperbolicKeplerShift)
 		Event x_ref = eom.Event_In_3D();
 		// ACT
 		Hyperbolic_Kepler_Shift(IC, rSun);
-		//ASSERT
+		// ASSERT
 		for(int i = 0; i < 3; i++)
 			ASSERT_NEAR(IC.position[i], x_ref.position[i], 0.001 * rSun);
 		for(int i = 0; i < 3; i++)

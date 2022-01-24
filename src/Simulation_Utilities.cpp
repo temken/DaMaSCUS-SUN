@@ -108,17 +108,23 @@ Event Initial_Conditions(obscura::DM_Distribution& halo_model, Solar_Model& sola
 	std::function<double(double)> pdf_v = [&halo_model, &solar_model](double v) {
 		return PDF_Initial_Speed(v, halo_model, solar_model);
 	};
-	double u = libphysica::Rejection_Sampling(pdf_v, halo_model.Minimum_DM_Speed(), halo_model.Maximum_DM_Speed(), 1000.0, PRNG);
+	double u = libphysica::Rejection_Sampling(pdf_v, halo_model.Minimum_DM_Speed(), halo_model.Maximum_DM_Speed(), 1200.0, PRNG);
 
 	// 1.2. Sample cos(theta) where theta is the angle between v and v_sun.
 	std::function<double(double)> pdf_cos_theta = [u, &halo_model](double cos_theta) {
 		return PDF_Cos_Theta(cos_theta, u, halo_model);
 	};
+	// Determine domain of cos theta
+	libphysica::Vector vel_sun = dynamic_cast<obscura::Standard_Halo_Model*>(&halo_model)->Get_Observer_Velocity();
+	double v_sun			   = vel_sun.Norm();
+	double v_gal			   = halo_model.Maximum_DM_Speed() - v_sun;
+	double cos_theta_max	   = std::min(1.0, (v_gal * v_gal - v_sun * v_sun - u * u) / (2.0 * u * v_sun));
+
 	double y_max	 = PDF_Cos_Theta(-1.0, u, halo_model);
-	double cos_theta = libphysica::Rejection_Sampling(pdf_cos_theta, -1.0, 1.0, y_max, PRNG);
+	double cos_theta = libphysica::Rejection_Sampling(pdf_cos_theta, -1.0, cos_theta_max, y_max, PRNG);
+	// double cos_theta = libphysica::Sample_Uniform(PRNG,-1.0,1.0);// to test isotropic initial conditions
 
 	// 1.3. Construct velocity vector
-	libphysica::Vector vel_sun			= dynamic_cast<obscura::Standard_Halo_Model*>(&halo_model)->Get_Observer_Velocity();
 	double phi							= libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
 	libphysica::Vector initial_velocity = libphysica::Spherical_Coordinates(u, acos(cos_theta), phi, vel_sun);
 
