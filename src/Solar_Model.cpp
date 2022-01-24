@@ -46,9 +46,9 @@ void Solar_Model::Import_Raw_Data()
 		else if(i == 1)
 			last_line[i] = rSun;
 		else if(i == 2)
-			last_line[i] = 5800 * Kelvin;	//temperature of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+			last_line[i] = 5800 * Kelvin;	// temperature of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
 		else if(i == 3)
-			last_line[i] = 1.0e-9 * gram / cm / cm / cm;   //mass density of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
+			last_line[i] = 1.0e-9 * gram / cm / cm / cm;   // mass density of the photosphere (http://solar-center.stanford.edu/vitalstats.html)
 		else
 			last_line[i] = raw_data.back()[i];
 	}
@@ -251,7 +251,11 @@ double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r,
 	if(using_interpolated_rate && DM_speed < rate_interpolation.domain[1][1])
 		return Total_DM_Scattering_Rate_Interpolated(DM, r, DM_speed);
 	else
+	{
+		if(using_interpolated_rate)
+			std::cerr << "Warning Solar_Model::Total_DM_Scattering_Rate(): DM speed is out of bound (vDM = " << DM_speed << ")\n\tScattering rate must be computed on the fly." << std::endl;
 		return Total_DM_Scattering_Rate_Computed(DM, r, DM_speed);
+	}
 }
 
 double Solar_Model::Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed)
@@ -287,6 +291,7 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 
 		using_interpolated_rate = true;
 
+		double vMax					 = 0.75;
 		unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
 		unsigned int global_N_radius = mpi_processes * local_N_radius;
 
@@ -295,7 +300,7 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 
 		// Compute the table in parallel
 		MPI_Scatter(global_radii.data(), local_N_radius, MPI_DOUBLE, local_radii.data(), local_N_radius, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		std::vector<double> speeds = libphysica::Linear_Space(0, 0.5, N_speed);
+		std::vector<double> speeds = libphysica::Linear_Space(0, vMax, N_speed);
 		std::vector<double> local_rates;
 		std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
 		for(auto& radius : local_radii)

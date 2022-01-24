@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 			f.close();
 		}
 	}
-	//Perform a parameter scan to compute exclusion limits
+	// Perform a parameter scan to compute exclusion limits
 	else if(cfg.run_mode == "Parameter scan")
 	{
 		if(mpi_rank == 0 && cfg.compute_halo_constraints)
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
 	}
 
 	////////////////////////////////////////////////////////////////////////
-	//Final terminal output
+	// Final terminal output
 	MPI_Barrier(MPI_COMM_WORLD);
 	auto time_end		 = std::chrono::system_clock::now();
 	double durationTotal = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();

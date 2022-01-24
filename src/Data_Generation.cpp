@@ -34,7 +34,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 {
 	auto time_start = std::chrono::system_clock::now();
 
-	//MPI ring communication
+	// MPI ring communication
 	int mpi_source		= (mpi_rank == 0) ? mpi_processes - 1 : mpi_rank - 1;
 	int mpi_destination = (mpi_rank == mpi_processes - 1) ? 0 : mpi_rank + 1;
 	int mpi_tag			= 0;
@@ -47,7 +47,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	if(fixed_seed != 0)
 		simulator.Fix_PRNG_Seed(fixed_seed);
 
-	//Get the MPI ring communication started by sending the data counters
+	// Get the MPI ring communication started by sending the data counters
 	std::vector<unsigned long int> local_counter_new(isoreflection_rings, 0);
 	if(mpi_rank == 0)
 		MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
@@ -63,7 +63,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 		number_of_trajectories++;
 		average_number_of_scatterings = 1.0 / number_of_trajectories * ((number_of_trajectories - 1) * average_number_of_scatterings + trajectory.number_of_scatterings);
 
-		if(trajectory.Particle_Captured())
+		if(trajectory.Particle_Captured(solar_model))
 			number_of_captured_particles++;
 		else
 		{
@@ -71,6 +71,9 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 				number_of_free_particles++;
 			else if(trajectory.Particle_Reflected())
 				number_of_reflected_particles++;
+			else
+				continue;
+
 			Hyperbolic_Kepler_Shift(trajectory.final_event, 1.0 * AU);
 			double v_final = trajectory.final_event.Speed();
 			if(trajectory.number_of_scatterings >= minimum_number_of_scatterings && v_final > KDE_boundary_correction_factor * minimum_speed_threshold)
@@ -80,12 +83,12 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 					local_counter_new[isoreflection_ring]++;
 				data[isoreflection_ring].push_back(libphysica::DataPoint(v_final));
 			}
-			//Check if data counters arrived.
+			// Check if data counters arrived.
 			int mpi_flag;
 			MPI_Iprobe(mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_flag, &mpi_status);
 			if(mpi_flag)
 			{
-				//Receive and increment the data counters
+				// Receive and increment the data counters
 				MPI_Recv(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, &mpi_status);
 				unsigned long int smallest_sample_size_old = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
 				for(unsigned int i = 0; i < isoreflection_rings; i++)
@@ -94,19 +97,19 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 					local_counter_new[i] = 0;
 				}
 				smallest_sample_size = *std::min_element(std::begin(number_of_data_points), std::end(number_of_data_points));
-				//Check if we are done
+				// Check if we are done
 				if(smallest_sample_size_old < min_sample_size_above_threshold && smallest_sample_size >= min_sample_size_above_threshold)
 					mpi_tag = mpi_source + 1;
 				else if(smallest_sample_size_old >= min_sample_size_above_threshold)
 					mpi_tag = mpi_status.MPI_TAG;
 
-				//Progress bar
+				// Progress bar
 				if(smallest_sample_size_old < smallest_sample_size && mpi_rank % 10 == 0)
 				{
 					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
 					libphysica::Print_Progress_Bar(1.0 * smallest_sample_size / min_sample_size_above_threshold, 0, 44, time);
 				}
-				//Pass on the counters, unless you are the very last process.
+				// Pass on the counters, unless you are the very last process.
 				if(mpi_tag != (mpi_rank + 1))
 					MPI_Isend(&number_of_data_points.front(), isoreflection_rings, MPI_UNSIGNED_LONG, mpi_destination, mpi_tag, MPI_COMM_WORLD, &mpi_request);
 			}
@@ -145,7 +148,7 @@ void Simulation_Data::Perform_MPI_Reductions()
 		// 3. How many data points did all workers gather in total?
 		number_of_data_points[i] = std::accumulate(data_points_of_workers.begin(), data_points_of_workers.end(), 0);
 
-		//4. Collect info on the data packages to be received.
+		// 4. Collect info on the data packages to be received.
 		std::vector<int> receive_counter(mpi_processes);
 		std::vector<int> receive_displacements(mpi_processes);
 		for(int j = 0; j < mpi_processes; j++)

@@ -33,7 +33,7 @@ struct Event
 
 	Event In_Units(double unit_distance, double unit_time) const;
 
-	//Overloading the output operator <<
+	// Overloading the output operator <<
 	friend std::ostream& operator<<(std::ostream& output, const Event& event);
 };
 

@@ -82,15 +82,16 @@ TEST(TestSimulationTrajectory, TestParticleCaptured)
 	libphysica::Vector v_2({0, 1000 * km / sec, 0});
 	Event initial_event;
 	Event captured_1(t, r_in, v_1);
-	Event captured_2(t, r_in, v_2);
+	Event not_captured_2(t, r_in, v_2);
 	Event captured_3(t, r_out, v_1);
 	Event not_captured(t, r_out, v_2);
+	Solar_Model solar_model;
 
 	// ACT & ASSERT
-	EXPECT_TRUE(Trajectory_Result(initial_event, captured_1, 0).Particle_Captured());
-	EXPECT_TRUE(Trajectory_Result(initial_event, captured_2, 0).Particle_Captured());
-	EXPECT_TRUE(Trajectory_Result(initial_event, captured_3, 0).Particle_Captured());
-	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured, 0).Particle_Captured());
+	EXPECT_TRUE(Trajectory_Result(initial_event, captured_1, 0).Particle_Captured(solar_model));
+	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured_2, 0).Particle_Captured(solar_model));
+	EXPECT_TRUE(Trajectory_Result(initial_event, captured_3, 0).Particle_Captured(solar_model));
+	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured, 0).Particle_Captured(solar_model));
 }
 
 // TEST(TestSimulationTrajectory, TestResultPrintSummary)
@@ -140,18 +141,27 @@ TEST(TestSimulationTrajectory, TestSimulate)
 		Hyperbolic_Kepler_Shift(IC, 1.5 * rSun);
 		Trajectory_Result result = simulator.Simulate(IC, DM);
 		if(result.Particle_Reflected() || result.Particle_Free())
-			ASSERT_NEAR(result.final_event.Radius(), simulator.maximum_distance, 0.001 * rSun);
+			ASSERT_NEAR(result.final_event.Radius(), simulator.maximum_distance, 0.01 * rSun);
 		else
 			ASSERT_GT(result.number_of_scatterings, 0);
 	}
 }
 
-// TEST(TestSimulationTrajectory, TestSimulatorPrintSummary)
-// {
-// 	//ARRANGE
-// 	//ACT
-// 	//ASSERT
-// }
+TEST(TestSimulationTrajectory, TestSimulatorPrintSummary)
+{
+	// ARRANGE
+	obscura::DM_Particle_SI DM(0.5 * GeV);
+	DM.Set_Sigma_Proton(0.1 * pb);
+	Solar_Model SSM;
+	Trajectory_Simulator simulator(SSM);
+	obscura::Standard_Halo_Model SHM;
+	// ACT
+	Event IC = Initial_Conditions(SHM, SSM, simulator.PRNG);
+	Hyperbolic_Kepler_Shift(IC, 1.5 * rSun);
+	Trajectory_Result result = simulator.Simulate(IC, DM);
+	// ASSERT
+	result.Print_Summary(SSM);
+}
 
 // 3. Equation of motion solution with Runge-Kutta-Fehlberg
 
