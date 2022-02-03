@@ -317,20 +317,20 @@ A number of parameters need to be specified and they are described here.
 
 If you decide to use this code, please cite the latest archived version,
 
-> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559874]](https://doi.org/10.5281/zenodo.4559874)
+> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) [Code, v0.1.1], Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.5957388]](https://doi.org/10.5281/zenodo.5957388)
 
 Bibtex entry:
 
 ```
 @software{DaMaSCUSsun,
   author = {Emken, Timon},
-  title = {{Dark Matter Simulation Code for Underground Scatterings - Sun Edition~(DaMaSCUS-SUN) [Code, v0.1.0]}},
+  title = {{Dark Matter Simulation Code for Underground Scatterings - Sun Edition~(DaMaSCUS-SUN) [Code, v0.1.1]}},
   year         = {2021},
   publisher    = {Zenodo},
-  version      = {v0.1.0},
-  doi          = {DOI:10.5281/zenodo.4559874},
-  url          = {https://doi.org/10.5281/zenodo.4559874},
-  howpublished={Astrophysics Source Code Library record \href{https://ascl.net/2102.018}{[ascl:2102.018]}. The code can be found under \url{https://github.com/temken/damascus-sun}. Version 0.1.0 is archived as \href{https://doi.org/10.5281/zenodo.4559874}{DOI:10.5281/zenodo.4559874}}
+  version      = {v0.1.1},
+  doi          = {DOI:10.5281/zenodo.5957388},
+  url          = {https://doi.org/10.5281/zenodo.5957388},
+  howpublished={Astrophysics Source Code Library record \href{https://ascl.net/2102.018}{[ascl:2102.018]}. The code can be found under \url{https://github.com/temken/damascus-sun}. Version 0.1.1 is archived as \href{https://doi.org/10.5281/zenodo.5957388}{DOI:10.5281/zenodo.5957388}}
 }
 ```
 
