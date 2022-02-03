@@ -147,7 +147,7 @@ void Configuration::Construct_DM_Particle()
 {
 	double DM_mass, DM_spin, DM_fraction;
 	bool DM_light;
-	//3.1 General properties
+	// 3.1 General properties
 	try
 	{
 		DM_mass = config.lookup("DM_mass");
@@ -186,7 +186,7 @@ void Configuration::Construct_DM_Particle()
 		std::exit(EXIT_FAILURE);
 	}
 
-	//3.2 DM interactions
+	// 3.2 DM interactions
 	std::string DM_interaction;
 	try
 	{
@@ -198,7 +198,7 @@ void Configuration::Construct_DM_Particle()
 		std::exit(EXIT_FAILURE);
 	}
 
-	//3.2.1 SI and SD
+	// 3.2.1 SI and SD
 	if(DM_interaction == "SI" || DM_interaction == "SD")
 		Configuration::Construct_DM_Particle_Standard(DM_interaction);
 	else if(DM_interaction == "Dark photon")
@@ -219,7 +219,7 @@ void Configuration::Construct_DM_Particle_Dark_Photon()
 {
 	DM = new DM_Particle_Dark_Photon();
 
-	//DM form factor
+	// DM form factor
 	std::string DM_form_factor;
 	double DM_mediator_mass = -1.0;
 	try
@@ -417,8 +417,10 @@ std::vector<double> Parameter_Scan::Find_Contour_Point(int row, int column, int 
 		int column_2 = (column_1 == column) ? column_previous : column;
 		double x_1	 = DM_masses[column_1];
 		double x_2	 = DM_masses[column_2];
-		double y_1	 = log10(p_value_grid[row][column_1]);
-		double y_2	 = log10(p_value_grid[row][column_2]);
+		double p_1	 = p_value_grid[row][column_1];
+		double p_2	 = p_value_grid[row][column_2];
+		double y_1	 = p_1 < 1.0e-100 ? -100.0 : log10(p_1);
+		double y_2	 = p_2 < 1.0e-100 ? -100.0 : log10(p_2);
 		double y	 = log10(p_critical);
 		double x	 = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
 		return {x, sigma};
@@ -430,8 +432,10 @@ std::vector<double> Parameter_Scan::Find_Contour_Point(int row, int column, int 
 		int row_2  = (row_1 == row) ? row_previous : row;
 		double x_1 = couplings[row_1];
 		double x_2 = couplings[row_2];
-		double y_1 = log10(p_value_grid[row_1][column]);
-		double y_2 = log10(p_value_grid[row_2][column]);
+		double p_1 = p_value_grid[row_1][column];
+		double p_2 = p_value_grid[row_2][column];
+		double y_1 = p_1 < 1.0e-100 ? -100.0 : log10(p_1);
+		double y_2 = p_2 < 1.0e-100 ? -100.0 : log10(p_2);
 		double y   = log10(p_critical);
 		double x   = (x_2 - x_1) * (y - y_1) / (y_2 - y_1) + x_1;
 		return {mDM, x};
