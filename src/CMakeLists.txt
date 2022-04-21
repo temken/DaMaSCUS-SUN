@@ -15,14 +15,11 @@ target_include_directories(DaMaSCUS-SUN
 install(TARGETS DaMaSCUS-SUN DESTINATION ${BIN_DIR})
 
 # Static library
+# Find all source files except main.cpp
+file(GLOB FILES "*.cpp")
+list(REMOVE_ITEM FILES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(lib_damascus_sun STATIC
-	Dark_Photon.cpp
-	Data_Generation.cpp
-	Parameter_Scan.cpp
-	Reflection_Spectrum.cpp
-	Simulation_Trajectory.cpp
-	Simulation_Utilities.cpp
-	Solar_Model.cpp )
+			${FILES} )
 
 set_target_properties(lib_damascus_sun PROPERTIES PREFIX "")
 
