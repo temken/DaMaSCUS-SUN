@@ -1,9 +1,11 @@
 #include "Medium_Effects.hpp"
 
+#include "libphysica/Natural_Units.hpp"
 #include "libphysica/Special_Functions.hpp"
 
 namespace DaMaSCUS_SUN
 {
+using namespace libphysica::natural_units;
 using namespace std::complex_literals;
 
 double Dawson_Integral(double x)
@@ -45,6 +47,15 @@ double Erfi(double x)
 std::complex<double> Plasma_Dispersion_Function(double x)
 {
 	return std::sqrt(M_PI) * std::exp(-x * x) * (1i - Erfi(x));
+}
+
+std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double electron_number_density)
+{
+	double sigma_MB				= std::sqrt(temperature / mElectron);
+	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * electron_number_density / mElectron;
+	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
+	double delta				= q / 2.0 / std::sqrt(2.0) / mElectron / sigma_MB;
+	return plasma_frequency_sqr * mElectron / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
 }
 
 }	// namespace DaMaSCUS_SUN
