@@ -47,7 +47,8 @@ double Erfi(double x)
 }
 std::complex<double> Plasma_Dispersion_Function(double x)
 {
-	return std::sqrt(M_PI) * std::exp(-x * x) * (1i - Erfi(x));
+	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
+	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
 }
 
 std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double electron_number_density)
