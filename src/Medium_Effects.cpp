@@ -1,5 +1,6 @@
 #include "Medium_Effects.hpp"
 
+#include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
 #include "libphysica/Special_Functions.hpp"
 
@@ -56,6 +57,30 @@ std::complex<double> Polarization_Tensor_L(double q0, double q, double temperatu
 	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
 	double delta				= q / 2.0 / std::sqrt(2.0) / mElectron / sigma_MB;
 	return plasma_frequency_sqr * mElectron / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
+}
+
+double Total_Scattering_Rate(double electron_density, double temperature, double m_DM, double sigma_e, double v_DM, double xi)
+{
+	double mA		 = keV;
+	double qRef		 = aEM * mElectron;
+	double mu_e		 = libphysica::Reduced_Mass(m_DM, mElectron);
+	double k_1		 = m_DM * v_DM;
+	double prefactor = electron_density * sigma_e / 2.0 / std::sqrt(2.0 * M_PI) / mu_e / mu_e * std::sqrt(mElectron / temperature);
+
+	std::function<double(double, double)> integrand = [temperature, electron_density, k_1, m_DM, qRef, mA](double q, double cos_theta) {
+		double F_DM						 = std::pow((qRef * qRef + mA * mA) / (q * q + mA * mA), 2.0);
+		double q0						 = (q * k_1 * cos_theta / m_DM + 0.5 * q * q / m_DM);
+		std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q, temperature, electron_density);
+		double medium_factor			 = q * q * q * q / std::norm(denominator);
+		double p1min					 = std::fabs(q / 2.0 * (1.0 + mElectron / m_DM) + k_1 * mElectron / m_DM * cos_theta);
+		return q * F_DM * F_DM * medium_factor * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
+	};
+
+	double q_min	= xi * k_1;
+	double q_max	= 2.0 * mu_e;
+	double integral = libphysica::Integrate_2D(integrand, q_min, q_max, -1.0, 1.0);
+
+	return prefactor * integral;
 }
 
 }	// namespace DaMaSCUS_SUN
