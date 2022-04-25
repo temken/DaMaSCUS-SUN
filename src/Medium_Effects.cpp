@@ -53,29 +53,50 @@ std::complex<double> Plasma_Dispersion_Function(double x)
 
 std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double electron_number_density)
 {
+	bool use_vlaslov_approximation = false;
+
 	double sigma_MB				= std::sqrt(temperature / mElectron);
 	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * electron_number_density / mElectron;
 	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
 	double delta				= q / 2.0 / std::sqrt(2.0) / mElectron / sigma_MB;
-	return plasma_frequency_sqr * mElectron / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
+
+	if(!use_vlaslov_approximation)
+		return plasma_frequency_sqr * mElectron / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
+	else
+		return plasma_frequency_sqr / sigma_MB / sigma_MB * (1.0 + xi * Plasma_Dispersion_Function(xi));
 }
 
-double Total_Scattering_Rate(double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, double xi)
+double Medium_Function(double number_density_electron, double temperature, double q, double mDM, double kDM, double cos_theta, bool use_medium_effects)
 {
-	double k_1		 = DM.mass * vDM;
+	if(!use_medium_effects)
+		return 1.0;
+	else
+	{
+		double q0						 = (q * kDM * cos_theta / mDM + 0.5 * q * q / mDM);
+		std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q, temperature, number_density_electron);
+		return q * q * q * q / std::norm(denominator);
+	}
+}
+
+double Differential_Scattering_Rate(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects)
+{
+	double k_1 = DM.mass * vDM;
+
+	double medium_function = Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects);
+	double p1min		   = std::fabs(q / 2.0 * (1.0 + mElectron / DM.mass) + k_1 * mElectron / DM.mass * cos_theta);
+	return q * DM.dSigma_dq2_Electron(q, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
+}
+
+double Total_Scattering_Rate(double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+{
 	double prefactor = electron_density * std::sqrt(2.0 / M_PI) * std::sqrt(mElectron / temperature);
 
-	std::function<double(double, double)> integrand = [temperature, electron_density, k_1, &DM, vDM](double q, double cos_theta) {
-		double q0						 = (q * k_1 * cos_theta / DM.mass + 0.5 * q * q / DM.mass);
-		std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q, temperature, electron_density);
-		double medium_factor			 = q * q * q * q / std::norm(denominator);
-		double p1min					 = std::fabs(q / 2.0 * (1.0 + mElectron / DM.mass) + k_1 * mElectron / DM.mass * cos_theta);
-		return q * DM.dSigma_dq2_Electron(q, vDM) * vDM * vDM * medium_factor * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
+	std::function<double(double, double)> integrand = [temperature, electron_density, &DM, vDM, use_medium_effects](double q, double cos_theta) {
+		return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects);
 	};
 
-	double q_min	= xi * k_1;
-	double mu_e		= libphysica::Reduced_Mass(DM.mass, mElectron);
-	double q_max	= 2.0 * mu_e;
+	double q_min	= xi * DM.mass * vDM;
+	double q_max	= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron);
 	double integral = libphysica::Integrate_2D(integrand, q_min, q_max, -1.0, 1.0);
 
 	return prefactor * integral;
