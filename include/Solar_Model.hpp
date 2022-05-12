@@ -43,6 +43,9 @@ class Solar_Model
 	bool using_interpolated_rate;
 	libphysica::Interpolation_2D rate_interpolation;
 
+	// Medium effects
+	bool include_medium_effects = false;
+
   public:
 	std::string name;
 	std::vector<Solar_Isotope> all_isotopes;
@@ -54,7 +57,6 @@ class Solar_Model
 	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
-	double Debye_Screening_Scale_Squared(double r);
 
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);

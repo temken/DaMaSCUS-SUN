@@ -21,5 +21,6 @@ extern double Medium_Function(double number_density_electron, double temperature
 extern double Differential_Scattering_Rate(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects = false);
 extern double Total_Scattering_Rate(double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects = false, double xi = 0.0);
 
+extern double PDF_Scattering(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects = false, double xi = 0.0);
 }	// namespace DaMaSCUS_SUN
 #endif

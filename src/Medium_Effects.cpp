@@ -80,16 +80,15 @@ double Medium_Function(double number_density_electron, double temperature, doubl
 
 double Differential_Scattering_Rate(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects)
 {
-	double k_1 = DM.mass * vDM;
-
+	double prefactor	   = electron_density * std::sqrt(2.0 / M_PI) * std::sqrt(mElectron / temperature);
+	double k_1			   = DM.mass * vDM;
 	double medium_function = Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects);
 	double p1min		   = std::fabs(q / 2.0 * (1.0 + mElectron / DM.mass) + k_1 * mElectron / DM.mass * cos_theta);
-	return q * DM.dSigma_dq2_Electron(q, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
+	return prefactor * q * DM.dSigma_dq2_Electron(q, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
 }
 
 double Total_Scattering_Rate(double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
 {
-	double prefactor = electron_density * std::sqrt(2.0 / M_PI) * std::sqrt(mElectron / temperature);
 
 	std::function<double(double, double)> integrand = [temperature, electron_density, &DM, vDM, use_medium_effects](double q, double cos_theta) {
 		return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects);
@@ -99,7 +98,13 @@ double Total_Scattering_Rate(double electron_density, double temperature, obscur
 	double q_max	= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron);
 	double integral = libphysica::Integrate_2D(integrand, q_min, q_max, -1.0, 1.0);
 
-	return prefactor * integral;
+	return integral;
+}
+
+double PDF_Scattering(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+{
+	double tot = Total_Scattering_Rate(electron_density, temperature, DM, vDM, use_medium_effects, xi);
+	return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects) / tot;
 }
 
 }	// namespace DaMaSCUS_SUN

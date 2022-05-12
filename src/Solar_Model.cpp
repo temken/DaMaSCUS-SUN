@@ -187,21 +187,6 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(local_escape_speed_squared(r));
 }
 
-double Solar_Model::Debye_Screening_Scale_Squared(double r)
-{
-	if(r <= rSun)
-	{
-		double T			 = Temperature(r);
-		double debye_scale_2 = 4.0 * M_PI * aEM / T * Number_Density_Electron(r);
-		return debye_scale_2;
-	}
-	else
-	{
-		std::cerr << "Error in Solar_Model::Debye_Screening_Scale(): r/rSun = " << r / rSun << " is outside the Sun." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 {
 	if(nucleus_index >= target_isotopes.size())
@@ -225,7 +210,7 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 {
 	if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent())
+	else if(DM.Is_Sigma_Total_V_Dependent() || include_medium_effects)
 	{
 
 		double kappa   = std::sqrt(mElectron / 2.0 / Temperature(r));
@@ -253,7 +238,7 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	}
 	else if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent())
+	else if(DM.Is_Sigma_Total_V_Dependent() || include_medium_effects)
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
 		double kappa	= std::sqrt(m_target / 2.0 / Temperature(r));
