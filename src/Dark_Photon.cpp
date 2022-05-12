@@ -88,8 +88,10 @@ void DM_Particle_Dark_Photon::Set_FormFactor_DM(std::string ff, double mMed)
 
 void DM_Particle_Dark_Photon::Set_Dark_Photon_Mass(double m)
 {
-	if(FF_DM != "Long-Range")
+	if(FF_DM == "General")
 		m_dark_photon = m;
+	else
+		std::cerr << "Warning in DM_Particle_Dark_Photon::Set_Dark_Photon_Mass(): Dark photon mass can only be set for the General form factor." << std::endl;
 }
 
 // Primary interaction parameter, such as a coupling constant or cross section
@@ -193,22 +195,8 @@ double DM_Particle_Dark_Photon::Sigma_Total_Nucleus(const obscura::Isotope& targ
 	}
 	else if(FF_DM == "Long-Range")
 	{
-		if(low_mass)
-		{
-			double k_debye_2 = SSM.Debye_Screening_Scale_Squared(r);
-			sigmatot *= std::pow(q_reference, 4.0) / k_debye_2 / (k_debye_2 + q2max);
-		}
-		else
-		{
-			// Account for Debye screening
-			double q2min						= 1.0e-10 * eV;
-			double k_debye_2					= SSM.Debye_Screening_Scale_Squared(r);
-			std::function<double(double)> dodq2 = [this, &target, vDM, r, k_debye_2](double q2) {
-				// The q2 * q2 cancels with the DM form factor in the differential cross section
-				return dSigma_dq2_Nucleus(sqrt(q2), target, vDM, r) * q2 * q2 / std::pow(q2 + k_debye_2, 2.0);
-			};
-			sigmatot = libphysica::Integrate(dodq2, q2min, q2max);
-		}
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sigma_Total_Nucleus(): Total cross section diverges for long range interactions." << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 
 	return sigmatot;
@@ -222,201 +210,10 @@ double DM_Particle_Dark_Photon::Sigma_Total_Electron(double vDM, double r)
 		sigmatot *= pow(q_reference * q_reference + m_dark_photon * m_dark_photon, 2.0) / m_dark_photon / m_dark_photon / (m_dark_photon * m_dark_photon + q2max);
 	else if(FF_DM == "Long-Range")
 	{
-		double k_debye_2 = SSM.Debye_Screening_Scale_Squared(r);
-		sigmatot *= std::pow(q_reference, 4.0) / k_debye_2 / (k_debye_2 + q2max);
+		std::cerr << "Error in DM_Particle_Dark_Photon::Sigma_Total_Electron(): Total cross section diverges for long range interactions." << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 	return sigmatot;
-}
-
-// Scattering angle functions
-double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r)
-{
-	if(FF_DM == "Contact")
-	{
-		if(low_mass)
-			return 0.5;
-		else
-			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else if(FF_DM == "General")
-	{
-		if(low_mass)
-		{
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / m_dark_photon / m_dark_photon;
-			return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
-		}
-		else
-			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		if(low_mass)
-		{
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-			return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
-		}
-		else
-			return PDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-double DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
-{
-	if(FF_DM == "Contact")
-		return 0.5;
-	else if(FF_DM == "General")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / m_dark_photon / m_dark_photon;
-		return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-		return (1.0 + x) / 2.0 / pow(1.0 + x / 2.0 * (1.0 - cos_alpha), 2.0);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::PDF_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r)
-{
-	if(FF_DM == "Contact")
-	{
-		if(low_mass)
-			return (1.0 + cos_alpha) / 2.0;
-		else
-			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else if(FF_DM == "General")
-	{
-		if(low_mass)
-		{
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / m_dark_photon / m_dark_photon;
-			return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
-		}
-		else
-			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		if(low_mass)
-		{
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-			return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
-		}
-		else
-			return CDF_Scattering_Angle_Nucleus_Base(cos_alpha, target, vDM, r);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-double DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r)
-{
-	if(FF_DM == "Contact")
-		return (1.0 + cos_alpha) / 2.0;
-	else if(FF_DM == "General")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / m_dark_photon / m_dark_photon;
-		return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-		return (1.0 + cos_alpha) / (2.0 + (1.0 - cos_alpha) * x);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::CDF_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(std::mt19937& PRNG, const obscura::Isotope& target, double vDM, double r)
-{
-	if(FF_DM == "Contact")
-	{
-		if(low_mass)
-		{
-			double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-			return 2.0 * xi - 1.0;
-		}
-		else
-			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
-	}
-	else if(FF_DM == "General")
-	{
-		if(low_mass)
-		{
-			double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / m_dark_photon / m_dark_photon;
-			return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
-		}
-		else
-			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		if(low_mass)
-		{
-			double xi	 = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-			double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, target.mass) * vDM, 2.0);
-			double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-			return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
-		}
-		else
-			return Sample_Scattering_Angle_Nucleus_Base(PRNG, target, vDM, r);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Nucleus(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-double DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(std::mt19937& PRNG, double vDM, double r)
-{
-	double xi = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-	if(FF_DM == "Contact")
-		return 2.0 * xi - 1.0;
-	else if(FF_DM == "General")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / m_dark_photon / m_dark_photon;
-		return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
-	}
-	else if(FF_DM == "Long-Range")
-	{
-		double q2max = 4.0 * pow(libphysica::Reduced_Mass(mass, mElectron) * vDM, 2.0);
-		double x	 = q2max / SSM.Debye_Screening_Scale_Squared(r);
-		return ((2.0 + x) * xi - 1.0) / (1.0 + x * xi);
-	}
-	else
-	{
-		std::cerr << "Error in DM_Particle_Dark_Photon::Sample_Scattering_Angle_Electron(): Form factor " << FF_DM << " not recognized." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
 }
 
 void DM_Particle_Dark_Photon::Print_Summary(int MPI_rank) const

@@ -21,8 +21,6 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	double m_dark_photon;
 	double FormFactor2_DM(double q) const;
 
-	Solar_Model SSM;
-
   public:
 	// Constructors
 	DM_Particle_Dark_Photon();
@@ -60,14 +58,6 @@ class DM_Particle_Dark_Photon : public obscura::DM_Particle
 	virtual bool Is_Sigma_Total_V_Dependent() const override;
 	virtual double Sigma_Total_Nucleus(const obscura::Isotope& target, double vDM, double r = -1.0) override;
 	virtual double Sigma_Total_Electron(double vDM, double r = -1.0) override;
-
-	// Scattering angle functions
-	virtual double PDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r = -1.0) override;
-	virtual double PDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r = -1.0) override;
-	virtual double CDF_Scattering_Angle_Nucleus(double cos_alpha, const obscura::Isotope& target, double vDM, double r = -1.0) override;
-	virtual double CDF_Scattering_Angle_Electron(double cos_alpha, double vDM, double r = -1.0) override;
-	virtual double Sample_Scattering_Angle_Nucleus(std::mt19937& PRNG, const obscura::Isotope& target, double vDM, double r = -1.0) override;
-	virtual double Sample_Scattering_Angle_Electron(std::mt19937& PRNG, double vDM, double r = -1.0) override;
 
 	virtual void Print_Summary(int MPI_rank = 0) const override;
 };
