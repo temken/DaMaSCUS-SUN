@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "Medium_Effects.hpp"
+#include "Scattering_Rates.hpp"
 
 using namespace DaMaSCUS_SUN;
 using namespace std::complex_literals;

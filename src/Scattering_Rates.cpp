@@ -1,4 +1,4 @@
-#include "Medium_Effects.hpp"
+#include "Scattering_Rates.hpp"
 
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"

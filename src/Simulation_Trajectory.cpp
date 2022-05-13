@@ -9,7 +9,7 @@
 
 #include "obscura/Astronomy.hpp"
 
-#include "Medium_Effects.hpp"
+#include "Scattering_Rates.hpp"
 
 namespace DaMaSCUS_SUN
 {

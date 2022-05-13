@@ -1,5 +1,5 @@
-#ifndef __Medium_Effects_hpp_
-#define __Medium_Effects_hpp_
+#ifndef __Scattering_Rates_hpp_
+#define __Scattering_Rates_hpp_
 
 #include <complex>
 #include <string>
