@@ -127,6 +127,17 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+
+	try
+	{
+		use_medium_effects = config.lookup("use_medium_effects");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'use_medium_effects' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
 	try
 	{
 		perform_full_scan = config.lookup("perform_full_scan");

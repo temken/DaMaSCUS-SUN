@@ -116,8 +116,8 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 	return table;
 }
 
-Solar_Model::Solar_Model()
-: using_interpolated_rate(false), name("Standard Solar Model AGSS09")
+Solar_Model::Solar_Model(bool medium_effects)
+: using_interpolated_rate(false), use_medium_effects(medium_effects), name("Standard Solar Model AGSS09")
 {
 	Import_Raw_Data();
 
@@ -210,7 +210,7 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 {
 	if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent() || include_medium_effects)
+	else if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects)
 	{
 
 		double kappa   = std::sqrt(mElectron / 2.0 / Temperature(r));
@@ -238,7 +238,7 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	}
 	else if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent() || include_medium_effects)
+	else if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects)
 	{
 		double m_target = target_isotopes[nucleus_index].mass;
 		double kappa	= std::sqrt(m_target / 2.0 / Temperature(r));
