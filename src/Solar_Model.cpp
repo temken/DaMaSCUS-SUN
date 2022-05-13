@@ -337,6 +337,7 @@ void Solar_Model::Print_Summary(int mpi_rank) const
 	{
 		std::cout << SEPARATOR
 				  << "Solar model:\t\t" << name << std::endl
+				  << "In medium effects:\t" << (use_medium_effects ? "[x]" : "[ ]") << std::endl
 				  << "Nuclear targets:\t" << target_isotopes.size() << std::endl
 				  << std::endl
 				  << "Isotope\tZ\tA\tAbund.[%]\tSpin\t<sp>\t<sn>"
