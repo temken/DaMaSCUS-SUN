@@ -44,9 +44,9 @@ class Solar_Model
 	libphysica::Interpolation_2D rate_interpolation;
 
 	// Medium effects
-	bool use_medium_effects = false;
 
   public:
+	bool use_medium_effects = false;
 	std::string name;
 	std::vector<Solar_Isotope> all_isotopes;
 	std::vector<Solar_Isotope> target_isotopes;

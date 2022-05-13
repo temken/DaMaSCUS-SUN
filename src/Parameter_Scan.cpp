@@ -130,7 +130,10 @@ void Configuration::Import_Parameter_Scan_Parameter()
 
 	try
 	{
-		use_medium_effects = config.lookup("use_medium_effects");
+		use_medium_effects		   = config.lookup("use_medium_effects");
+		std::string DM_form_factor = config.lookup("DM_form_factor").c_str();
+		if(!use_medium_effects && DM_form_factor == "Long-Range")
+			use_medium_effects = true;
 	}
 	catch(const SettingNotFoundException& nfex)
 	{
@@ -256,6 +259,7 @@ void Configuration::Construct_DM_Particle_Dark_Photon()
 		}
 	}
 	dynamic_cast<DM_Particle_Dark_Photon*>(DM)->Set_FormFactor_DM(DM_form_factor, DM_mediator_mass);
+
 	double DM_cross_section_electron;
 	try
 	{

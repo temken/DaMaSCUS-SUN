@@ -9,6 +9,8 @@
 
 #include "obscura/Astronomy.hpp"
 
+#include "Medium_Effects.hpp"
+
 namespace DaMaSCUS_SUN
 {
 
@@ -168,9 +170,20 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 
 libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
 {
-	double q		 = 1.0;
-	double cos_theta = 0.1;
-	double phi		 = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+	double n_e = solar_model.Number_Density_Electron(r);
+	double T   = solar_model.Temperature(r);
+	double vDM = DM_velocity.Norm();
+	double xi  = 0.0;
+
+	// 1. Sample theta, the angle between q and the initial DM velocity.
+	double cos_theta = Sample_Cos_Theta(PRNG, n_e, T, DM, vDM, solar_model.use_medium_effects, xi);
+
+	// 2. Sample q, the norm of the momentum transfer.
+	double q = Sample_q(PRNG, cos_theta, n_e, T, DM, vDM, solar_model.use_medium_effects, xi);
+
+	// 3. Sample phi, the azimuthal angle.
+	double phi = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
+
 	return libphysica::Spherical_Coordinates(q, acos(cos_theta), phi, DM_velocity);
 }
 
