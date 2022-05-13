@@ -3,51 +3,16 @@
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
 #include "libphysica/Special_Functions.hpp"
+#include "libphysica/Statistics.hpp"
 
 namespace DaMaSCUS_SUN
 {
 using namespace libphysica::natural_units;
 using namespace std::complex_literals;
 
-double Dawson_Integral(double x)
-{
-	double ans;
-	static const double H = 0.4, A1 = 2.0 / 3.0, A2 = 0.4, A3 = 2.0 / 7.0;
-
-	if(std::fabs(x) < 0.2)
-	{
-		double x2 = x * x;
-		ans		  = x * (1.0 - A1 * x2 * (1.0 - A2 * x2 * (1.0 - A3 * x2)));
-	}
-	else
-	{
-		static const int NMAX = 6;
-		static std::vector<double> c(NMAX);
-		for(int i = 0; i < NMAX; i++)
-			c[i] = exp(-(2.0 * i + 1.0) * (2.0 * i + 1.0) * H * H);
-
-		double xx  = std::fabs(x);
-		int n0	   = 2 * int(0.5 * xx / H + 0.5);
-		double xp  = xx - n0 * H;
-		double e1  = std::exp(2.0 * xp * H);
-		double e2  = e1 * e1;
-		double d1  = n0 + 1;
-		double d2  = d1 - 2.0;
-		double sum = 0.0;
-		for(int i = 0; i < NMAX; i++, d1 += 2.0, d2 -= 2.0, e1 *= e2)
-			sum += c[i] * (e1 / d1 + 1.0 / (d2 * e1));
-		ans = 0.5641895835 * libphysica::Sign(std::exp(-xp * xp), x) * sum;
-	}
-	return ans;
-}
-
-double Erfi(double x)
-{
-	return 2.0 / std::sqrt(M_PI) * std::exp(x * x) * Dawson_Integral(x);
-}
 std::complex<double> Plasma_Dispersion_Function(double x)
 {
-	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
+	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * libphysica::Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
 	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
 }
 
@@ -94,17 +59,64 @@ double Total_Scattering_Rate(double electron_density, double temperature, obscur
 		return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects);
 	};
 
+	double vRel_max = 0.2;
 	double q_min	= xi * DM.mass * vDM;
-	double q_max	= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron);
+	double q_max	= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
 	double integral = libphysica::Integrate_2D(integrand, q_min, q_max, -1.0, 1.0);
 
 	return integral;
 }
 
-double PDF_Scattering(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+double PDF_Cos_Theta(double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
 {
-	double tot = Total_Scattering_Rate(electron_density, temperature, DM, vDM, use_medium_effects, xi);
-	return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects) / tot;
+	// 1. Obtain dGamma/dcos_theta
+	std::function<double(double)> integrand = [temperature, electron_density, &DM, vDM, use_medium_effects, cos_theta](double q) {
+		return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects);
+	};
+	double vRel_max			= 0.2;
+	double q_min			= xi * DM.mass * vDM;
+	double q_max			= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
+	double dGamma_dcostheta = libphysica::Integrate(integrand, q_min, q_max);
+
+	// 2. Compute total rate for normalization
+	double Gamma = Total_Scattering_Rate(electron_density, temperature, DM, vDM, use_medium_effects, xi);
+	return dGamma_dcostheta / Gamma;
+}
+
+double Conditional_PDF_q(double q, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+{
+	// 1. Obtain dGamma/dcos_theta
+	std::function<double(double)> integrand = [temperature, electron_density, &DM, vDM, use_medium_effects, cos_theta](double q) {
+		return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects);
+	};
+	double vRel_max			= 0.2;
+	double q_min			= xi * DM.mass * vDM;
+	double q_max			= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
+	double dGamma_dcostheta = libphysica::Integrate(integrand, q_min, q_max);
+
+	// 2. Compute total rate for normalization
+	return Differential_Scattering_Rate(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects) / dGamma_dcostheta;
+}
+
+double Sample_Cos_Theta(std::mt19937& PRNG, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+{
+	std::function<double(double)> pdf = [electron_density, temperature, &DM, vDM, use_medium_effects, xi](double cos) {
+		return PDF_Cos_Theta(cos, electron_density, temperature, DM, vDM, use_medium_effects, xi);
+	};
+	double pdf_max = std::max(pdf(-1.0), pdf(1.0));
+	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf_max, PRNG);
+}
+
+double Sample_q(std::mt19937& PRNG, double cos_theta, double electron_density, double temperature, obscura::DM_Particle& DM, double vDM, bool use_medium_effects, double xi)
+{
+	std::function<double(double)> pdf = [cos_theta, electron_density, temperature, &DM, vDM, use_medium_effects, xi](double q) {
+		return Conditional_PDF_q(q, cos_theta, electron_density, temperature, DM, vDM, use_medium_effects, xi);
+	};
+	double vRel_max = 0.2;
+	double qMin		= xi * DM.mass * vDM;
+	double qMax		= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
+	double pdf_max	= 1.1 * pdf(libphysica::Find_Maximum(pdf, qMin, qMax));
+	return libphysica::Rejection_Sampling(pdf, qMin, qMax, pdf_max, PRNG);
 }
 
 }	// namespace DaMaSCUS_SUN
