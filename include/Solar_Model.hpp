@@ -73,7 +73,5 @@ class Solar_Model
 	void Print_Summary(int mpi_rank = 0) const;
 };
 
-// 3. Thermal average of relative speed between a particle of speed v_DM and a solar thermal target.
-extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, double v_DM);
 }	// namespace DaMaSCUS_SUN
 #endif

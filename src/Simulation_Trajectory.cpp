@@ -170,16 +170,16 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 
 libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
 {
-	double n_e = solar_model.Number_Density_Electron(r);
-	double T   = solar_model.Temperature(r);
-	double vDM = DM_velocity.Norm();
-	double xi  = 0.0;
+	double n_e	= solar_model.Number_Density_Electron(r);
+	double T	= solar_model.Temperature(r);
+	double vDM	= DM_velocity.Norm();
+	double zeta = 0.0;
 
 	// 1. Sample theta, the angle between q and the initial DM velocity.
-	double cos_theta = Sample_Cos_Theta(PRNG, n_e, T, DM, vDM, solar_model.use_medium_effects, xi);
+	double cos_theta = Sample_Cos_Theta(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
 
-	// 2. Sample q, the norm of the momentum transfer.
-	double q = Sample_q(PRNG, cos_theta, n_e, T, DM, vDM, solar_model.use_medium_effects, xi);
+	// // 2. Sample q, the norm of the momentum transfer.
+	double q = Sample_q(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
 
 	// 3. Sample phi, the azimuthal angle.
 	double phi = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
@@ -192,8 +192,8 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	double r = current_event.Radius();
 	double v = current_event.Speed();
 	// 1. Find target.
-	int target_index   = Sample_Target(DM, r, v);
-	double target_mass = (target_index == -1) ? mElectron : solar_model.target_isotopes[target_index].mass;
+	int target_index = Sample_Target(DM, r, v);
+	// double target_mass = (target_index == -1) ? mElectron : solar_model.target_isotopes[target_index].mass;
 
 	// 2. Sample momentum transfer.
 	libphysica::Vector qVec = Sample_Momentum_Transfer(DM, current_event.velocity, r);
