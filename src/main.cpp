@@ -39,8 +39,9 @@ int main(int argc, char* argv[])
 
 	// Configuration parameters
 	Configuration cfg(argv[1], mpi_rank);
-	Solar_Model SSM(cfg.use_medium_effects);
+	Solar_Model SSM(cfg.use_medium_effects, cfg.zeta);
 	cfg.Print_Summary(mpi_rank);
+	SSM.Print_Summary(mpi_rank);
 	MPI_Barrier(MPI_COMM_WORLD);
 	////////////////////////////////////////////////////////////////////////
 

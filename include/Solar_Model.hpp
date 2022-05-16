@@ -46,12 +46,13 @@ class Solar_Model
 	// Medium effects
 
   public:
-	bool use_medium_effects = false;
+	bool use_medium_effects;
+	double zeta;
 	std::string name;
 	std::vector<Solar_Isotope> all_isotopes;
 	std::vector<Solar_Isotope> target_isotopes;
 
-	Solar_Model(bool medium_effects = false);
+	Solar_Model(bool medium_effects = false, double q_cutoff_parameter = 0.0);
 
 	double Mass(double r);
 	double Mass_Density(double r);
@@ -61,13 +62,13 @@ class Solar_Model
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);
 
-	double DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed);
-	double DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double DM_speed, unsigned int nucleus_index);
+	double DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double vDM);
+	double DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double vDM, unsigned int nucleus_index);
 
-	double Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed);
-	double Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed);
+	double Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double vDM);
+	double Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double vDM);
 
-	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed);
+	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double vDM);
 	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed);
 
 	void Print_Summary(int mpi_rank = 0) const;

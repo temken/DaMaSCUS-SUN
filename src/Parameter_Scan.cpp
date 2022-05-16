@@ -143,6 +143,16 @@ void Configuration::Import_Parameter_Scan_Parameter()
 
 	try
 	{
+		zeta = config.lookup("zeta");
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'zeta' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
 		perform_full_scan = config.lookup("perform_full_scan");
 	}
 	catch(const SettingNotFoundException& nfex)
@@ -283,7 +293,10 @@ void Configuration::Print_Summary(int mpi_rank)
 				  << std::endl
 				  << "\tRun mode:\t\t\t" << run_mode << std::endl
 				  << "\tSample size:\t\t\t" << sample_size << std::endl
-				  << "\tSc. rate interpolation:\t\t" << ((interpolation_points > 0) ? "[x] (Grid: " + std::to_string(interpolation_points) + "×" + std::to_string(interpolation_points) + ")" : "[ ]") << std::endl;
+				  << "\tSc. rate interpolation:\t\t" << ((interpolation_points > 0) ? "[x] (Grid: " + std::to_string(interpolation_points) + "×" + std::to_string(interpolation_points) + ")" : "[ ]") << std::endl
+				  << "\tMedium effects:\t\t\t" << (use_medium_effects ? "[x]" : "[ ]") << std::endl;
+		if(zeta > 0.0)
+			std::cout << "\tQ-cutoff parameter zeta:\t" << zeta << std::endl;
 		if(run_mode == "Parameter point" && isoreflection_rings > 1)
 			std::cout << "\tIsoreflection rings:\t\t" << isoreflection_rings << std::endl;
 		else if(run_mode == "Parameter scan")

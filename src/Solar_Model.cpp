@@ -117,8 +117,8 @@ std::vector<std::vector<double>> Solar_Model::Create_Number_Density_Table_Electr
 	return table;
 }
 
-Solar_Model::Solar_Model(bool medium_effects)
-: using_interpolated_rate(false), use_medium_effects(medium_effects), name("Standard Solar Model AGSS09")
+Solar_Model::Solar_Model(bool medium_effects, double q_cutoff_parameter)
+: using_interpolated_rate(false), use_medium_effects(medium_effects), zeta(q_cutoff_parameter), name("Standard Solar Model AGSS09")
 {
 	Import_Raw_Data();
 
@@ -207,30 +207,19 @@ double Solar_Model::Number_Density_Electron(double r)
 		return number_density_electron(r);
 }
 
-double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double DM_speed)
+double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double r, double vDM)
 {
 	if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects)
-	{
-
-		double kappa   = std::sqrt(mElectron / 2.0 / Temperature(r));
-		auto integrand = [kappa, r, DM_speed, &DM](double vT, double cos_a) {
-			double v_rel = std::sqrt(DM_speed * DM_speed + vT * vT - 2.0 * DM_speed * vT * cos_a);
-			double sigma = DM.Sigma_Total_Electron(v_rel, r);
-			double pdf	 = 2.0 * M_PI * vT * vT * std::pow(kappa * kappa / M_PI, 1.5) * std::exp(-kappa * kappa * vT * vT);
-			return sigma * v_rel * pdf;
-		};
-		return Number_Density_Electron(r) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
-	}
 	else
 	{
-		double v_rel = Thermal_Averaged_Relative_Speed(Temperature(r), mElectron, DM_speed);
-		return Number_Density_Electron(r) * DM.Sigma_Total_Electron(DM_speed) * v_rel;
+		double electron_density = Number_Density_Electron(r);
+		double T				= Temperature(r);
+		return Total_Scattering_Rate_Electron(DM, vDM, electron_density, T, use_medium_effects, zeta);
 	}
 }
 
-double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double DM_speed, unsigned int nucleus_index)
+double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double r, double vDM, unsigned int nucleus_index)
 {
 	if(nucleus_index >= target_isotopes.size())
 	{
@@ -239,58 +228,45 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	}
 	else if(r > rSun)
 		return 0.0;
-	else if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects)
-	{
-		double m_target = target_isotopes[nucleus_index].mass;
-		double kappa	= std::sqrt(m_target / 2.0 / Temperature(r));
-		auto target		= target_isotopes[nucleus_index];
-		auto integrand	= [kappa, r, DM_speed, &DM, &target](double vT, double cos_a) {
-			 double v_rel = std::sqrt(DM_speed * DM_speed + vT * vT - 2.0 * DM_speed * vT * cos_a);
-			 double sigma = DM.Sigma_Total_Nucleus(target, v_rel, r);
-			 double pdf	  = 2.0 * M_PI * vT * vT * std::pow(kappa * kappa / M_PI, 1.5) * std::exp(-kappa * kappa * vT * vT);
-			 return sigma * v_rel * pdf;
-		};
-		return Number_Density_Nucleus(r, nucleus_index) * libphysica::Integrate_2D(integrand, 0.0, 4.0 / kappa, -1.0, 1.0);
-	}
 	else
 	{
-		double m_target = target_isotopes[nucleus_index].mass;
-		double v_rel	= Thermal_Averaged_Relative_Speed(Temperature(r), m_target, DM_speed);
-		return Number_Density_Nucleus(r, nucleus_index) * DM.Sigma_Total_Nucleus(target_isotopes[nucleus_index], DM_speed, r) * v_rel;
+		double nucleus_density = Number_Density_Nucleus(r, nucleus_index);
+		double T			   = Temperature(r);
+		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, T, use_medium_effects, zeta);
 	}
 }
 
-double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double DM_speed)
+double Solar_Model::Total_DM_Scattering_Rate(obscura::DM_Particle& DM, double r, double vDM)
 {
-	if(using_interpolated_rate && DM_speed < rate_interpolation.domain[1][1])
-		return Total_DM_Scattering_Rate_Interpolated(DM, r, DM_speed);
+	if(using_interpolated_rate && vDM < rate_interpolation.domain[1][1])
+		return Total_DM_Scattering_Rate_Interpolated(DM, r, vDM);
 	else
 	{
 		if(using_interpolated_rate)
-			std::cerr << "Warning Solar_Model::Total_DM_Scattering_Rate(): DM speed is out of bound (vDM = " << DM_speed << ")\n\tScattering rate must be computed on the fly." << std::endl;
-		return Total_DM_Scattering_Rate_Computed(DM, r, DM_speed);
+			std::cerr << "Warning Solar_Model::Total_DM_Scattering_Rate(): DM speed is out of bound (vDM = " << vDM << ")\n\tScattering rate must be computed on the fly." << std::endl;
+		return Total_DM_Scattering_Rate_Computed(DM, r, vDM);
 	}
 }
 
-double Solar_Model::Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double DM_speed)
+double Solar_Model::Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double vDM)
 {
 	if(r > rSun)
 		return 0.0;
 	else
 	{
-		double total_rate = DM_Scattering_Rate_Electron(DM, r, DM_speed);
+		double total_rate = DM_Scattering_Rate_Electron(DM, r, vDM);
 		for(unsigned int i = 0; i < target_isotopes.size(); i++)
-			total_rate += DM_Scattering_Rate_Nucleus(DM, r, DM_speed, i);
+			total_rate += DM_Scattering_Rate_Nucleus(DM, r, vDM, i);
 		return total_rate;
 	}
 }
 
-double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double DM_speed)
+double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double vDM)
 {
 	if(r > rSun)
 		return 0.0;
 	else
-		return rate_interpolation(r, DM_speed);
+		return rate_interpolation(r, vDM);
 }
 
 void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
