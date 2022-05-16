@@ -42,7 +42,10 @@ class Trajectory_Simulator
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
 	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
-	libphysica::Vector Sample_Momentum_Transfer(obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r);
+	libphysica::Vector Sample_Momentum_Transfer(int target_index, obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r);
+
+	// Momentum transfer range
+	double zeta = 0.0;	 // Momentum transfer cutoff parameter
 
   public:
 	std::mt19937 PRNG;

@@ -168,22 +168,28 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 	}
 }
 
-libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
+libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_index, obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
 {
-	double n_e	= solar_model.Number_Density_Electron(r);
-	double T	= solar_model.Temperature(r);
-	double vDM	= DM_velocity.Norm();
-	double zeta = 0.0;
+	double n_e = solar_model.Number_Density_Electron(r);
+	double T   = solar_model.Temperature(r);
+	double vDM = DM_velocity.Norm();
+	// 1. Sample theta, the angle between q and the initial DM velocity, and the momentum transfer norm q
+	double cos_theta, q;
+	if(target_index == -1)	 // Electrons
+	{
+		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
+		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
+	}
+	else   // Nuclei
+	{
+		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, zeta);
+		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, zeta);
+	}
 
-	// 1. Sample theta, the angle between q and the initial DM velocity.
-	double cos_theta = Sample_Cos_Theta(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
-
-	// // 2. Sample q, the norm of the momentum transfer.
-	double q = Sample_q(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, zeta);
-
-	// 3. Sample phi, the azimuthal angle.
+	// 2. Sample phi, the azimuthal angle.
 	double phi = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
 
+	// 3. Construct the 3D momentum transfer vector
 	return libphysica::Spherical_Coordinates(q, acos(cos_theta), phi, DM_velocity);
 }
 
@@ -196,7 +202,7 @@ void Trajectory_Simulator::Scatter(Event& current_event, obscura::DM_Particle& D
 	// double target_mass = (target_index == -1) ? mElectron : solar_model.target_isotopes[target_index].mass;
 
 	// 2. Sample momentum transfer.
-	libphysica::Vector qVec = Sample_Momentum_Transfer(DM, current_event.velocity, r);
+	libphysica::Vector qVec = Sample_Momentum_Transfer(target_index, DM, current_event.velocity, r);
 
 	// 3. Construct the final DM velocity
 	current_event.velocity += qVec / DM.mass;
