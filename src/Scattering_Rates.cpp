@@ -18,6 +18,8 @@ double Differential_Scattering_Rate_Electron(double q, double cos_theta, obscura
 	// To DO: Medium function only contains nuclear density, which is wrong here!! Needs to be fixed.
 	double medium_function = use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
 	double p1min		   = std::fabs(q / 2.0 * (1.0 + mElectron / DM.mass) + k_1 * mElectron / DM.mass * cos_theta);
+	if(vDM == 0.0)	 // cancels in next expression
+		vDM = 1.0;
 	return prefactor * q * DM.dSigma_dq2_Electron(q, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mElectron / temperature);
 }
 
@@ -27,8 +29,11 @@ double Differential_Scattering_Rate_Nucleus(double q, double cos_theta, obscura:
 	double prefactor = nucleus_density * std::sqrt(2.0 / M_PI) * std::sqrt(mNucleus / temperature);
 	double k_1		 = DM.mass * vDM;
 	// To DO: Medium function only contains nuclear density, which is wrong here!! Needs to be fixed.
-	double medium_function = use_medium_effects ? Medium_Function(nucleus_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
-	double p1min		   = std::fabs(q / 2.0 * (1.0 + mNucleus / DM.mass) + k_1 * mNucleus / DM.mass * cos_theta);
+	double electron_density = 10.0 * nucleus_density;
+	double medium_function	= use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
+	double p1min			= std::fabs(q / 2.0 * (1.0 + mNucleus / DM.mass) + k_1 * mNucleus / DM.mass * cos_theta);
+	if(vDM == 0.0)	 // cancels in next expression
+		vDM = 1.0;
 	return prefactor * q * DM.dSigma_dq2_Nucleus(q, target, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mNucleus / temperature);
 }
 
@@ -210,6 +215,8 @@ double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::DM_Parti
 	double qMin		= zeta * DM.mass * vDM;
 	double qMax		= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
 	double pdf_max	= 1.1 * pdf(libphysica::Find_Maximum(pdf, qMin, qMax));
+	if(pdf_max == 0.0)
+		pdf_max = 1.1 * pdf(libphysica::Find_Maximum(pdf, qMin, (qMax + qMin) / 2.0));
 	return libphysica::Rejection_Sampling(pdf, qMin, qMax, pdf_max, PRNG);
 }
 
@@ -222,6 +229,8 @@ double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Partic
 	double qMin		= zeta * DM.mass * vDM;
 	double qMax		= 2.0 * libphysica::Reduced_Mass(DM.mass, target.mass) * vRel_max;
 	double pdf_max	= 1.1 * pdf(libphysica::Find_Maximum(pdf, qMin, qMax));
+	if(pdf_max == 0.0)
+		pdf_max = 1.1 * pdf(libphysica::Find_Maximum(pdf, qMin, (qMax + qMin) / 2.0));
 	return libphysica::Rejection_Sampling(pdf, qMin, qMax, pdf_max, PRNG);
 }
 
