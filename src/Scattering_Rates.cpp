@@ -2,14 +2,12 @@
 
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
-#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 #include "libphysica/Utilities.hpp"
 
 namespace DaMaSCUS_SUN
 {
 using namespace libphysica::natural_units;
-using namespace std::complex_literals;
 
 // 1. Differential scattering rate dGamma / dq / dcos(theta)
 double Differential_Scattering_Rate_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double electron_density, double temperature, bool use_medium_effects)
@@ -90,42 +88,6 @@ double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, d
 		double relative_speed = (1.0 + 2.0 * pow(kappa * v_DM, 2.0)) * erf(kappa * v_DM) / 2.0 / kappa / kappa / v_DM + exp(-pow(kappa * v_DM, 2.0)) / sqrt(M_PI) / kappa;
 		return relative_speed;
 	}
-}
-
-// 4. Medium effects
-std::complex<double> Plasma_Dispersion_Function(double x)
-{
-	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * libphysica::Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
-	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
-}
-
-std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double number_density, double mass, double Z)
-{
-	bool use_vlaslov_approximation = false;
-
-	double sigma_MB				= std::sqrt(temperature / mass);
-	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * Z * Z * number_density / mass;
-	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
-	double delta				= q / 2.0 / std::sqrt(2.0) / mass / sigma_MB;
-
-	if(!use_vlaslov_approximation)
-		return plasma_frequency_sqr * mass / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
-	else
-		return plasma_frequency_sqr / sigma_MB / sigma_MB * (1.0 + xi * Plasma_Dispersion_Function(xi));
-}
-
-double Medium_Function(double q0, double q, double temperature, double number_density_electron, std::vector<double> number_densities_nuclei, std::vector<obscura::Isotope> nuclei)
-{
-	std::complex<double> PI_L = 0.0;
-	// 1. Electron contributions
-	PI_L += Polarization_Tensor_L(q0, q, temperature, number_density_electron, mElectron, 1.0);
-
-	// 2. Nuclear contributions
-	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Medium_Function", "The number of nuclei and the number of densities must be the same.");
-	for(unsigned int i = 0; i < nuclei.size(); i++)
-		PI_L += Polarization_Tensor_L(q0, q, temperature, number_densities_nuclei[i], nuclei[i].mass, nuclei[i].Z);
-	std::complex<double> denominator = q * q + PI_L;
-	return q * q * q * q / std::norm(denominator);
 }
 
 // PDFs and sampling functions of cos(theta) and q (WILL BE MOVED TO ANOTHER FILE)

@@ -1,6 +1,8 @@
 #ifndef __Solar_Model_hpp_
 #define __Solar_Model_hpp_
 
+#include <complex>
+
 #include "libphysica/Linear_Algebra.hpp"
 #include "libphysica/Numerics.hpp"
 
@@ -22,7 +24,23 @@ class Solar_Isotope : public obscura::Isotope
 	double Number_Density(double r);
 };
 
-// 2. Solar model
+// 2. Plasma struct to act as target for DM scatterings and describe in-medium effects
+
+struct Plasma
+{
+	double temperature, number_density_electrons;
+	std::vector<double> number_densities_nuclei;
+	std::vector<obscura::Isotope> nuclei;
+
+	Plasma(double T, double ne, std::vector<double>& nn, std::vector<obscura::Isotope>& iso);
+
+	std::complex<double> Polarization_Tensor_L(double q0, double q);
+	double Form_Factor_Medium_Effects(double q0, double q);
+};
+extern std::complex<double> Plasma_Dispersion_Function(double x);
+extern std::complex<double> Polarization_Tensor_Longitudinal(double q0, double q, double temperature, double number_density, double mass, double Z);
+
+// 3. Solar model
 class Solar_Model
 {
   private:

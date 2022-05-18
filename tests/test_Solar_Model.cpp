@@ -13,6 +13,7 @@
 
 using namespace DaMaSCUS_SUN;
 using namespace libphysica::natural_units;
+using namespace std::complex_literals;
 
 int main(int argc, char* argv[])
 {
@@ -23,6 +24,17 @@ int main(int argc, char* argv[])
 	result = RUN_ALL_TESTS();
 	MPI_Finalize();
 	return result;
+}
+
+TEST(TestSolarModel, TestPlasmaDispersionFunction)
+{
+	// ARRANGE
+	double x					= 0.0;
+	std::complex<double> result = 0.0 + 1.0i * std::sqrt(M_PI);
+	// ACT & ASSERT
+	std::complex<double> z = Plasma_Dispersion_Function(x);
+	EXPECT_NEAR(z.real(), result.real(), 1e-6);
+	EXPECT_NEAR(z.imag(), result.imag(), 1e-6);
 }
 
 TEST(TestSolarModel, TestSolarNucleus)

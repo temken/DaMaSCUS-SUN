@@ -5,6 +5,7 @@
 
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 #include "libphysica/Utilities.hpp"
 
@@ -15,6 +16,8 @@ namespace DaMaSCUS_SUN
 {
 
 using namespace libphysica::natural_units;
+using namespace std::complex_literals;
+
 // 1. Nuclear targets in the Sun
 Solar_Isotope::Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance)
 : Isotope(isotope), number_density(libphysica::Interpolation(density_table))
@@ -30,7 +33,53 @@ double Solar_Isotope::Number_Density(double r)
 		return number_density(r);
 }
 
-// 2. Solar model
+// 2. Plasma struct to act as target for DM scatterings and describe in-medium effects
+Plasma::Plasma(double T, double ne, std::vector<double>& nn, std::vector<obscura::Isotope>& iso)
+: temperature(T), number_density_electrons(ne), number_densities_nuclei(nn), nuclei(iso)
+{
+	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Plasma::Plasma", "The number of nuclei and the number of densities must be the same.");
+}
+
+std::complex<double> Plasma::Polarization_Tensor_L(double q0, double q)
+{
+	std::complex<double> PI_L = 0.0;
+	// 1. Electron contributions
+	PI_L += Polarization_Tensor_Longitudinal(q0, q, temperature, number_density_electrons, mElectron, 1.0);
+
+	// 2. Nuclear contributions
+	for(unsigned int i = 0; i < nuclei.size(); i++)
+		PI_L += Polarization_Tensor_Longitudinal(q0, q, temperature, number_densities_nuclei[i], nuclei[i].mass, nuclei[i].Z);
+	return PI_L;
+}
+
+double Plasma::Form_Factor_Medium_Effects(double q0, double q)
+{
+	std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q);
+	return q * q * q * q / std::norm(denominator);
+}
+
+std::complex<double> Plasma_Dispersion_Function(double x)
+{
+	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * libphysica::Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
+	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
+}
+
+std::complex<double> Polarization_Tensor_Longitudinal(double q0, double q, double temperature, double number_density, double mass, double Z)
+{
+	bool use_vlaslov_approximation = false;
+
+	double sigma_MB				= std::sqrt(temperature / mass);
+	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * Z * Z * number_density / mass;
+	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
+	double delta				= q / 2.0 / std::sqrt(2.0) / mass / sigma_MB;
+
+	if(!use_vlaslov_approximation)
+		return plasma_frequency_sqr * mass / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
+	else
+		return plasma_frequency_sqr / sigma_MB / sigma_MB * (1.0 + xi * Plasma_Dispersion_Function(xi));
+}
+
+// 3. Solar model
 // Auxiliary functions for the data import
 void Solar_Model::Import_Raw_Data()
 {
