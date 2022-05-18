@@ -69,6 +69,23 @@ double Plasma::Form_Factor_Medium_Effects(double q0, double q)
 	return q * q * q * q / std::norm(denominator);
 }
 
+void Plasma::Print_Summary(int rank)
+{
+	if(rank == 0)
+	{
+		std::cout << SEPARATOR << "Plasma Summary:" << std::endl
+				  << "Temperature [K]:\t" << libphysica::Round(In_Units(temperature, Kelvin)) << std::endl
+				  << "n_Electron [cm^-3]:\t" << libphysica::Round(In_Units(number_density_electrons, 1.0 / cm / cm / cm)) << std::endl;
+		if(nuclei.size() > 0)
+		{
+			std::cout << "\nNucleus\tn_Nucleus [cm^-3]" << std::endl;
+			for(unsigned int i = 0; i < nuclei.size(); i++)
+				std::cout << nuclei[i].name << "\t" << libphysica::Round(In_Units(number_densities_nuclei[i], 1.0 / cm / cm / cm)) << std::endl;
+		}
+		std::cout << SEPARATOR << std::endl;
+	}
+}
+
 std::complex<double> Plasma_Dispersion_Function(double x)
 {
 	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * libphysica::Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value

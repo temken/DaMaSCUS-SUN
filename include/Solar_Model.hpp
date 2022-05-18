@@ -41,6 +41,8 @@ class Plasma
 	Plasma(double temp, double ne, std::vector<double>& nn, Container& iso);
 
 	double Form_Factor_Medium_Effects(double q0, double q);
+
+	void Print_Summary(int rank = 0);
 };
 
 extern std::complex<double> Plasma_Dispersion_Function(double x);
