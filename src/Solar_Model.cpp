@@ -45,6 +45,12 @@ Plasma::Plasma(double temp, double ne, std::vector<double>& nn, Container& iso)
 	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Plasma::Plasma", "The number of nuclei and the number of densities must be the same.");
 }
 
+Plasma::Plasma(double temp, double ne)
+: temperature(temp), number_density_electrons(ne)
+{
+	// Empty
+}
+
 std::complex<double> Plasma::Polarization_Tensor_L(double q0, double q)
 {
 	std::complex<double> PI_L = 0.0;
@@ -244,12 +250,17 @@ double Solar_Model::Local_Escape_Speed(double r)
 
 Plasma Solar_Model::Get_Plasma(double r)
 {
-	double T			   = Temperature(r);
-	double ne			   = Number_Density_Electron(r);
-	std::vector<double> nn = {};
-	for(auto& isotope : target_isotopes)
-		nn.push_back(isotope.Number_Density(r));
-	return Plasma(T, ne, nn, target_isotopes);
+	double T  = Temperature(r);
+	double ne = Number_Density_Electron(r);
+	if(use_medium_effects)
+	{
+		std::vector<double> nn = {};
+		for(auto& isotope : target_isotopes)
+			nn.push_back(isotope.Number_Density(r));
+		return Plasma(T, ne, nn, target_isotopes);
+	}
+	else
+		return Plasma(T, ne);
 }
 
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)

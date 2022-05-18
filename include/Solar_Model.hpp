@@ -36,6 +36,7 @@ class Plasma
   public:
 	double temperature, number_density_electrons;
 
+	Plasma(double temp, double ne);
 	template <typename Container>
 	Plasma(double temp, double ne, std::vector<double>& nn, Container& iso);
 
