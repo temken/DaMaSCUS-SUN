@@ -24,19 +24,24 @@ class Solar_Isotope : public obscura::Isotope
 	double Number_Density(double r);
 };
 
-// 2. Plasma struct to act as target for DM scatterings and describe in-medium effects
-
-struct Plasma
+// 2. Plasma class to act as target for DM scatterings and describe in-medium effects
+class Plasma
 {
-	double temperature, number_density_electrons;
+  private:
 	std::vector<double> number_densities_nuclei;
 	std::vector<obscura::Isotope> nuclei;
 
-	Plasma(double T, double ne, std::vector<double>& nn, std::vector<obscura::Isotope>& iso);
-
 	std::complex<double> Polarization_Tensor_L(double q0, double q);
+
+  public:
+	double temperature, number_density_electrons;
+
+	template <typename Container>
+	Plasma(double temp, double ne, std::vector<double>& nn, Container& iso);
+
 	double Form_Factor_Medium_Effects(double q0, double q);
 };
+
 extern std::complex<double> Plasma_Dispersion_Function(double x);
 extern std::complex<double> Polarization_Tensor_Longitudinal(double q0, double q, double temperature, double number_density, double mass, double Z);
 
@@ -76,6 +81,7 @@ class Solar_Model
 	double Mass_Density(double r);
 	double Temperature(double r);
 	double Local_Escape_Speed(double r);
+	Plasma Get_Plasma(double r);
 
 	double Number_Density_Nucleus(double r, unsigned int nucleus_index);
 	double Number_Density_Electron(double r);

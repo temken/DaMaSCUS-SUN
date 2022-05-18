@@ -170,23 +170,22 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 
 libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_index, obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
 {
-	double n_e = solar_model.Number_Density_Electron(r);
-	double T   = solar_model.Temperature(r);
-	double vDM = DM_velocity.Norm();
+	Plasma plasma = solar_model.Get_Plasma(r);
+	double vDM	  = DM_velocity.Norm();
 	// 1. Sample theta, the angle between q and the initial DM velocity, and the momentum transfer norm q
 	double cos_theta, q;
 	double qMin = solar_model.zeta * DM.mass * vDM;
 	if(target_index == -1)	 // Electrons
 	{
 		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * solar_model.vRel_max;
-		cos_theta	= Sample_Cos_Theta_Electron(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, qMin, qMax);
-		q			= Sample_q_Electron(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, qMin, qMax);
+		cos_theta	= Sample_Cos_Theta_Electron(PRNG, DM, vDM, plasma, solar_model.use_medium_effects, qMin, qMax);
+		q			= Sample_q_Electron(PRNG, cos_theta, DM, vDM, plasma, solar_model.use_medium_effects, qMin, qMax);
 	}
 	else   // Nuclei
 	{
 		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, solar_model.target_isotopes[target_index].mass) * solar_model.vRel_max;
-		cos_theta	= Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, qMin, qMax);
-		q			= Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, qMin, qMax);
+		cos_theta	= Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin, qMax);
+		q			= Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin, qMax);
 	}
 
 	// 2. Sample phi, the azimuthal angle.

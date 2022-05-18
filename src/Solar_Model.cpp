@@ -34,9 +34,14 @@ double Solar_Isotope::Number_Density(double r)
 }
 
 // 2. Plasma struct to act as target for DM scatterings and describe in-medium effects
-Plasma::Plasma(double T, double ne, std::vector<double>& nn, std::vector<obscura::Isotope>& iso)
-: temperature(T), number_density_electrons(ne), number_densities_nuclei(nn), nuclei(iso)
+template <typename Container>
+Plasma::Plasma(double temp, double ne, std::vector<double>& nn, Container& iso)
+: number_densities_nuclei(nn), temperature(temp), number_density_electrons(ne)
 {
+	for(obscura::Isotope& nucleus : iso)
+	{
+		nuclei.push_back(nucleus);
+	}
 	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Plasma::Plasma", "The number of nuclei and the number of densities must be the same.");
 }
 
@@ -237,6 +242,16 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(local_escape_speed_squared(r));
 }
 
+Plasma Solar_Model::Get_Plasma(double r)
+{
+	double T			   = Temperature(r);
+	double ne			   = Number_Density_Electron(r);
+	std::vector<double> nn = {};
+	for(auto& isotope : target_isotopes)
+		nn.push_back(isotope.Number_Density(r));
+	return Plasma(T, ne, nn, target_isotopes);
+}
+
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 {
 	if(nucleus_index >= target_isotopes.size())
@@ -262,11 +277,10 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double electron_density = Number_Density_Electron(r);
-		double T				= Temperature(r);
-		double qMin				= zeta * DM.mass * vDM;
-		double qMax				= 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
-		return Total_Scattering_Rate_Electron(DM, vDM, electron_density, T, use_medium_effects, qMin, qMax);
+		double qMin	  = zeta * DM.mass * vDM;
+		double qMax	  = 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
+		Plasma plasma = Get_Plasma(r);
+		return Total_Scattering_Rate_Electron(DM, vDM, plasma, use_medium_effects, qMin, qMax);
 	}
 }
 
@@ -282,10 +296,10 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	else
 	{
 		double nucleus_density = Number_Density_Nucleus(r, nucleus_index);
-		double T			   = Temperature(r);
 		double qMin			   = zeta * DM.mass * vDM;
 		double qMax			   = 2.0 * libphysica::Reduced_Mass(DM.mass, target_isotopes[nucleus_index].mass) * vRel_max;
-		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, T, use_medium_effects, qMin, qMax);
+		Plasma plasma		   = Get_Plasma(r);
+		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, plasma, use_medium_effects, qMin, qMax);
 	}
 }
 
