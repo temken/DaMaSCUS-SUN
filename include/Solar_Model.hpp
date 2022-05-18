@@ -47,7 +47,7 @@ class Solar_Model
 
   public:
 	bool use_medium_effects;
-	double zeta;
+	double zeta, vRel_max = 0.2;
 	std::string name;
 	std::vector<Solar_Isotope> all_isotopes;
 	std::vector<Solar_Isotope> target_isotopes;

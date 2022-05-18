@@ -175,15 +175,18 @@ libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_ind
 	double vDM = DM_velocity.Norm();
 	// 1. Sample theta, the angle between q and the initial DM velocity, and the momentum transfer norm q
 	double cos_theta, q;
+	double qMin = solar_model.zeta * DM.mass * vDM;
 	if(target_index == -1)	 // Electrons
 	{
-		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, solar_model.zeta);
-		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, solar_model.zeta);
+		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * solar_model.vRel_max;
+		cos_theta	= Sample_Cos_Theta_Electron(PRNG, DM, vDM, n_e, T, solar_model.use_medium_effects, qMin, qMax);
+		q			= Sample_q_Electron(PRNG, cos_theta, DM, vDM, n_e, T, solar_model.use_medium_effects, qMin, qMax);
 	}
 	else   // Nuclei
 	{
-		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, solar_model.zeta);
-		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, solar_model.zeta);
+		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, solar_model.target_isotopes[target_index].mass) * solar_model.vRel_max;
+		cos_theta	= Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, qMin, qMax);
+		q			= Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], n_e, T, solar_model.use_medium_effects, qMin, qMax);
 	}
 
 	// 2. Sample phi, the azimuthal angle.
