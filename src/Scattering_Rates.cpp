@@ -4,6 +4,7 @@
 #include "libphysica/Natural_Units.hpp"
 #include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
+#include "libphysica/Utilities.hpp"
 
 namespace DaMaSCUS_SUN
 {
@@ -16,7 +17,8 @@ double Differential_Scattering_Rate_Electron(double q, double cos_theta, obscura
 	double prefactor = electron_density * std::sqrt(2.0 / M_PI) * std::sqrt(mElectron / temperature);
 	double k_1		 = DM.mass * vDM;
 	// To DO: Medium function only contains nuclear density, which is wrong here!! Needs to be fixed.
-	double medium_function = use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
+	// double medium_function = use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
+	double medium_function = 1.0;
 	double p1min		   = std::fabs(q / 2.0 * (1.0 + mElectron / DM.mass) + k_1 * mElectron / DM.mass * cos_theta);
 	if(vDM == 0.0)	 // cancels in next expression
 		vDM = 1.0;
@@ -29,9 +31,9 @@ double Differential_Scattering_Rate_Nucleus(double q, double cos_theta, obscura:
 	double prefactor = nucleus_density * std::sqrt(2.0 / M_PI) * std::sqrt(mNucleus / temperature);
 	double k_1		 = DM.mass * vDM;
 	// To DO: Medium function only contains nuclear density, which is wrong here!! Needs to be fixed.
-	double electron_density = 10.0 * nucleus_density;
-	double medium_function	= use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
-	double p1min			= std::fabs(q / 2.0 * (1.0 + mNucleus / DM.mass) + k_1 * mNucleus / DM.mass * cos_theta);
+	// double medium_function	= use_medium_effects ? Medium_Function(electron_density, temperature, q, DM.mass, k_1, cos_theta, use_medium_effects) : 1.0;
+	double medium_function = 1.0;
+	double p1min		   = std::fabs(q / 2.0 * (1.0 + mNucleus / DM.mass) + k_1 * mNucleus / DM.mass * cos_theta);
 	if(vDM == 0.0)	 // cancels in next expression
 		vDM = 1.0;
 	return prefactor * q * DM.dSigma_dq2_Nucleus(q, target, vDM) * vDM * vDM * medium_function * std::exp(-p1min * p1min / 2.0 / mNucleus / temperature);
@@ -103,25 +105,32 @@ std::complex<double> Plasma_Dispersion_Function(double x)
 	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
 }
 
-std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double electron_number_density)
+std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double number_density, double mass, double Z)
 {
 	bool use_vlaslov_approximation = false;
 
-	double sigma_MB				= std::sqrt(temperature / mElectron);
-	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * electron_number_density / mElectron;
+	double sigma_MB				= std::sqrt(temperature / mass);
+	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * Z * Z * number_density / mass;
 	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
-	double delta				= q / 2.0 / std::sqrt(2.0) / mElectron / sigma_MB;
+	double delta				= q / 2.0 / std::sqrt(2.0) / mass / sigma_MB;
 
 	if(!use_vlaslov_approximation)
-		return plasma_frequency_sqr * mElectron / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
+		return plasma_frequency_sqr * mass / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
 	else
 		return plasma_frequency_sqr / sigma_MB / sigma_MB * (1.0 + xi * Plasma_Dispersion_Function(xi));
 }
 
-double Medium_Function(double number_density_electron, double temperature, double q, double mDM, double kDM, double cos_theta, bool use_medium_effects)
+double Medium_Function(double q0, double q, double temperature, double number_density_electron, std::vector<double> number_densities_nuclei, std::vector<obscura::Isotope> nuclei)
 {
-	double q0						 = (q * kDM * cos_theta / mDM + 0.5 * q * q / mDM);
-	std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q, temperature, number_density_electron);
+	std::complex<double> PI_L = 0.0;
+	// 1. Electron contributions
+	PI_L += Polarization_Tensor_L(q0, q, temperature, number_density_electron, mElectron, 1.0);
+
+	// 2. Nuclear contributions
+	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Medium_Function", "The number of nuclei and the number of densities must be the same.");
+	for(unsigned int i = 0; i < nuclei.size(); i++)
+		PI_L += Polarization_Tensor_L(q0, q, temperature, number_densities_nuclei[i], nuclei[i].mass, nuclei[i].Z);
+	std::complex<double> denominator = q * q + PI_L;
 	return q * q * q * q / std::norm(denominator);
 }
 
@@ -241,12 +250,10 @@ double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::DM_Parti
 	double vRel_max					  = 0.2;
 	double qMin						  = zeta * DM.mass * vDM;
 	double qMax						  = 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * vRel_max;
-	double xi						  = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-	std::function<double(double)> fct = [xi, cos_theta, electron_density, temperature, &DM, vDM, use_medium_effects, zeta](double q) {
-		return xi - CDF_q_Electron(q, cos_theta, DM, vDM, electron_density, temperature, use_medium_effects, zeta);
+	std::function<double(double)> cdf = [cos_theta, electron_density, temperature, &DM, vDM, use_medium_effects, zeta](double q) {
+		return CDF_q_Electron(q, cos_theta, DM, vDM, electron_density, temperature, use_medium_effects, zeta);
 	};
-	double q = libphysica::Find_Root(fct, qMin, qMax, 1e-10 * (qMax - qMin));
-	return q;
+	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
 }
 
 double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& target, double nucleus_density, double temperature, bool use_medium_effects, double zeta)
@@ -254,12 +261,10 @@ double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Partic
 	double vRel_max					  = 0.2;
 	double qMin						  = zeta * DM.mass * vDM;
 	double qMax						  = 2.0 * libphysica::Reduced_Mass(DM.mass, target.mass) * vRel_max;
-	double xi						  = libphysica::Sample_Uniform(PRNG, 0.0, 1.0);
-	std::function<double(double)> fct = [xi, &target, cos_theta, nucleus_density, temperature, &DM, vDM, use_medium_effects, zeta](double q) {
-		return xi - CDF_q_Nucleus(q, cos_theta, DM, vDM, target, nucleus_density, temperature, use_medium_effects, zeta);
+	std::function<double(double)> cdf = [&target, cos_theta, nucleus_density, temperature, &DM, vDM, use_medium_effects, zeta](double q) {
+		return CDF_q_Nucleus(q, cos_theta, DM, vDM, target, nucleus_density, temperature, use_medium_effects, zeta);
 	};
-	double q = libphysica::Find_Root(fct, qMin, qMax, 1e-10 * (qMax - qMin));
-	return q;
+	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
 }
 
 }	// namespace DaMaSCUS_SUN

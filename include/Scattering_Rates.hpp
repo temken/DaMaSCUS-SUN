@@ -22,8 +22,8 @@ extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_ta
 
 // 4. Medium effects
 extern std::complex<double> Plasma_Dispersion_Function(double x);
-extern std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double electron_number_density);
-extern double Medium_Function(double number_density_electron, double temperature, double q, double mDM, double kDM, double cos_theta, bool use_medium_effects = false);
+extern std::complex<double> Polarization_Tensor_L(double q0, double q, double temperature, double number_density, double mass, double Z = 1.0);
+extern double Medium_Function(double q0, double q, double temperature, double number_density_electron, std::vector<double> number_densities_nuclei = {}, std::vector<obscura::Isotope> nuclei = {});
 
 // PDFs and sampling functions of cos(theta) and q (WILL BE MOVED TO ANOTHER FILE)
 extern double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, double electron_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
