@@ -32,6 +32,9 @@ extern double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, 
 extern double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double electron_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
 extern double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& target, double nucleus_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
 
+extern double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double electron_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
+extern double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& target, double nucleus_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
+
 extern double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double electron_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
 extern double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& target, double nucleus_density, double temperature, bool use_medium_effects = false, double zeta = 0.0);
 
