@@ -177,15 +177,13 @@ libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_ind
 	double qMin = solar_model.zeta * DM.mass * vDM;
 	if(target_index == -1)	 // Electrons
 	{
-		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, mElectron) * solar_model.vRel_max;
-		cos_theta	= Sample_Cos_Theta_Electron(PRNG, DM, vDM, plasma, solar_model.use_medium_effects, qMin, qMax);
-		q			= Sample_q_Electron(PRNG, cos_theta, DM, vDM, plasma, solar_model.use_medium_effects, qMin, qMax);
+		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, plasma, solar_model.use_medium_effects, qMin);
+		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, plasma, solar_model.use_medium_effects, qMin);
 	}
 	else   // Nuclei
 	{
-		double qMax = 2.0 * libphysica::Reduced_Mass(DM.mass, solar_model.target_isotopes[target_index].mass) * solar_model.vRel_max;
-		cos_theta	= Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin, qMax);
-		q			= Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin, qMax);
+		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin);
+		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin);
 	}
 
 	// 2. Sample phi, the azimuthal angle.

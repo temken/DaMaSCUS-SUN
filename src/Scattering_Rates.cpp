@@ -39,7 +39,7 @@ double Differential_Scattering_Rate_Nucleus(double q, double cos_theta, obscura:
 }
 
 // 2. Total scattering rate
-double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects || qMin > 0.0)
 	{
@@ -47,8 +47,8 @@ double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, Plas
 			return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects);
 		};
 
-		double integral = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
-		return integral;
+		double qMax = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, mElectron, vDM);
+		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
 	}
 	else
 	{
@@ -57,13 +57,14 @@ double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, Plas
 	}
 }
 
-double Total_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Total_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	if(DM.Is_Sigma_Total_V_Dependent() || use_medium_effects || qMin > 0.0)
 	{
 		std::function<double(double, double)> integrand = [&nucleus, nucleus_density, &DM, vDM, &plasma, use_medium_effects](double q, double cos_theta) {
 			return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects);
 		};
+		double qMax = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, nucleus.mass, vDM);
 		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
 	}
 	else
@@ -86,73 +87,90 @@ double Thermal_Averaged_Relative_Speed(double temperature, double mass_target, d
 	}
 }
 
+double Maximum_Relative_Speed(double temperature, double mass_target, double vDM, double N)
+{
+	double kappa = sqrt(mass_target / 2.0 / temperature);
+	return vDM + N / kappa;
+}
+
+double Maximum_Momentum_Transfer(double mDM, double temperature, double mass_target, double vDM, double N)
+{
+	double vRelMax = Maximum_Relative_Speed(temperature, mass_target, vDM, N);
+	return 2.0 * libphysica::Reduced_Mass(mDM, mass_target) * vRelMax;
+}
+
 // PDFs and sampling functions of cos(theta) and q (WILL BE MOVED TO ANOTHER FILE)
-double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	// 1. Obtain dGamma/dcos_theta
 	std::function<double(double)> integrand = [&plasma, &DM, vDM, use_medium_effects, cos_theta](double q) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects);
 	};
+	double qMax				= Maximum_Momentum_Transfer(DM.mass, plasma.temperature, mElectron, vDM);
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
 	// 2. Compute total rate for normalization
-	double Gamma = Total_Scattering_Rate_Electron(DM, vDM, plasma, use_medium_effects, qMin, qMax);
+	double Gamma = Total_Scattering_Rate_Electron(DM, vDM, plasma, use_medium_effects, qMin);
 	return dGamma_dcostheta / Gamma;
 }
 
-double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	// 1. Obtain dGamma/dcos_theta
 	std::function<double(double)> integrand = [&nucleus, &plasma, nucleus_density, &DM, vDM, use_medium_effects, cos_theta](double q) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects);
 	};
+	double qMax				= Maximum_Momentum_Transfer(DM.mass, plasma.temperature, nucleus.mass, vDM);
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
 	// 2. Compute total rate for normalization
-	double Gamma = Total_Scattering_Rate_Nucleus(DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin, qMax);
+	double Gamma = Total_Scattering_Rate_Nucleus(DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin);
 	return dGamma_dcostheta / Gamma;
 }
 
 // Conditional PDF/CDF of q for a fixed value of cos_theta
-double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	// 1. Obtain dGamma/dcos_theta
 	std::function<double(double)> integrand = [&plasma, &DM, vDM, use_medium_effects, cos_theta](double q) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects);
 	};
+	double qMax				= Maximum_Momentum_Transfer(DM.mass, plasma.temperature, mElectron, vDM);
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
 	return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects) / dGamma_dcostheta;
 }
 
-double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	// 1. Obtain dGamma/dcos_theta
 	std::function<double(double)> integrand = [&nucleus, &plasma, nucleus_density, &DM, vDM, use_medium_effects, cos_theta](double q) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects);
 	};
+	double qMax				= Maximum_Momentum_Transfer(DM.mass, plasma.temperature, nucleus.mass, vDM);
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
 	return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects) / dGamma_dcostheta;
 }
 
-double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	std::function<double(double)> integrand = [cos_theta, &plasma, &DM, vDM, use_medium_effects](double q) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects);
 	};
-
+	double qMax		  = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, mElectron, vDM);
 	double integral_1 = libphysica::Integrate(integrand, qMin, q);
 	double integral_2 = libphysica::Integrate(integrand, qMin, qMax);
 
 	return integral_1 / integral_2;
 }
 
-double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
 	std::function<double(double)> integrand = [cos_theta, &plasma, &nucleus, nucleus_density, &DM, vDM, use_medium_effects](double q) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects);
 	};
+	double qMax = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, nucleus.mass, vDM);
 
 	double integral_1 = libphysica::Integrate(integrand, qMin, q);
 	double integral_2 = libphysica::Integrate(integrand, qMin, qMax);
@@ -160,10 +178,10 @@ double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, doubl
 	return integral_1 / integral_2;
 }
 
-double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
-	std::function<double(double)> pdf = [&plasma, &DM, vDM, use_medium_effects, qMin, qMax](double cos) {
-		return PDF_Cos_Theta_Electron(cos, DM, vDM, plasma, use_medium_effects, qMin, qMax);
+	std::function<double(double)> pdf = [&plasma, &DM, vDM, use_medium_effects, qMin](double cos) {
+		return PDF_Cos_Theta_Electron(cos, DM, vDM, plasma, use_medium_effects, qMin);
 	};
 	double pdf_max = std::max(pdf(-1.0), pdf(1.0));
 	if(pdf_max < 1.0)
@@ -171,10 +189,10 @@ double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, d
 	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf_max, PRNG);
 }
 
-double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
-	std::function<double(double)> pdf = [&nucleus, nucleus_density, &plasma, &DM, vDM, use_medium_effects, qMin, qMax](double cos) {
-		return PDF_Cos_Theta_Nucleus(cos, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin, qMax);
+	std::function<double(double)> pdf = [&nucleus, nucleus_density, &plasma, &DM, vDM, use_medium_effects, qMin](double cos) {
+		return PDF_Cos_Theta_Nucleus(cos, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin);
 	};
 	double pdf_max = std::max(pdf(-1.0), pdf(1.0));
 	if(pdf_max < 1.0)
@@ -182,19 +200,21 @@ double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, do
 	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf_max, PRNG);
 }
 
-double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin)
 {
-	std::function<double(double)> cdf = [cos_theta, &plasma, &DM, vDM, use_medium_effects, qMin, qMax](double q) {
-		return CDF_q_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects, qMin, qMax);
+	std::function<double(double)> cdf = [cos_theta, &plasma, &DM, vDM, use_medium_effects, qMin](double q) {
+		return CDF_q_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects, qMin);
 	};
+	double qMax = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, mElectron, vDM);
 	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
 }
 
-double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
+double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin)
 {
-	std::function<double(double)> cdf = [&nucleus, cos_theta, nucleus_density, &plasma, &DM, vDM, use_medium_effects, qMin, qMax](double q) {
-		return CDF_q_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin, qMax);
+	std::function<double(double)> cdf = [&nucleus, cos_theta, nucleus_density, &plasma, &DM, vDM, use_medium_effects, qMin](double q) {
+		return CDF_q_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin);
 	};
+	double qMax = Maximum_Momentum_Transfer(DM.mass, plasma.temperature, nucleus.mass, vDM);
 	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
 }
 

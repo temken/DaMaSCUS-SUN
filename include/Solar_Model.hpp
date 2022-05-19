@@ -25,15 +25,13 @@ class Solar_Isotope : public obscura::Isotope
 };
 
 // 2. Plasma class to act as target for DM scatterings and describe in-medium effects
-class Plasma
+struct Plasma
 {
-  private:
 	std::vector<double> number_densities_nuclei;
 	std::vector<obscura::Isotope> nuclei;
 
 	std::complex<double> Polarization_Tensor_L(double q0, double q);
 
-  public:
 	double temperature, number_density_electrons;
 
 	Plasma(double temp, double ne);
@@ -73,7 +71,7 @@ class Solar_Model
 
   public:
 	bool use_medium_effects;
-	double zeta, vRel_max = 0.2;
+	double zeta;
 	std::string name;
 	std::vector<Solar_Isotope> all_isotopes;
 	std::vector<Solar_Isotope> target_isotopes;
