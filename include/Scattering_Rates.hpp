@@ -26,6 +26,7 @@ extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_ta
 extern double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax);
 extern double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax);
 
+// Conditional PDF/CDF of q for a fixed value of cos_theta
 extern double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax);
 extern double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax);
 

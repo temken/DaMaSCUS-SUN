@@ -113,6 +113,7 @@ double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double 
 	return dGamma_dcostheta / Gamma;
 }
 
+// Conditional PDF/CDF of q for a fixed value of cos_theta
 double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
 {
 	// 1. Obtain dGamma/dcos_theta
@@ -121,7 +122,6 @@ double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, doub
 	};
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
-	// 2. Compute total rate for normalization
 	return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects) / dGamma_dcostheta;
 }
 
@@ -133,32 +133,31 @@ double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, doubl
 	};
 	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
 
-	// 2. Compute total rate for normalization
 	return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects) / dGamma_dcostheta;
 }
 
 double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
 {
-	std::function<double(double, double)> integrand = [&plasma, &DM, vDM, use_medium_effects](double q, double cos_theta) {
+	std::function<double(double)> integrand = [cos_theta, &plasma, &DM, vDM, use_medium_effects](double q) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, plasma, use_medium_effects);
 	};
 
-	double integral	  = libphysica::Integrate_2D(integrand, qMin, q, -1.0, 1.0);
-	double integral_2 = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
+	double integral_1 = libphysica::Integrate(integrand, qMin, q);
+	double integral_2 = libphysica::Integrate(integrand, qMin, qMax);
 
-	return integral / integral_2;
+	return integral_1 / integral_2;
 }
 
 double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
 {
-	std::function<double(double, double)> integrand = [&plasma, &nucleus, nucleus_density, &DM, vDM, use_medium_effects](double q, double cos_theta) {
+	std::function<double(double)> integrand = [cos_theta, &plasma, &nucleus, nucleus_density, &DM, vDM, use_medium_effects](double q) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects);
 	};
 
-	double integral	  = libphysica::Integrate_2D(integrand, qMin, q, -1.0, 1.0);
-	double integral_2 = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
+	double integral_1 = libphysica::Integrate(integrand, qMin, q);
+	double integral_2 = libphysica::Integrate(integrand, qMin, qMax);
 
-	return integral / integral_2;
+	return integral_1 / integral_2;
 }
 
 double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, Plasma& plasma, bool use_medium_effects, double qMin, double qMax)
@@ -167,6 +166,8 @@ double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, d
 		return PDF_Cos_Theta_Electron(cos, DM, vDM, plasma, use_medium_effects, qMin, qMax);
 	};
 	double pdf_max = std::max(pdf(-1.0), pdf(1.0));
+	if(pdf_max < 1.0)
+		pdf_max = 1.0;
 	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf_max, PRNG);
 }
 
@@ -176,6 +177,8 @@ double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, do
 		return PDF_Cos_Theta_Nucleus(cos, DM, vDM, nucleus, nucleus_density, plasma, use_medium_effects, qMin, qMax);
 	};
 	double pdf_max = std::max(pdf(-1.0), pdf(1.0));
+	if(pdf_max < 1.0)
+		pdf_max = 1.0;
 	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf_max, PRNG);
 }
 
