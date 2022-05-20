@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 
 project(DaMaSCUS-SUN VERSION "0.1.1")
 
@@ -27,7 +27,7 @@ include(FetchContent)
 set(OBSCURA_DIR   ${EXTERNAL_DIR}/obscura)
 FetchContent_Declare(obscura
   GIT_REPOSITORY  https://github.com/temken/obscura.git
-  GIT_TAG         v1.0.1
+  GIT_TAG         v1.0.2
   SOURCE_DIR     "${OBSCURA_DIR}"
   CMAKE_ARGS     "-DCMAKE_BUILD_TYPE=Release -DCODE_COVERAGE=OFF" )
 FetchContent_GetProperties(obscura)
