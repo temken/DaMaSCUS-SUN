@@ -1,5 +1,5 @@
 [![Build & Test Status](https://github.com/temken/DaMaSCUS-SUN/workflows/Build%20&%20Tests/badge.svg)](https://github.com/temken/DaMaSCUS-SUN/actions)
-[![codecov](https://codecov.io/gh/temken/DaMaSCUS-SUN/branch/master/graph/badge.svg)](https://codecov.io/gh/temken/DaMaSCUS-SUN)
+[![codecov](https://codecov.io/gh/temken/DaMaSCUS-SUN/branch/main/graph/badge.svg)](https://codecov.io/gh/temken/DaMaSCUS-SUN)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 # DaMaSCUS-SUN
@@ -157,7 +157,7 @@ Here *N* must be specified to the number of MPI processes.
 ```
 >mpirun -n N DaMaSCUS-SUN config.cfg                                                                                                                                                                                                                        1 ↵  
 [Started on Wed Feb 24 13:19:23 2021]
-DaMaSCUS-SUN-0.1.0	git:master/757a821
+DaMaSCUS-SUN-0.1.0	git:main/757a821
   ___       __  __      ___  ___ _   _ ___     ___ _   _ _  _
  |   \ __ _|  \/  |__ _/ __|/ __| | | / __|___/ __| | | | \| |
  | |) / _` | |\/| / _` \__ \ (__| |_| \__ \___\__ \ |_| | .` |
