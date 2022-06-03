@@ -143,7 +143,11 @@ void Configuration::Import_Parameter_Scan_Parameter()
 
 	try
 	{
-		zeta = config.lookup("zeta");
+		std::string DM_form_factor = config.lookup("DM_form_factor").c_str();
+		if(DM_form_factor == "Long-Range")
+			zeta = config.lookup("zeta");
+		else
+			zeta = 0.0;
 	}
 	catch(const SettingNotFoundException& nfex)
 	{
