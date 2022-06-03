@@ -5,7 +5,7 @@
 
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
-#include "libphysica/Special_Functions.hpp"
+// #include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 #include "libphysica/Utilities.hpp"
 
@@ -16,7 +16,6 @@ namespace DaMaSCUS_SUN
 {
 
 using namespace libphysica::natural_units;
-using namespace std::complex_literals;
 
 // 1. Nuclear targets in the Sun
 Solar_Isotope::Solar_Isotope(const obscura::Isotope& isotope, const std::vector<std::vector<double>>& density_table, double abundance)
@@ -31,80 +30,6 @@ double Solar_Isotope::Number_Density(double r)
 		return 0.0;
 	else
 		return number_density(r);
-}
-
-// 2. Plasma struct to act as target for DM scatterings and describe in-medium effects
-template <typename Container>
-Plasma::Plasma(double temp, double ne, std::vector<double>& nn, Container& iso)
-: number_densities_nuclei(nn), temperature(temp), number_density_electrons(ne)
-{
-	for(obscura::Isotope& nucleus : iso)
-	{
-		nuclei.push_back(nucleus);
-	}
-	libphysica::Check_For_Error(nuclei.size() != number_densities_nuclei.size(), "Plasma::Plasma", "The number of nuclei and the number of densities must be the same.");
-}
-
-Plasma::Plasma(double temp, double ne)
-: temperature(temp), number_density_electrons(ne)
-{
-	// Empty
-}
-
-std::complex<double> Plasma::Polarization_Tensor_L(double q0, double q)
-{
-	std::complex<double> PI_L = 0.0;
-	// 1. Electron contributions
-	PI_L += Polarization_Tensor_Longitudinal(q0, q, temperature, number_density_electrons, mElectron, 1.0);
-
-	// 2. Nuclear contributions
-	for(unsigned int i = 0; i < nuclei.size(); i++)
-		PI_L += Polarization_Tensor_Longitudinal(q0, q, temperature, number_densities_nuclei[i], nuclei[i].mass, nuclei[i].Z);
-	return PI_L;
-}
-
-double Plasma::Form_Factor_Medium_Effects(double q0, double q)
-{
-	std::complex<double> denominator = q * q + Polarization_Tensor_L(q0, q);
-	return q * q * q * q / std::norm(denominator);
-}
-
-void Plasma::Print_Summary(int rank)
-{
-	if(rank == 0)
-	{
-		std::cout << SEPARATOR << "Plasma Summary:" << std::endl
-				  << "Temperature [K]:\t" << libphysica::Round(In_Units(temperature, Kelvin)) << std::endl
-				  << "n_Electron [cm^-3]:\t" << libphysica::Round(In_Units(number_density_electrons, 1.0 / cm / cm / cm)) << std::endl;
-		if(nuclei.size() > 0)
-		{
-			std::cout << "\nNucleus\tn_Nucleus [cm^-3]" << std::endl;
-			for(unsigned int i = 0; i < nuclei.size(); i++)
-				std::cout << nuclei[i].name << "\t" << libphysica::Round(In_Units(number_densities_nuclei[i], 1.0 / cm / cm / cm)) << std::endl;
-		}
-		std::cout << SEPARATOR << std::endl;
-	}
-}
-
-std::complex<double> Plasma_Dispersion_Function(double x)
-{
-	double expmx2_erfi = 2.0 / std::sqrt(M_PI) * libphysica::Dawson_Integral(x);   // remove exp(-x^2) exp(x^2) to avoid inf value
-	return std::sqrt(M_PI) * (1i * std::exp(-x * x) - expmx2_erfi);
-}
-
-std::complex<double> Polarization_Tensor_Longitudinal(double q0, double q, double temperature, double number_density, double mass, double Z)
-{
-	bool use_vlaslov_approximation = false;
-
-	double sigma_MB				= std::sqrt(temperature / mass);
-	double plasma_frequency_sqr = Elementary_Charge * Elementary_Charge * Z * Z * number_density / mass;
-	double xi					= q0 / std::sqrt(2.0) / sigma_MB / q;
-	double delta				= q / 2.0 / std::sqrt(2.0) / mass / sigma_MB;
-
-	if(!use_vlaslov_approximation)
-		return plasma_frequency_sqr * mass / q0 * xi * (Plasma_Dispersion_Function(xi - delta) - Plasma_Dispersion_Function(xi + delta));
-	else
-		return plasma_frequency_sqr / sigma_MB / sigma_MB * (1.0 + xi * Plasma_Dispersion_Function(xi));
 }
 
 // 3. Solar model
@@ -265,21 +190,6 @@ double Solar_Model::Local_Escape_Speed(double r)
 		return sqrt(local_escape_speed_squared(r));
 }
 
-Plasma Solar_Model::Get_Plasma(double r)
-{
-	double T  = Temperature(r);
-	double ne = Number_Density_Electron(r);
-	if(use_medium_effects)
-	{
-		std::vector<double> nn = {};
-		for(auto& isotope : target_isotopes)
-			nn.push_back(isotope.Number_Density(r));
-		return Plasma(T, ne, nn, target_isotopes);
-	}
-	else
-		return Plasma(T, ne);
-}
-
 double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 {
 	if(nucleus_index >= target_isotopes.size())
@@ -289,6 +199,14 @@ double Solar_Model::Number_Density_Nucleus(double r, unsigned int nucleus_index)
 	}
 	else
 		return target_isotopes[nucleus_index].Number_Density(r);
+}
+
+std::vector<double> Solar_Model::Number_Densities_Nuclei(double r)
+{
+	std::vector<double> n = {};
+	for(auto& isotope : target_isotopes)
+		n.push_back(isotope.Number_Density(r));
+	return n;
 }
 
 double Solar_Model::Number_Density_Electron(double r)
@@ -305,9 +223,9 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double qMin	  = zeta * DM.mass * vDM;
-		Plasma plasma = Get_Plasma(r);
-		return Total_Scattering_Rate_Electron(DM, vDM, plasma, use_medium_effects, qMin);
+		double qMin					 = zeta * DM.mass * vDM;
+		auto number_densities_nuclei = Number_Densities_Nuclei(r);
+		return Total_Scattering_Rate_Electron(DM, vDM, Temperature(r), Number_Density_Electron(r), target_isotopes, number_densities_nuclei, use_medium_effects, qMin);
 	}
 }
 
@@ -322,10 +240,10 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 		return 0.0;
 	else
 	{
-		double nucleus_density = Number_Density_Nucleus(r, nucleus_index);
-		double qMin			   = zeta * DM.mass * vDM;
-		Plasma plasma		   = Get_Plasma(r);
-		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, plasma, use_medium_effects, qMin);
+		double nucleus_density		 = Number_Density_Nucleus(r, nucleus_index);
+		auto number_densities_nuclei = Number_Densities_Nuclei(r);
+		double qMin					 = zeta * DM.mass * vDM;
+		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, Temperature(r), Number_Density_Electron(r), target_isotopes, number_densities_nuclei, use_medium_effects, qMin);
 	}
 }
 

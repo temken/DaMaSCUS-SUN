@@ -170,20 +170,24 @@ int Trajectory_Simulator::Sample_Target(obscura::DM_Particle& DM, double r, doub
 
 libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_index, obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r)
 {
-	Plasma plasma = solar_model.Get_Plasma(r);
-	double vDM	  = DM_velocity.Norm();
+	double vDM = DM_velocity.Norm();
 	// 1. Sample theta, the angle between q and the initial DM velocity, and the momentum transfer norm q
 	double cos_theta, q;
 	double qMin = solar_model.zeta * DM.mass * vDM;
+
+	double temperature							= solar_model.Temperature(r);
+	double number_density_electrons				= solar_model.Number_Density_Electron(r);
+	std::vector<double> number_densities_nuclei = solar_model.Number_Densities_Nuclei(r);
+
 	if(target_index == -1)	 // Electrons
 	{
-		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, plasma, solar_model.use_medium_effects, qMin);
-		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, plasma, solar_model.use_medium_effects, qMin);
+		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
+		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
 	}
 	else   // Nuclei
 	{
-		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin);
-		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), plasma, solar_model.use_medium_effects, qMin);
+		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
+		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
 	}
 
 	// 2. Sample phi, the azimuthal angle.
