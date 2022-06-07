@@ -36,11 +36,16 @@ extern double Thermal_Averaged_Relative_Speed(double temperature, double mass_ta
 extern double Maximum_Relative_Speed(double temperature, double mass_target, double vDM, double N = 5.0);
 extern double Maximum_Momentum_Transfer(double mDM, double temperature, double mass_target, double vDM, double N = 5.0);
 
-// PDFs and sampling functions of cos(theta) and q (WILL BE MOVED TO ANOTHER FILE)
+// PDFs and CDFs and sampling functions of cos(theta) and q
 template <typename Container>
 extern double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 template <typename Container>
 extern double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+
+template <typename Container>
+extern double CDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template <typename Container>
+extern double CDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
 // Conditional PDF/CDF of q for a fixed value of cos_theta
 template <typename Container>
