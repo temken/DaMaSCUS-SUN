@@ -155,65 +155,87 @@ int main(int argc, char* argv[])
 		std::vector<double> number_densities_nuclei = SSM.Number_Densities_Nuclei(r);
 		double vDM									= 5000 * km / sec;
 		double qMin									= SSM.zeta * cfg.DM->mass * vDM;
-		double qMax									= Maximum_Momentum_Transfer(cfg.DM->mass, temperature, nucleus.mass, vDM, 5);
-		std::cout << "qMax = " << qMax << std::endl;
+		double qMax_Nucleus							= Maximum_Momentum_Transfer(cfg.DM->mass, temperature, nucleus.mass, vDM, 5);
+		double qMax_Electron						= Maximum_Momentum_Transfer(cfg.DM->mass, temperature, mElectron, vDM, 5);
+		auto qList_Nucleus							= libphysica::Linear_Space(qMin, qMax_Nucleus, 1000);
+		auto qList_Electron							= libphysica::Linear_Space(qMin, qMax_Electron, 1000);
 
-		// double qMax = Maximum_Momentum_Transfer(cfg.DM->mass, plasma.temperature, mElectron, vDM);
-		// double qMax = Maximum_Momentum_Transfer(cfg.DM->mass, plasma.temperature, nucleus.mass, vDM);
-		// std::cout << qMax << std::endl;
-
-		// std::cout << Total_Scattering_Rate_Nucleus(*cfg.DM, vDM, nucleus, nucleus_density, plasma, cfg.use_medium_effects, cfg.zeta) << std::endl;
-		// std::cout << Total_Scattering_Rate_Nucleus(*cfg.DM, vDM, nucleus, nucleus_density, plasma, cfg.use_medium_effects, cfg.zeta) << std::endl;
-
-		std::ofstream f;
-		// 0. Differential scattering rate
-		int nPoints	 = 200;
-		auto qList	 = libphysica::Linear_Space(qMin, qMax, nPoints);
-		auto cosList = libphysica::Linear_Space(-1, 0, nPoints);
-		f.open("Differential_Scattering_Rate.txt");
-		for(auto q : qList)
-			for(auto cos : cosList)
-			{
-				double differential_scattering_rate = Differential_Scattering_Rate_Nucleus(q, cos, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects);
-				f << q / qMax << "\t" << cos << "\t" << differential_scattering_rate << std::endl;
-			}
-		f.close();
+		std::ofstream f, g;
+		// // 0. Differential scattering rate
+		// int nPoints	 = 200;
+		// auto qList	 = libphysica::Linear_Space(qMin, qMax, nPoints);
+		// auto cosList = libphysica::Linear_Space(-1, 0, nPoints);
+		// f.open("Differential_Scattering_Rate.txt");
+		// for(auto q : qList)
+		// 	for(auto cos : cosList)
+		// 	{
+		// 		double differential_scattering_rate = Differential_Scattering_Rate_Nucleus(q, cos, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects);
+		// 		f << q / qMax << "\t" << cos << "\t" << differential_scattering_rate << std::endl;
+		// 	}
+		// f.close();
 
 		// 1. PDF of cos(theta)
 		std::cout << "1. PDF of cos(theta)" << std::endl;
-		f.open("PDF_Cos_Theta.txt");
+		f.open("PDF_Cos_Theta_Electron.txt");
+		g.open("PDF_Cos_Theta_Nucleus.txt");
 		for(auto& x : libphysica::Linear_Space(-1.0, 1.0, 1000))
-			f << x << "\t" << PDF_Cos_Theta_Nucleus(x, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		{
+			f << x << "\t" << PDF_Cos_Theta_Electron(x, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << x << "\t" << PDF_Cos_Theta_Nucleus(x, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
 		f.close();
+		g.close();
 
 		// 2. Sample cos(theta)
 		std::cout << "2. Sample cos(theta)" << std::endl;
-		f.open("Sample_Cos_Theta.txt");
-		for(int i = 0; i < 10000; i++)
-			f << Sample_Cos_Theta_Nucleus(PRNG, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		f.open("Sample_Cos_Theta_Electron.txt");
+		g.open("Sample_Cos_Theta_Nucleus.txt");
+		for(int i = 0; i < cfg.sample_size; i++)
+		{
+			f << Sample_Cos_Theta_Electron(PRNG, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << Sample_Cos_Theta_Nucleus(PRNG, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
 		f.close();
+		g.close();
 
 		// 3. PDF of q
 		std::cout << "3. PDF of q" << std::endl;
-		f.open("PDF_q.txt");
-		double cos_theta = Sample_Cos_Theta_Nucleus(PRNG, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin);
-		for(auto& q : libphysica::Linear_Space(qMin, qMax, 1000))
-			f << q << "\t" << PDF_q_Nucleus(q, cos_theta, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		f.open("PDF_q_Electron.txt");
+		g.open("PDF_q_Nucleus.txt");
+		double cos_theta_e = Sample_Cos_Theta_Electron(PRNG, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin);
+		double cos_theta_n = Sample_Cos_Theta_Nucleus(PRNG, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin);
+		for(unsigned int i = 0; i < qList_Nucleus.size(); i++)
+		{
+			f << qList_Electron[i] << "\t" << PDF_q_Electron(qList_Electron[i], cos_theta_e, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << qList_Nucleus[i] << "\t" << PDF_q_Nucleus(qList_Nucleus[i], cos_theta_n, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
 		f.close();
+		g.close();
 
 		// 4. CDF of q
 		std::cout << "4. CDF of q" << std::endl;
-		f.open("CDF_q.txt");
-		for(auto& q : libphysica::Linear_Space(qMin, qMax, 200))
-			f << q << "\t" << CDF_q_Nucleus(q, cos_theta, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		f.open("CDF_q_Electron.txt");
+		g.open("CDF_q_Nucleus.txt");
+		for(unsigned int i = 0; i < qList_Nucleus.size(); i++)
+
+		{
+			f << qList_Electron[i] << "\t" << CDF_q_Electron(qList_Electron[i], cos_theta_e, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << qList_Nucleus[i] << "\t" << CDF_q_Nucleus(qList_Nucleus[i], cos_theta_n, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
 		f.close();
+		g.close();
 
 		// 5. Sample q
 		std::cout << "5. Sample q" << std::endl;
-		f.open("Sample_q.txt");
-		for(int i = 0; i < 10000; i++)
-			f << Sample_q_Nucleus(PRNG, cos_theta, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		f.open("Sample_q_Electron.txt");
+		g.open("Sample_q_Nucleus.txt");
+		for(int i = 0; i < cfg.sample_size; i++)
+		{
+			f << Sample_q_Electron(PRNG, cos_theta_e, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << Sample_q_Nucleus(PRNG, cos_theta_n, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
 		f.close();
+		g.close();
 	}
 
 	////////////////////////////////////////////////////////////////////////

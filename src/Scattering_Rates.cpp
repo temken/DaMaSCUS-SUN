@@ -155,7 +155,7 @@ double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 	};
 	double qMax				= Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
+	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax, "Gauss-Kronrod");
 
 	// 2. Compute total rate for normalization
 	double Gamma = Total_Scattering_Rate_Electron(DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
@@ -190,8 +190,8 @@ double CDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double
 	};
 
 	double qMax		   = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	double numerator   = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, cos_theta);
-	double denominator = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
+	double numerator   = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, cos_theta, "Gauss-Kronrod");
+	double denominator = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Kronrod");
 	return numerator / denominator;
 }
 
@@ -251,8 +251,8 @@ double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, doub
 		std::function<double(double)> integrand = [cos_theta, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects](double q) {
 			return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 		};
-		double numerator   = libphysica::Integrate(integrand, qMin, q);
-		double denominator = libphysica::Integrate(integrand, qMin, qMax);
+		double numerator   = libphysica::Integrate(integrand, qMin, q, "Gauss-Kronrod");
+		double denominator = libphysica::Integrate(integrand, qMin, qMax, "Gauss-Kronrod");
 		return numerator / denominator;
 	}
 }
@@ -279,10 +279,6 @@ double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, doubl
 template <typename Container>
 double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
-	// std::function<double(double)> cdf = [temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double cos) {
-	// 	return CDF_Cos_Theta_Electron(cos, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
-	// };
-	// return libphysica::Inverse_Transform_Sampling(cdf, -1.0, 1.0, PRNG);
 	std::function<double(double)> pdf = [temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double cos) {
 		return PDF_Cos_Theta_Electron(cos, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
 	};
