@@ -65,12 +65,24 @@ int main(int argc, char* argv[])
 		{
 			Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, 0);
 			spectrum.Print_Summary(mpi_rank);
-			std::function<double(double)> func = [&spectrum, &cfg](double v) {
+
+			// Export differential DM flux dPhi/dv to file
+			std::function<double(double)> dPhi_dv = [&spectrum, &cfg](double v) {
 				return spectrum.Differential_DM_Flux(v, cfg.DM->mass);
 			};
 			std::vector<double> speeds = libphysica::Linear_Space(spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 300);
 			if(mpi_rank == 0)
-				libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux.txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+				libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux.txt", dPhi_dv, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+
+			// Export recoil energy spectrum dR/dE to file
+			std::function<double(double)> dR_dE = [&spectrum, &cfg](double E) {
+				return cfg.DM_detector->dRdE(E, *cfg.DM, spectrum);
+			};
+			std::vector<double> energies = libphysica::Linear_Space(0.01 * eV, cfg.DM_detector->Maximum_Energy_Deposit(*cfg.DM, spectrum), 300);
+			if(mpi_rank == 0)
+				libphysica::Export_Function(cfg.results_path + "Differential_Energy_Spectrum.txt", dR_dE, energies, {keV, 1.0 / keV / kg / year});
+
+			// Compute p value for chosen experiment
 			double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
 			libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1, mpi_rank);
 		}

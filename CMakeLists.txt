@@ -27,7 +27,7 @@ include(FetchContent)
 set(OBSCURA_DIR   ${EXTERNAL_DIR}/obscura)
 FetchContent_Declare(obscura
   GIT_REPOSITORY  https://github.com/temken/obscura.git
-  GIT_TAG         v1.0.2
+  GIT_TAG         origin/dev
   SOURCE_DIR     "${OBSCURA_DIR}"
   CMAKE_ARGS     "-DCMAKE_BUILD_TYPE=Release -DCODE_COVERAGE=OFF" )
 FetchContent_GetProperties(obscura)
@@ -96,7 +96,7 @@ if (BUILD_TESTING AND (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
   if(NOT googletest_POPULATED)
     FetchContent_Populate(googletest)
     add_subdirectory(
-      ${googletest_SOURCE_DIR} 
+      ${googletest_SOURCE_DIR}
       ${googletest_BINARY_DIR}
       EXCLUDE_FROM_ALL)
   endif()
