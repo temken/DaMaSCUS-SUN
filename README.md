@@ -83,7 +83,7 @@ or using APT on Linux machines
 
 ```
 >sudo apt-get update -y
->sudo apt-get install -y libconfig-dev
+>sudo apt-get install -y libconfig++-dev
 ```
 
 Alternatively, it can be built from the source files via
