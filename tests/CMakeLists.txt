@@ -1,5 +1,5 @@
 # 1. Test executable
-add_test(NAME executable_test COMMAND DaMaSCUS-SUN config.cfg
+add_test(NAME executable_test COMMAND mpirun DaMaSCUS-SUN config.cfg
 	WORKING_DIRECTORY ${BIN_DIR})
 
 # 2. Test all modules
