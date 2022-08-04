@@ -73,7 +73,9 @@ or alternatively with APT:
 
 <details><summary>Installation of libconfig</summary>
 <p>
-On Macs, it can be on installed using [homebrew](https://brew.sh/)
+It is no-longer strictly necessary to install libconfig. During the build of *libphysica*, CMake will download and build *libconfig* in libphysica/external/ if it cannot find an installation. It still makes sense to install it in most cases.
+
+On Macs, *libconfig* can be on installed using [homebrew](https://brew.sh/)
 
 ```
 >brew install libconfig

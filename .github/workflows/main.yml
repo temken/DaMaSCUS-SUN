@@ -23,10 +23,6 @@ jobs:
     # LCOV
     - name: Install lcov
       run: sudo apt-get install lcov
-
-    # LIBCONFIG
-    - name: Install libconfig
-      run: wget https://hyperrealm.github.io/libconfig/dist/libconfig-1.7.2.tar.gz && tar -xvzf libconfig-1.7.2.tar.gz && pushd libconfig-1.7.2 && ./configure && make && sudo make install && popd
     
     # MPI
     - name: Install MPI
