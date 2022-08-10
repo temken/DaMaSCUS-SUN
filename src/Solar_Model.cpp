@@ -280,12 +280,14 @@ double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& 
 		return rate_interpolation(r, vDM);
 }
 
-void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
+void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed, int mpi_rank)
 {
 	if(N_radius == 0 || N_speed == 0)
 		using_interpolated_rate = false;
 	else
 	{
+		if(mpi_rank == 0)
+			std::cout << "\nInterpolating total DM scattering rate on " << N_radius << "x" << N_speed << " grid..." << std::flush;
 		int mpi_processes, mpi_rank;
 		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -316,6 +318,9 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 			for(auto& speed : speeds)
 				rates.push_back({radius, speed, global_rates[i++]});
 		rate_interpolation = libphysica::Interpolation_2D(rates);
+		if(mpi_rank == 0)
+			std::cout << "done." << std::endl
+					  << std::endl;
 	}
 }
 

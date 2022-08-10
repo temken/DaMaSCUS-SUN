@@ -54,13 +54,14 @@ int main(int argc, char* argv[])
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
 		data_set.Configure(1.1 * rSun, 1, 1000);
 		if(mpi_rank == 0)
-			std::cout << "Generate data..." << std::endl
-					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << "\t\t"
-					  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
-					  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
-					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
+			std::cout << "\nDM parameters:" << std::endl
+					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << std::endl
+					  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
+					  << "\tsigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
 					  << std::endl;
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
+		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points, mpi_rank);
+		if(mpi_rank == 0)
+			std::cout << "\nGenerating data...\t(with u_min = " << libphysica::Round(In_Units(u_min, km / sec)) << " km/s)" << std::endl;
 		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
 		data_set.Print_Summary(mpi_rank);
 		if(cfg.isoreflection_rings == 1)
@@ -80,7 +81,7 @@ int main(int argc, char* argv[])
 			std::function<double(double)> dR_dE = [&spectrum, &cfg](double E) {
 				return cfg.DM_detector->dRdE(E, *cfg.DM, spectrum);
 			};
-			std::vector<double> energies = libphysica::Linear_Space(0.01 * eV, cfg.DM_detector->Maximum_Energy_Deposit(*cfg.DM, spectrum), 300);
+			std::vector<double> energies = libphysica::Log_Space(0.1 * eV, cfg.DM_detector->Maximum_Energy_Deposit(*cfg.DM, spectrum), 300);
 			if(mpi_rank == 0)
 				libphysica::Export_Function(cfg.results_path + "Differential_Energy_Spectrum.txt", dR_dE, energies, {keV, 1.0 / keV / kg / year});
 
@@ -119,7 +120,7 @@ int main(int argc, char* argv[])
 	{
 		if(mpi_rank == 0 && cfg.compute_halo_constraints)
 		{
-			std::cout << "Compute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
+			std::cout << "\nCompute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
 			double mDM_min								= cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
 			std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 100);
 			std::vector<std::vector<double>> halo_limit = cfg.DM_detector->Upper_Limit_Curve(*cfg.DM, *cfg.DM_distr, DM_masses, cfg.constraints_certainty);

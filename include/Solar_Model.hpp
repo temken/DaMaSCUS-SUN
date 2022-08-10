@@ -72,7 +72,7 @@ class Solar_Model
 	double Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, double r, double vDM);
 
 	double Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& DM, double r, double vDM);
-	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed);
+	void Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed, int mpi_rank = 0);
 
 	void Print_Summary(int mpi_rank = 0) const;
 };
