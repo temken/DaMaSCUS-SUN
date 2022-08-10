@@ -179,7 +179,7 @@ void Configuration::Construct_DM_Particle()
 	try
 	{
 		DM_mass = config.lookup("DM_mass");
-		DM_mass *= GeV;
+		DM_mass *= MeV;
 	}
 	catch(const SettingNotFoundException& nfex)
 	{
