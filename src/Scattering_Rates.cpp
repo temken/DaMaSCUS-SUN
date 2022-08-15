@@ -94,7 +94,7 @@ double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, doub
 		};
 
 		double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
+		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Legendre");
 	}
 	else
 	{
@@ -314,6 +314,22 @@ double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Partic
 	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
 }
 
+template <typename Container>
+std::pair<double, double> Sample_Cos_Theta_q_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
+{
+	std::function<double(double, double)> f = [&DM, vDM, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, use_medium_effects](double cos_theta, double q) {
+		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
+	};
+	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
+
+	std::vector<double> domain				  = {-1.0, 1.0, qMin, qMax};
+	std::pair<double, double> proposal_sigmas = {(domain[1] - domain[0]) / 10, (domain[3] - domain[2]) / 10};
+	unsigned int burnin						  = 1000;
+
+	return libphysica::Sample_Metropolis_2D(PRNG, f, proposal_sigmas, 1, 1, burnin, domain)[0];
+	// return Rejection_Sampling_2D(PRNG, f, -1.0, 1.0, qMin, qMax);
+}
+
 // Explicitly instantiate the template functions with the two possible containers
 // This avoids the need to implement the template functions in the header file
 template std::complex<double> Polarization_Tensor_L<std::vector<obscura::Isotope>>(double q0, double q, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei);
@@ -363,5 +379,8 @@ template double Sample_q_Electron<std::vector<Solar_Isotope>>(std::mt19937& PRNG
 
 template double Sample_q_Nucleus<std::vector<obscura::Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 template double Sample_q_Nucleus<std::vector<Solar_Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+
+template std::pair<double, double> Sample_Cos_Theta_q_Electron<std::vector<obscura::Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template std::pair<double, double> Sample_Cos_Theta_q_Electron<std::vector<Solar_Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
 }	// namespace DaMaSCUS_SUN

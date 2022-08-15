@@ -68,5 +68,8 @@ extern double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::D
 template <typename Container>
 extern double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
+template <typename Container>
+extern std::pair<double, double> Sample_Cos_Theta_q_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+
 }	// namespace DaMaSCUS_SUN
 #endif
