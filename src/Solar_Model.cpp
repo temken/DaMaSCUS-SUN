@@ -1,5 +1,6 @@
 #include "Solar_Model.hpp"
 
+#include <chrono>
 #include <cmath>
 #include <mpi.h>
 
@@ -280,17 +281,19 @@ double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& 
 		return rate_interpolation(r, vDM);
 }
 
-void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed, int mpi_rank)
+void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
 {
 	if(N_radius == 0 || N_speed == 0)
 		using_interpolated_rate = false;
 	else
 	{
-		if(mpi_rank == 0)
-			std::cout << "\nInterpolating total DM scattering rate on " << N_radius << "x" << N_speed << " grid..." << std::flush;
 		int mpi_processes, mpi_rank;
 		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+		auto time_start = std::chrono::system_clock::now();
+
+		if(mpi_rank == 0)
+			std::cout << "\nInterpolate total DM scattering rate on " << N_radius << "x" << N_speed << " grid with " << mpi_processes << " worker(s)." << std::endl;
 
 		using_interpolated_rate = true;
 
@@ -306,9 +309,18 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 		std::vector<double> speeds = libphysica::Linear_Space(0, vMax, N_speed);
 		std::vector<double> local_rates;
 		std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
+		int local_points = local_N_radius * N_speed;
+		int counter		 = 0;
 		for(auto& radius : local_radii)
 			for(auto& speed : speeds)
+			{
 				local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
+				if(mpi_rank == 0 && counter++ % 100 == 0)
+				{
+					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+					libphysica::Print_Progress_Bar(1.0 * counter / local_points, mpi_rank, 44, time);
+				}
+			}
 		MPI_Allgather(local_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, global_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, MPI_COMM_WORLD);
 
 		// Re-organize into a 2D array and interpolate.
@@ -319,8 +331,11 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 				rates.push_back({radius, speed, global_rates[i++]});
 		rate_interpolation = libphysica::Interpolation_2D(rates);
 		if(mpi_rank == 0)
-			std::cout << "done." << std::endl
-					  << std::endl;
+		{
+			double computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+			libphysica::Print_Progress_Bar(1.0, mpi_rank, 44, computing_time);
+			std::cout << std::endl;
+		}
 	}
 }
 

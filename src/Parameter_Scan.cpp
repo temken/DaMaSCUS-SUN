@@ -316,7 +316,7 @@ double Compute_p_Value(unsigned int sample_size, obscura::DM_Particle& DM, obscu
 {
 	double u_min = detector.Minimum_DM_Speed(DM);
 
-	solar_model.Interpolate_Total_DM_Scattering_Rate(DM, rate_interpolation_points, rate_interpolation_points, mpi_rank);
+	solar_model.Interpolate_Total_DM_Scattering_Rate(DM, rate_interpolation_points, rate_interpolation_points);
 	Simulation_Data data_set(sample_size, u_min);
 	data_set.Generate_Data(DM, solar_model, halo_model);
 	data_set.Print_Summary(mpi_rank);

@@ -59,9 +59,7 @@ int main(int argc, char* argv[])
 					  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
 					  << "\tsigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
 					  << std::endl;
-		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points, mpi_rank);
-		if(mpi_rank == 0)
-			std::cout << "\nGenerating data...\t(with u_min = " << libphysica::Round(In_Units(u_min, km / sec)) << " km/s)" << std::endl;
+		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
 		data_set.Print_Summary(mpi_rank);
 		if(cfg.isoreflection_rings == 1)

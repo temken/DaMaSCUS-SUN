@@ -41,6 +41,9 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	MPI_Status mpi_status;
 	MPI_Request mpi_request;
 
+	if(mpi_rank == 0)
+		std::cout << "\nGenerate data with " << mpi_processes << " worker(s).\t(u_min = " << libphysica::Round(In_Units(minimum_speed_threshold, km / sec)) << " km/s)" << std::endl;
+
 	// Configure the simulator
 	Trajectory_Simulator simulator(solar_model, maximum_free_time_steps, maximum_number_of_scatterings, initial_and_final_radius);
 	// simulator.Toggle_Trajectory_Saving(50);
