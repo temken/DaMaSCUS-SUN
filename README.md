@@ -338,7 +338,25 @@ Bibtex entry:
 
 As well as the original publications,
 
-> Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
+> Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [Phys.Rev.D 105 (2022) 6, 063020](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.105.063020), [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
+
+Bibtex entry:
+
+```
+@article{Emken:2021lgc,
+    author = "Emken, Timon",
+    title = "{Solar reflection of light dark matter with heavy mediators}",
+    eprint = "2102.12483",
+    archivePrefix = "arXiv",
+    primaryClass = "hep-ph",
+    doi = "10.1103/PhysRevD.105.063020",
+    journal = "Phys. Rev. D",
+    volume = "105",
+    number = "6",
+    pages = "063020",
+    year = "2022"
+}
+```
 
 </p>
 </details>
