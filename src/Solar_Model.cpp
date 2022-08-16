@@ -6,7 +6,7 @@
 
 #include "libphysica/Integration.hpp"
 #include "libphysica/Natural_Units.hpp"
-// #include "libphysica/Special_Functions.hpp"
+#include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
 #include "libphysica/Utilities.hpp"
 
@@ -283,6 +283,8 @@ double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& 
 
 void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
 {
+
+	// Case A: Do not tabulate and interpolate.
 	if(N_radius == 0 || N_speed == 0)
 		using_interpolated_rate = false;
 	else
@@ -291,11 +293,32 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 		auto time_start = std::chrono::system_clock::now();
-
+		// Case B: Mass has not changed since last tabulation. Try to re-scale a previous tabulation/interpolation.
+		if(interpolation_mass == DM.mass)
+		{
+			int rescaling_power			 = DM.Interaction_Parameter_Is_Cross_Section() ? 1 : 2;
+			double new_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
+			double new_coupling_nuclei	 = DM.Get_Interaction_Parameter("Nuclei");
+			double rescaling_electron	 = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
+			double rescaling_nuclei		 = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
+			if(libphysica::Relative_Difference(rescaling_nuclei, rescaling_electron) < 1.0e-10)
+			{
+				if(mpi_rank == 0)
+					std::cout << "\nInterpolation of total scattering rate not necessary: DM mass has not changed and rate can be re-scaled by a factor of " << libphysica::Round(rescaling_electron) << "." << std::endl;
+				rate_interpolation.Multiply(rescaling_nuclei);
+				interpolation_coupling_electron = new_coupling_electron;
+				interpolation_coupling_nuclei	= new_coupling_nuclei;
+				return;
+			}
+		}
+		// Case C: Tabulate and interpolate
 		if(mpi_rank == 0)
 			std::cout << "\nInterpolate total DM scattering rate on " << N_radius << "x" << N_speed << " grid with " << mpi_processes << " worker(s)." << std::endl;
 
-		using_interpolated_rate = true;
+		using_interpolated_rate			= true;
+		interpolation_mass				= DM.mass;
+		interpolation_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
+		interpolation_coupling_nuclei	= DM.Get_Interaction_Parameter("Nuclei");
 
 		double vMax					 = 0.75;
 		unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
@@ -315,7 +338,7 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 			for(auto& speed : speeds)
 			{
 				local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
-				if(mpi_rank == 0 && counter++ % 100 == 0)
+				if(mpi_rank == 0 && counter++ % 500 == 0)
 				{
 					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
 					libphysica::Print_Progress_Bar(1.0 * counter / local_points, mpi_rank, 44, time);

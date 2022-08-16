@@ -42,6 +42,7 @@ class Solar_Model
 	libphysica::Interpolation number_density_electron;
 
 	// Interpolation of total scattering rate
+	double interpolation_mass = -1.0, interpolation_coupling_electron = -1.0, interpolation_coupling_nuclei = -1.0;
 	bool using_interpolated_rate;
 	libphysica::Interpolation_2D rate_interpolation;
 
