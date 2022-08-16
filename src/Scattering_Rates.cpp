@@ -180,6 +180,8 @@ double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double 
 template <typename Container>
 double PDF_q_Electron(double q, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
+	if(q < qMin)
+		return 0.0;
 	// 1. Obtain dGamma/dq
 	std::function<double(double)> integrand = [q, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects](double cos_theta) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
@@ -194,6 +196,8 @@ double PDF_q_Electron(double q, obscura::DM_Particle& DM, double vDM, double tem
 template <typename Container>
 double PDF_q_Nucleus(double q, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
+	if(q < qMin)
+		return 0.0;
 	// 1. Obtain dGamma/dq
 	std::function<double(double)> integrand = [q, &nucleus, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, nucleus_density, &DM, vDM, use_medium_effects](double cos_theta) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
