@@ -112,7 +112,7 @@ double Total_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double vDM, obscu
 			return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 		};
 		double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0);
+		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Legendre");
 	}
 	else
 	{
@@ -146,7 +146,7 @@ double Maximum_Momentum_Transfer(double mDM, double temperature, double mass_tar
 	return 2.0 * libphysica::Reduced_Mass(mDM, mass_target) * vRelMax;
 }
 
-// PDFs and sampling functions of cos(theta) and q (WILL BE MOVED TO ANOTHER FILE)
+// 4. Marginal PDFs and sampling of cos(theta) and q
 template <typename Container>
 double PDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
@@ -178,140 +178,31 @@ double PDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double 
 }
 
 template <typename Container>
-double CDF_Cos_Theta_Electron(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
+double PDF_q_Electron(double q, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
-	if(cos_theta == -1.0)
-		return 0.0;
-	else if(cos_theta == 1.0)
-		return 1.0;
-
-	std::function<double(double, double)> integrand = [&DM, vDM, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, use_medium_effects](double q, double cos_theta) {
+	// 1. Obtain dGamma/dq
+	std::function<double(double)> integrand = [q, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects](double cos_theta) {
 		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 	};
+	double dGamma_dq = libphysica::Integrate(integrand, -1.0, 1.0, "Gauss-Kronrod");
 
-	double qMax		   = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	double numerator   = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, cos_theta, "Gauss-Kronrod");
-	double denominator = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Kronrod");
-	return numerator / denominator;
+	// 2. Compute total rate for normalization
+	double Gamma = Total_Scattering_Rate_Electron(DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
+	return dGamma_dq / Gamma;
 }
 
 template <typename Container>
-double CDF_Cos_Theta_Nucleus(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
+double PDF_q_Nucleus(double q, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
 {
-	if(cos_theta == -1.0)
-		return 0.0;
-	else if(cos_theta == 1.0)
-		return 1.0;
-
-	std::function<double(double, double)> integrand = [&nucleus, nucleus_density, &DM, vDM, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, use_medium_effects](double q, double cos_theta) {
+	// 1. Obtain dGamma/dq
+	std::function<double(double)> integrand = [q, &nucleus, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, nucleus_density, &DM, vDM, use_medium_effects](double cos_theta) {
 		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 	};
-	double qMax		   = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-	double numerator   = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, cos_theta, "Gauss-Kronrod");
-	double denominator = libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Kronrod");
-	return numerator / denominator;
-}
+	double dGamma_dq = libphysica::Integrate(integrand, -1.0, 1.0, "Gauss-Kronrod");
 
-// Conditional PDF/CDF of q for a fixed value of cos_theta
-template <typename Container>
-double PDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	// 1. Obtain dGamma/dcos_theta
-	std::function<double(double)> integrand = [temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, cos_theta](double q) {
-		return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
-	};
-	double qMax				= Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax);
-
-	return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects) / dGamma_dcostheta;
-}
-
-template <typename Container>
-double PDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	// 1. Obtain dGamma/dcos_theta
-	std::function<double(double)> integrand = [&nucleus, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, nucleus_density, &DM, vDM, use_medium_effects, cos_theta](double q) {
-		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
-	};
-	double qMax				= Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-	double dGamma_dcostheta = libphysica::Integrate(integrand, qMin, qMax, "Gauss-Kronrod");
-	return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects) / dGamma_dcostheta;
-}
-
-template <typename Container>
-double CDF_q_Electron(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	if(q == qMin)
-		return 0.0;
-	else if(q == qMax)
-		return 1.0;
-	else
-	{
-		std::function<double(double)> integrand = [cos_theta, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects](double q) {
-			return Differential_Scattering_Rate_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
-		};
-		double numerator   = libphysica::Integrate(integrand, qMin, q, "Gauss-Kronrod");
-		double denominator = libphysica::Integrate(integrand, qMin, qMax, "Gauss-Kronrod");
-		return numerator / denominator;
-	}
-}
-
-template <typename Container>
-double CDF_q_Nucleus(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-	if(q == qMin)
-		return 0.0;
-	else if(q == qMax)
-		return 1.0;
-	else
-	{
-		std::function<double(double)> integrand = [cos_theta, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &nucleus, nucleus_density, &DM, vDM, use_medium_effects](double q) {
-			return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
-		};
-		double numerator   = libphysica::Integrate(integrand, qMin, q, "Gauss-Kronrod");
-		double denominator = libphysica::Integrate(integrand, qMin, qMax, "Gauss-Kronrod");
-		return numerator / denominator;
-	}
-}
-
-template <typename Container>
-double Sample_Cos_Theta_Electron(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	std::function<double(double)> pdf = [temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double cos) {
-		return PDF_Cos_Theta_Electron(cos, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
-	};
-	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf(-1.0), PRNG);
-}
-
-template <typename Container>
-double Sample_Cos_Theta_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	std::function<double(double)> pdf = [&nucleus, nucleus_density, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double cos) {
-		return PDF_Cos_Theta_Nucleus(cos, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
-	};
-	return libphysica::Rejection_Sampling(pdf, -1.0, 1.0, pdf(-1.0), PRNG);
-}
-
-template <typename Container>
-double Sample_q_Electron(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	std::function<double(double)> cdf = [cos_theta, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double q) {
-		return CDF_q_Electron(q, cos_theta, DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
-	};
-	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
-}
-
-template <typename Container>
-double Sample_q_Nucleus(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
-{
-	std::function<double(double)> cdf = [&nucleus, cos_theta, nucleus_density, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, &DM, vDM, use_medium_effects, qMin](double q) {
-		return CDF_q_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
-	};
-	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-	return libphysica::Inverse_Transform_Sampling(cdf, qMin, qMax, PRNG);
+	// 2. Compute total rate for normalization
+	double Gamma = Total_Scattering_Rate_Nucleus(DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects, qMin);
+	return dGamma_dq / Gamma;
 }
 
 template <typename Container>
@@ -322,12 +213,26 @@ std::pair<double, double> Sample_Cos_Theta_q_Electron(std::mt19937& PRNG, obscur
 	};
 	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
 
+	// Use Metropolis-Hastings to sample cos_theta and q
 	std::vector<double> domain				  = {-1.0, 1.0, qMin, qMax};
-	std::pair<double, double> proposal_sigmas = {(domain[1] - domain[0]) / 10, (domain[3] - domain[2]) / 10};
+	std::pair<double, double> proposal_sigmas = {(domain[1] - domain[0]) / 10, (domain[3] - domain[2]) / 5};
 	unsigned int burnin						  = 1000;
-
 	return libphysica::Sample_Metropolis_2D(PRNG, f, proposal_sigmas, 1, 1, burnin, domain)[0];
-	// return Rejection_Sampling_2D(PRNG, f, -1.0, 1.0, qMin, qMax);
+}
+
+template <typename Container>
+std::pair<double, double> Sample_Cos_Theta_q_Nucleus(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, Container& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin)
+{
+	std::function<double(double, double)> f = [&DM, vDM, &nucleus, nucleus_density, temperature, number_density_electrons, &nuclei, &number_densities_nuclei, use_medium_effects](double cos_theta, double q) {
+		return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
+	};
+	double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
+
+	// Use Metropolis-Hastings to sample cos_theta and q
+	std::vector<double> domain				  = {-1.0, 1.0, qMin, qMax};
+	std::pair<double, double> proposal_sigmas = {(domain[1] - domain[0]) / 10, (domain[3] - domain[2]) / 5};
+	unsigned int burnin						  = 1000;
+	return libphysica::Sample_Metropolis_2D(PRNG, f, proposal_sigmas, 1, 1, burnin, domain)[0];
 }
 
 // Explicitly instantiate the template functions with the two possible containers
@@ -350,37 +255,16 @@ template double PDF_Cos_Theta_Electron<std::vector<Solar_Isotope>>(double cos_th
 template double PDF_Cos_Theta_Nucleus<std::vector<obscura::Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 template double PDF_Cos_Theta_Nucleus<std::vector<Solar_Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
-template double CDF_Cos_Theta_Electron<std::vector<obscura::Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double CDF_Cos_Theta_Electron<std::vector<Solar_Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template double PDF_q_Electron<std::vector<obscura::Isotope>>(double q, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template double PDF_q_Electron<std::vector<Solar_Isotope>>(double q, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
-template double CDF_Cos_Theta_Nucleus<std::vector<obscura::Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double CDF_Cos_Theta_Nucleus<std::vector<Solar_Isotope>>(double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double PDF_q_Electron<std::vector<obscura::Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double PDF_q_Electron<std::vector<Solar_Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double PDF_q_Nucleus<std::vector<obscura::Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double PDF_q_Nucleus<std::vector<Solar_Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double CDF_q_Electron<std::vector<obscura::Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double CDF_q_Electron<std::vector<Solar_Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double CDF_q_Nucleus<std::vector<obscura::Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double CDF_q_Nucleus<std::vector<Solar_Isotope>>(double q, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double Sample_Cos_Theta_Electron<std::vector<obscura::Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double Sample_Cos_Theta_Electron<std::vector<Solar_Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double Sample_Cos_Theta_Nucleus<std::vector<obscura::Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double Sample_Cos_Theta_Nucleus<std::vector<Solar_Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double Sample_q_Electron<std::vector<obscura::Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double Sample_q_Electron<std::vector<Solar_Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-
-template double Sample_q_Nucleus<std::vector<obscura::Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
-template double Sample_q_Nucleus<std::vector<Solar_Isotope>>(std::mt19937& PRNG, double cos_theta, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template double PDF_q_Nucleus<std::vector<obscura::Isotope>>(double q, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template double PDF_q_Nucleus<std::vector<Solar_Isotope>>(double q, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
 template std::pair<double, double> Sample_Cos_Theta_q_Electron<std::vector<obscura::Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 template std::pair<double, double> Sample_Cos_Theta_q_Electron<std::vector<Solar_Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+
+template std::pair<double, double> Sample_Cos_Theta_q_Nucleus<std::vector<obscura::Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<obscura::Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
+template std::pair<double, double> Sample_Cos_Theta_q_Nucleus<std::vector<Solar_Isotope>>(std::mt19937& PRNG, obscura::DM_Particle& DM, double vDM, obscura::Isotope& nucleus, double nucleus_density, double temperature, double number_density_electrons, std::vector<Solar_Isotope>& nuclei, std::vector<double>& number_densities_nuclei, bool use_medium_effects, double qMin);
 
 }	// namespace DaMaSCUS_SUN

@@ -179,16 +179,14 @@ libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_ind
 	double number_density_electrons				= solar_model.Number_Density_Electron(r);
 	std::vector<double> number_densities_nuclei = solar_model.Number_Densities_Nuclei(r);
 
+	std::pair<double, double> cos_theta_and_q;
 	if(target_index == -1)	 // Electrons
-	{
-		cos_theta = Sample_Cos_Theta_Electron(PRNG, DM, vDM, temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
-		q		  = Sample_q_Electron(PRNG, cos_theta, DM, vDM, temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
-	}
+		cos_theta_and_q = Sample_Cos_Theta_q_Electron(PRNG, DM, vDM, temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
 	else   // Nuclei
-	{
-		cos_theta = Sample_Cos_Theta_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
-		q		  = Sample_q_Nucleus(PRNG, cos_theta, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
-	}
+		cos_theta_and_q = Sample_Cos_Theta_q_Nucleus(PRNG, DM, vDM, solar_model.target_isotopes[target_index], solar_model.Number_Density_Nucleus(r, target_index), temperature, number_density_electrons, solar_model.target_isotopes, number_densities_nuclei, solar_model.use_medium_effects, qMin);
+
+	cos_theta = cos_theta_and_q.first;
+	q		  = cos_theta_and_q.second;
 
 	// 2. Sample phi, the azimuthal angle.
 	double phi = libphysica::Sample_Uniform(PRNG, 0.0, 2.0 * M_PI);
