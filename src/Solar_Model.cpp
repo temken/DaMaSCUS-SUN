@@ -289,21 +289,28 @@ bool Solar_Model::Rescale_Rate_Interpolation(obscura::DM_Particle& DM, int mpi_r
 	if(using_interpolated_rate && interpolation_mass == DM.mass)
 	{
 		int rescaling_power			 = DM.Interaction_Parameter_Is_Cross_Section() ? 1 : 2;
+		double rescaling_factor		 = 0.0;
 		double new_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
 		double new_coupling_nuclei	 = DM.Get_Interaction_Parameter("Nuclei");
-		double rescaling_electron	 = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
-		double rescaling_nuclei		 = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
-		if(libphysica::Relative_Difference(rescaling_nuclei, rescaling_electron) < 1.0e-10)
-		{
-			if(mpi_rank == 0)
-				std::cout << "\nInterpolation of total scattering rate not necessary: DM mass has not changed and rate can be re-scaled by a factor of " << libphysica::Round(rescaling_electron) << "." << std::endl;
-			rate_interpolation.Multiply(rescaling_nuclei);
-			interpolation_coupling_electron = new_coupling_electron;
-			interpolation_coupling_nuclei	= new_coupling_nuclei;
-			return true;
-		}
+		if(new_coupling_nuclei == 0.0)
+			rescaling_factor = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
+		else if(new_coupling_electron == 0.0)
+			rescaling_factor = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
 		else
-			return false;
+		{
+			double rescaling_electron = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
+			double rescaling_nuclei	  = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
+			if(libphysica::Relative_Difference(rescaling_nuclei, rescaling_electron) < 1.0e-10)
+				rescaling_factor = rescaling_electron;
+			else
+				return false;
+		}
+		if(mpi_rank == 0)
+			std::cout << "\nDM mass has not changed and previously interpolated rate can be re-scaled. Rescaling factor = " << libphysica::Round(rescaling_factor) << "." << std::endl;
+		rate_interpolation.Multiply(rescaling_factor);
+		interpolation_coupling_electron = new_coupling_electron;
+		interpolation_coupling_nuclei	= new_coupling_nuclei;
+		return true;
 	}
 	else
 		return false;
