@@ -266,9 +266,12 @@ double Solar_Model::Total_DM_Scattering_Rate_Computed(obscura::DM_Particle& DM, 
 		return 0.0;
 	else
 	{
-		double total_rate = DM_Scattering_Rate_Electron(DM, r, vDM);
-		for(unsigned int i = 0; i < target_isotopes.size(); i++)
-			total_rate += DM_Scattering_Rate_Nucleus(DM, r, vDM, i);
+		double total_rate = 0.0;
+		if(DM.Get_Interaction_Parameter("Electrons") > 0.0)
+			total_rate = DM_Scattering_Rate_Electron(DM, r, vDM);
+		if(DM.Get_Interaction_Parameter("Nuclei") > 0.0)
+			for(unsigned int i = 0; i < target_isotopes.size(); i++)
+				total_rate += DM_Scattering_Rate_Nucleus(DM, r, vDM, i);
 		return total_rate;
 	}
 }
@@ -281,10 +284,33 @@ double Solar_Model::Total_DM_Scattering_Rate_Interpolated(obscura::DM_Particle& 
 		return rate_interpolation(r, vDM);
 }
 
+bool Solar_Model::Rescale_Rate_Interpolation(obscura::DM_Particle& DM, int mpi_rank)
+{
+	if(using_interpolated_rate && interpolation_mass == DM.mass)
+	{
+		int rescaling_power			 = DM.Interaction_Parameter_Is_Cross_Section() ? 1 : 2;
+		double new_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
+		double new_coupling_nuclei	 = DM.Get_Interaction_Parameter("Nuclei");
+		double rescaling_electron	 = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
+		double rescaling_nuclei		 = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
+		if(libphysica::Relative_Difference(rescaling_nuclei, rescaling_electron) < 1.0e-10)
+		{
+			if(mpi_rank == 0)
+				std::cout << "\nInterpolation of total scattering rate not necessary: DM mass has not changed and rate can be re-scaled by a factor of " << libphysica::Round(rescaling_electron) << "." << std::endl;
+			rate_interpolation.Multiply(rescaling_nuclei);
+			interpolation_coupling_electron = new_coupling_electron;
+			interpolation_coupling_nuclei	= new_coupling_nuclei;
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+		return false;
+}
+
 void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM, unsigned int N_radius, unsigned int N_speed)
 {
-
-	// Case A: Do not tabulate and interpolate.
 	if(N_radius == 0 || N_speed == 0)
 		using_interpolated_rate = false;
 	else
@@ -292,72 +318,59 @@ void Solar_Model::Interpolate_Total_DM_Scattering_Rate(obscura::DM_Particle& DM,
 		int mpi_processes, mpi_rank;
 		MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-		auto time_start = std::chrono::system_clock::now();
-		// Case B: Mass has not changed since last tabulation. Try to re-scale a previous tabulation/interpolation.
-		if(interpolation_mass == DM.mass)
+		// Try to re-scale a previous tabulation/interpolation.
+		bool rate_rescaled = Solar_Model::Rescale_Rate_Interpolation(DM, mpi_rank);
+		// If that does not work: Tabulate and interpolate
+		if(!rate_rescaled)
 		{
-			int rescaling_power			 = DM.Interaction_Parameter_Is_Cross_Section() ? 1 : 2;
-			double new_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
-			double new_coupling_nuclei	 = DM.Get_Interaction_Parameter("Nuclei");
-			double rescaling_electron	 = std::pow(new_coupling_electron / interpolation_coupling_electron, rescaling_power);
-			double rescaling_nuclei		 = std::pow(new_coupling_nuclei / interpolation_coupling_nuclei, rescaling_power);
-			if(libphysica::Relative_Difference(rescaling_nuclei, rescaling_electron) < 1.0e-10)
-			{
-				if(mpi_rank == 0)
-					std::cout << "\nInterpolation of total scattering rate not necessary: DM mass has not changed and rate can be re-scaled by a factor of " << libphysica::Round(rescaling_electron) << "." << std::endl;
-				rate_interpolation.Multiply(rescaling_nuclei);
-				interpolation_coupling_electron = new_coupling_electron;
-				interpolation_coupling_nuclei	= new_coupling_nuclei;
-				return;
-			}
-		}
-		// Case C: Tabulate and interpolate
-		if(mpi_rank == 0)
-			std::cout << "\nInterpolate total DM scattering rate on " << N_radius << "x" << N_speed << " grid with " << mpi_processes << " worker(s)." << std::endl;
+			if(mpi_rank == 0)
+				std::cout << "\nInterpolate total DM scattering rate on " << N_radius << "x" << N_speed << " grid with " << mpi_processes << " worker(s)." << std::endl;
 
-		using_interpolated_rate			= true;
-		interpolation_mass				= DM.mass;
-		interpolation_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
-		interpolation_coupling_nuclei	= DM.Get_Interaction_Parameter("Nuclei");
+			using_interpolated_rate			= true;
+			interpolation_mass				= DM.mass;
+			interpolation_coupling_electron = DM.Get_Interaction_Parameter("Electrons");
+			interpolation_coupling_nuclei	= DM.Get_Interaction_Parameter("Nuclei");
+			auto time_start					= std::chrono::system_clock::now();
 
-		double vMax					 = 0.75;
-		unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
-		unsigned int global_N_radius = mpi_processes * local_N_radius;
+			double vMax					 = 0.75;
+			unsigned int local_N_radius	 = std::ceil(1.0 * N_radius / mpi_processes);
+			unsigned int global_N_radius = mpi_processes * local_N_radius;
 
-		std::vector<double> global_radii = libphysica::Linear_Space(0, rSun, global_N_radius);
-		std::vector<double> local_radii(local_N_radius, 0.0);
+			std::vector<double> global_radii = libphysica::Linear_Space(0, rSun, global_N_radius);
+			std::vector<double> local_radii(local_N_radius, 0.0);
 
-		// Compute the table in parallel
-		MPI_Scatter(global_radii.data(), local_N_radius, MPI_DOUBLE, local_radii.data(), local_N_radius, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		std::vector<double> speeds = libphysica::Linear_Space(0, vMax, N_speed);
-		std::vector<double> local_rates;
-		std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
-		int local_points = local_N_radius * N_speed;
-		int counter		 = 0;
-		for(auto& radius : local_radii)
-			for(auto& speed : speeds)
-			{
-				local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
-				if(mpi_rank == 0 && counter++ % 500 == 0)
+			// Compute the table in parallel
+			MPI_Scatter(global_radii.data(), local_N_radius, MPI_DOUBLE, local_radii.data(), local_N_radius, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			std::vector<double> speeds = libphysica::Linear_Space(0, vMax, N_speed);
+			std::vector<double> local_rates;
+			std::vector<double> global_rates(N_speed * global_N_radius, 0.0);
+			int local_points = local_N_radius * N_speed;
+			int counter		 = 0;
+			for(auto& radius : local_radii)
+				for(auto& speed : speeds)
 				{
-					double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-					libphysica::Print_Progress_Bar(1.0 * counter / local_points, mpi_rank, 44, time);
+					local_rates.push_back(Total_DM_Scattering_Rate_Computed(DM, radius, speed));
+					if(mpi_rank == 0 && counter++ % 500 == 0)
+					{
+						double time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+						libphysica::Print_Progress_Bar(1.0 * counter / local_points, mpi_rank, 44, time);
+					}
 				}
-			}
-		MPI_Allgather(local_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, global_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, MPI_COMM_WORLD);
+			MPI_Allgather(local_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, global_rates.data(), local_N_radius * N_speed, MPI_DOUBLE, MPI_COMM_WORLD);
 
-		// Re-organize into a 2D array and interpolate.
-		std::vector<std::vector<double>> rates;
-		int i = 0;
-		for(auto& radius : global_radii)
-			for(auto& speed : speeds)
-				rates.push_back({radius, speed, global_rates[i++]});
-		rate_interpolation = libphysica::Interpolation_2D(rates);
-		if(mpi_rank == 0)
-		{
-			double computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
-			libphysica::Print_Progress_Bar(1.0, mpi_rank, 44, computing_time);
-			std::cout << std::endl;
+			// Re-organize into a 2D array and interpolate.
+			std::vector<std::vector<double>> rates;
+			int i = 0;
+			for(auto& radius : global_radii)
+				for(auto& speed : speeds)
+					rates.push_back({radius, speed, global_rates[i++]});
+			rate_interpolation = libphysica::Interpolation_2D(rates);
+			if(mpi_rank == 0)
+			{
+				double computing_time = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - time_start).count();
+				libphysica::Print_Progress_Bar(1.0, mpi_rank, 44, computing_time);
+				std::cout << std::endl;
+			}
 		}
 	}
 }
