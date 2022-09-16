@@ -143,16 +143,28 @@ int main(int argc, char* argv[])
 	{
 		// Total scattering rate
 		std::vector<double> radii = libphysica::Linear_Space(0.0, rSun, 200);
-		std::ofstream f;
-		f.open(cfg.results_path + "/Total_Scattering_Rate.txt");
+		std::ofstream f, g, h;
+		f.open(cfg.results_path + "/Total_Scattering_Rate_300kms.txt");
+		g.open(cfg.results_path + "/Total_Scattering_Rate_3000kms.txt");
+		h.open(cfg.results_path + "/Total_Scattering_Rate_30000kms.txt");
 		f << "# r [rSun]\t Total scattering rate [sec^-1]" << std::endl;
-		double u = 3000 * km / sec;
+		g << "# r [rSun]\t Total scattering rate [sec^-1]" << std::endl;
+		h << "# r [rSun]\t Total scattering rate [sec^-1]" << std::endl;
+		double u1 = 300 * km / sec;
+		double u2 = 3000 * km / sec;
+		double u3 = 30000 * km / sec;
 		for(auto& r : radii)
 		{
-			double w = sqrt(u * u + SSM.Local_Escape_Speed(r) * SSM.Local_Escape_Speed(r));
-			f << r / rSun << "\t" << SSM.Total_DM_Scattering_Rate(*cfg.DM, r, w) * sec << std::endl;
+			double w1 = sqrt(u1 * u1 + SSM.Local_Escape_Speed(r) * SSM.Local_Escape_Speed(r));
+			double w2 = sqrt(u2 * u2 + SSM.Local_Escape_Speed(r) * SSM.Local_Escape_Speed(r));
+			double w3 = sqrt(u3 * u3 + SSM.Local_Escape_Speed(r) * SSM.Local_Escape_Speed(r));
+			f << r / rSun << "\t" << SSM.Total_DM_Scattering_Rate(*cfg.DM, r, w1) * sec << std::endl;
+			g << r / rSun << "\t" << SSM.Total_DM_Scattering_Rate(*cfg.DM, r, w2) * sec << std::endl;
+			h << r / rSun << "\t" << SSM.Total_DM_Scattering_Rate(*cfg.DM, r, w3) * sec << std::endl;
 		}
 		f.close();
+		g.close();
+		h.close();
 	}
 
 	////////////////////////////////////////////////////////////////////////
