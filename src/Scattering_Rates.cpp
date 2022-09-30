@@ -94,7 +94,7 @@ double Total_Scattering_Rate_Electron(obscura::DM_Particle& DM, double vDM, doub
 		};
 
 		double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, mElectron, vDM);
-		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Legendre");
+		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Kronrod");
 	}
 	else
 	{
@@ -112,7 +112,7 @@ double Total_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double vDM, obscu
 			return Differential_Scattering_Rate_Nucleus(q, cos_theta, DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, use_medium_effects);
 		};
 		double qMax = Maximum_Momentum_Transfer(DM.mass, temperature, nucleus.mass, vDM);
-		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Legendre");
+		return libphysica::Integrate_2D(integrand, qMin, qMax, -1.0, 1.0, "Gauss-Kronrod");
 	}
 	else
 	{
