@@ -25,12 +25,8 @@ class Simulation_Data
 	unsigned long int maximum_free_time_steps  = 1e7;
 
 	// Results
-	unsigned long int number_of_trajectories;
-	unsigned long int number_of_free_particles;
-	unsigned long int number_of_reflected_particles;
-	unsigned long int number_of_captured_particles;
-	double average_number_of_scatterings;
-	double computing_time;
+	unsigned long int number_of_trajectories, number_of_free_particles, number_of_reflected_particles, number_of_captured_particles;
+	double average_number_of_scatterings, average_radius_last_scattering, computing_time;
 
 	std::vector<unsigned long int> number_of_data_points;
 

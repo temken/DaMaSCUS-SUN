@@ -16,7 +16,7 @@ namespace DaMaSCUS_SUN
 using namespace libphysica::natural_units;
 
 Simulation_Data::Simulation_Data(unsigned int sample_size, double u_min, unsigned int iso_rings)
-: min_sample_size_above_threshold(sample_size), minimum_speed_threshold(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
+: min_sample_size_above_threshold(sample_size), minimum_speed_threshold(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), average_radius_last_scattering(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
 {
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -73,7 +73,10 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 			if(trajectory.Particle_Free())
 				number_of_free_particles++;
 			else if(trajectory.Particle_Reflected())
+			{
 				number_of_reflected_particles++;
+				average_radius_last_scattering = 1.0 / number_of_reflected_particles * ((number_of_reflected_particles - 1) * average_radius_last_scattering + trajectory.radius_last_scattering);
+			}
 			else
 				continue;
 
@@ -215,7 +218,8 @@ void Simulation_Data::Print_Summary(unsigned int mpi_rank)
 				  << "Results:" << std::endl
 				  << "Simulated trajectories:\t\t" << number_of_trajectories << std::endl
 				  << "Generated data points (total):\t" << number_of_data_points_tot << std::endl
-				  << "Average # of scatterings:\t" << libphysica::Round(average_number_of_scatterings) << std::endl
+				  << "<nScatterings>:\t" << libphysica::Round(average_number_of_scatterings) << std::endl
+				  << "<r>(last scattering) [rSun]:\t" << libphysica::Round(In_Units(average_radius_last_scattering, rSun)) << std::endl
 				  << "Free particles [%]:\t\t" << libphysica::Round(100.0 * Free_Ratio()) << std::endl
 				  << "Reflected particles [%]:\t" << libphysica::Round(100.0 * Reflection_Ratio()) << std::endl
 				  << "Captured particles [%]:\t\t" << libphysica::Round(100.0 * Capture_Ratio()) << std::endl;

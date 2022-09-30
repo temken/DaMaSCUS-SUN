@@ -17,8 +17,8 @@ namespace DaMaSCUS_SUN
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
-Trajectory_Result::Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat)
-: initial_event(event_ini), final_event(event_final), number_of_scatterings(nScat)
+Trajectory_Result::Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last)
+: initial_event(event_ini), final_event(event_final), number_of_scatterings(nScat), radius_last_scattering(r_last)
 {
 }
 
@@ -48,8 +48,10 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi
 		std::cout << SEPARATOR
 				  << "Trajectory result summary" << std::endl
 				  << std::endl
-				  << "Number of scatterings:\t" << number_of_scatterings << std::endl
-				  << "Simulation time [days]:\t" << libphysica::Round(In_Units(final_event.time, day)) << std::endl
+				  << "Number of scatterings:\t" << number_of_scatterings << std::endl;
+		if(number_of_scatterings > 0)
+			std::cout << "r(last scattering) [rSun]:\t" << libphysica::Round(In_Units(radius_last_scattering, rSun)) << std::endl;
+		std::cout << "Simulation time [days]:\t" << libphysica::Round(In_Units(final_event.time, day)) << std::endl
 				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
 				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
 				  << "Free particle:\t\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
@@ -233,19 +235,21 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 	}
 	Event current_event						= initial_condition;
 	long unsigned int number_of_scatterings = 0;
+	double r_last_scattering				= -1.0;
 	while(Propagate_Freely(current_event, DM, f) && number_of_scatterings < maximum_scatterings)
 	{
 		if(current_event.Radius() < rSun)
 		{
 			Scatter(current_event, DM);
 			number_of_scatterings++;
+			r_last_scattering = current_event.Radius();
 		}
 		else
 			break;
 	}
 	if(save_trajectories)
 		f.close();
-	return Trajectory_Result(initial_condition, current_event, number_of_scatterings);
+	return Trajectory_Result(initial_condition, current_event, number_of_scatterings, r_last_scattering);
 }
 
 // 3. Equation of motion solution with Runge-Kutta-Fehlberg
