@@ -265,6 +265,12 @@ void Configuration::Construct_DM_Particle_Dark_Photon()
 		{
 			DM_mediator_mass = config.lookup("DM_mediator_mass");
 			DM_mediator_mass *= MeV;
+			if(DM_mediator_mass < 1e-60)
+			{
+				std::cout << "Error in Configuration::Construct_DM_Particle_Dark_Photon:\tMediator mass for \"General\" form factor needs to be positive. (DM_mediator_mass = " << DM_mediator_mass / MeV << " MeV)\n"
+						  << "\tFor long range interactions or zero mediator mass, use \"Long range\" form factor." << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
 		}
 		catch(const SettingNotFoundException& nfex)
 		{
