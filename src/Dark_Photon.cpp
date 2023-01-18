@@ -13,7 +13,7 @@ namespace DaMaSCUS_SUN
 using namespace libphysica::natural_units;
 
 DM_Particle_Dark_Photon::DM_Particle_Dark_Photon()
-: DM_Particle(), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(GeV)
+: DM_Particle(), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(-1.0)
 {
 	using_cross_section = true;
 	DD_use_eta_function = true;
@@ -21,7 +21,7 @@ DM_Particle_Dark_Photon::DM_Particle_Dark_Photon()
 }
 
 DM_Particle_Dark_Photon::DM_Particle_Dark_Photon(double mDM)
-: DM_Particle(mDM), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(GeV)
+: DM_Particle(mDM), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(-1.0)
 {
 	using_cross_section = true;
 	DD_use_eta_function = true;
@@ -29,7 +29,7 @@ DM_Particle_Dark_Photon::DM_Particle_Dark_Photon(double mDM)
 }
 
 DM_Particle_Dark_Photon::DM_Particle_Dark_Photon(double mDM, double sigma_p)
-: DM_Particle(mDM), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(GeV)
+: DM_Particle(mDM), alpha_dark(aEM), q_reference(aEM * mElectron), FF_DM("Contact"), m_dark_photon(-1.0)
 {
 	using_cross_section = true;
 	DD_use_eta_function = true;
@@ -80,7 +80,7 @@ void DM_Particle_Dark_Photon::Set_FormFactor_DM(std::string ff, double mMed)
 		std::cerr << "Error in obscura::DM_Particle_Dark_Photon::Set_FormFactor_DM(): Form factor " << ff << " not recognized." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
-	if(FF_DM == "General" && mMed > 0.0)
+	if(FF_DM == "General" && mMed >= 0.0)
 		m_dark_photon = mMed;
 	else if(FF_DM == "Long-Range")
 		m_dark_photon = 0.0;
