@@ -17,8 +17,8 @@ namespace DaMaSCUS_SUN
 using namespace libphysica::natural_units;
 
 // 1. Result of one trajectory
-Trajectory_Result::Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last)
-: initial_event(event_ini), final_event(event_final), number_of_scatterings(nScat), radius_last_scattering(r_last)
+Trajectory_Result::Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last, double r_deepest)
+: initial_event(event_ini), final_event(event_final), number_of_scatterings(nScat), radius_last_scattering(r_last), radius_deepest_scattering(r_deepest)
 {
 }
 
@@ -50,7 +50,8 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi
 				  << std::endl
 				  << "Number of scatterings:\t" << number_of_scatterings << std::endl;
 		if(number_of_scatterings > 0)
-			std::cout << "r(last scattering) [rSun]:\t" << libphysica::Round(In_Units(radius_last_scattering, rSun)) << std::endl;
+			std::cout << "r(last scattering) [rSun]:\t" << libphysica::Round(In_Units(radius_last_scattering, rSun)) << std::endl
+					  << "r(deepest scattering) [rSun]:\t" << libphysica::Round(In_Units(radius_deepest_scattering, rSun)) << std::endl;
 		std::cout << "Simulation time [days]:\t" << libphysica::Round(In_Units(final_event.time, day)) << std::endl
 				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
 				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
@@ -236,6 +237,7 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 	Event current_event						= initial_condition;
 	long unsigned int number_of_scatterings = 0;
 	double r_last_scattering				= -1.0;
+	double r_deepest_scattering				= -1.0;
 	while(Propagate_Freely(current_event, DM, f) && number_of_scatterings < maximum_scatterings)
 	{
 		if(current_event.Radius() < rSun)
@@ -243,13 +245,15 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 			Scatter(current_event, DM);
 			number_of_scatterings++;
 			r_last_scattering = current_event.Radius();
+			if(r_deepest_scattering < 0.0 || r_last_scattering < r_deepest_scattering)
+				r_deepest_scattering = r_last_scattering;
 		}
 		else
 			break;
 	}
 	if(save_trajectories)
 		f.close();
-	return Trajectory_Result(initial_condition, current_event, number_of_scatterings, r_last_scattering);
+	return Trajectory_Result(initial_condition, current_event, number_of_scatterings, r_last_scattering, r_deepest_scattering);
 }
 
 // 3. Equation of motion solution with Runge-Kutta-Fehlberg

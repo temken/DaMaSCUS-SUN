@@ -26,7 +26,7 @@ class Simulation_Data
 
 	// Results
 	unsigned long int number_of_trajectories, number_of_free_particles, number_of_reflected_particles, number_of_captured_particles;
-	double average_number_of_scatterings, average_radius_last_scattering, computing_time;
+	double average_number_of_scatterings, average_radius_last_scattering, average_radius_deepest_scattering, computing_time;
 
 	std::vector<unsigned long int> number_of_data_points;
 

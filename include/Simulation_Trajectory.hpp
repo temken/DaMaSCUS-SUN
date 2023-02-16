@@ -20,8 +20,9 @@ struct Trajectory_Result
 	Event initial_event, final_event;
 	unsigned long int number_of_scatterings;
 	double radius_last_scattering;
+	double radius_deepest_scattering;
 
-	Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last = -1.0);
+	Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last = -1.0, double r_deepest = -1.0);
 
 	bool Particle_Reflected() const;
 	bool Particle_Free() const;
