@@ -133,22 +133,26 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 
 void Simulation_Data::Perform_MPI_Reductions()
 {
-	// Reduce particle counters
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_reflected_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_captured_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
 	// Reduce averages accounting for the number of trajectories of each process
 	average_number_of_scatterings *= number_of_trajectories;
 	average_radius_last_scattering *= number_of_reflected_particles;
 	average_radius_deepest_scattering *= number_of_reflected_particles;
+
+	// Reduce particle counters
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_reflected_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &number_of_trajectories, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &average_number_of_scatterings, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &average_radius_last_scattering, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	MPI_Allreduce(MPI_IN_PLACE, &average_radius_deepest_scattering, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
 	average_number_of_scatterings /= number_of_trajectories;
 	average_radius_last_scattering /= number_of_reflected_particles;
 	average_radius_deepest_scattering /= number_of_reflected_particles;
+
+	// Reduce remaining particle counters
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_captured_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
 	// Reduce data
 	MPI_Datatype mpi_datapoint;
