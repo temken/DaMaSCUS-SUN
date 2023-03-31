@@ -603,9 +603,8 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 	double mDM_original		 = DM.mass;
 	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
 
-	double p_critical					  = 1.0 - certainty_level;
-	unsigned int counter				  = 0;
-	unsigned int last_excluded_mass_index = DM_masses.size();
+	double p_critical	 = 1.0 - certainty_level;
+	unsigned int counter = 0;
 	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
 		int row			   = couplings.size() - 1 - i;
@@ -646,10 +645,7 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 			}
 
 			if(p < p_critical)
-			{
-				row_exclusion			 = true;
-				last_excluded_mass_index = j;
-			}
+				row_exclusion = true;
 		}
 		if(!row_exclusion)
 		{
