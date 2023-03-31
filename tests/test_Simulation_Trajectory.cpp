@@ -87,13 +87,12 @@ TEST(TestSimulationTrajectory, TestParticleCaptured)
 	Event not_captured_2(t, r_in, v_2);
 	Event captured_3(t, r_out, v_1);
 	Event not_captured(t, r_out, v_2);
-	Solar_Model solar_model;
 
 	// ACT & ASSERT
-	EXPECT_TRUE(Trajectory_Result(initial_event, captured_1, 0).Particle_Captured(solar_model));
-	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured_2, 0).Particle_Captured(solar_model));
-	EXPECT_TRUE(Trajectory_Result(initial_event, captured_3, 0).Particle_Captured(solar_model));
-	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured, 0).Particle_Captured(solar_model));
+	EXPECT_TRUE(Trajectory_Result(initial_event, captured_1, 2).Particle_Captured());
+	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured_2, 0).Particle_Captured());
+	EXPECT_TRUE(Trajectory_Result(initial_event, captured_3, 1).Particle_Captured());
+	EXPECT_FALSE(Trajectory_Result(initial_event, not_captured, 0).Particle_Captured());
 }
 
 // TEST(TestSimulationTrajectory, TestResultPrintSummary)

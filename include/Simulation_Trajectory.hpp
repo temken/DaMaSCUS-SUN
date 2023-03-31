@@ -26,7 +26,7 @@ struct Trajectory_Result
 
 	bool Particle_Reflected() const;
 	bool Particle_Free() const;
-	bool Particle_Captured(Solar_Model& solar_model) const;
+	bool Particle_Captured() const;
 
 	void Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank = 0);
 };

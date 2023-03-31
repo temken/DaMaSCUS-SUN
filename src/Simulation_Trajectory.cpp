@@ -6,6 +6,7 @@
 #include "libphysica/Integration.hpp"
 #include "libphysica/Special_Functions.hpp"
 #include "libphysica/Statistics.hpp"
+#include "libphysica/Utilities.hpp"
 
 #include "obscura/Astronomy.hpp"
 
@@ -34,11 +35,10 @@ bool Trajectory_Result::Particle_Free() const
 	return number_of_scatterings == 0;
 }
 
-bool Trajectory_Result::Particle_Captured(Solar_Model& solar_model) const
+bool Trajectory_Result::Particle_Captured() const
 {
-	double r	= final_event.Radius();
-	double vesc = solar_model.Local_Escape_Speed(r);
-	return final_event.Speed() < vesc;
+	// A particle that is neither free nor reflected is considered captured.
+	return !Particle_Free() && !Particle_Reflected();
 }
 
 void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank)
@@ -56,7 +56,7 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi
 				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
 				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
 				  << "Free particle:\t\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
-				  << "Captured:\t\t[" << (Particle_Captured(solar_model) ? "x" : " ") << "]" << std::endl
+				  << "Captured:\t\t[" << (Particle_Captured() ? "x" : " ") << "]" << std::endl
 				  << "Reflection:\t\t[" << (Particle_Reflected() ? "x" : " ") << "]";
 
 		if(Particle_Reflected())
@@ -253,6 +253,7 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 	}
 	if(save_trajectories)
 		f.close();
+	libphysica::Check_For_Warning(number_of_scatterings == maximum_scatterings, "Trajectory_Simulator::Simulate()", "Trajectory aborted after scatterings reached the maximum of " + std::to_string(number_of_scatterings) + "\n\t.Particle is counted as captured.");
 	return Trajectory_Result(initial_condition, current_event, number_of_scatterings, r_last_scattering, r_deepest_scattering);
 }
 

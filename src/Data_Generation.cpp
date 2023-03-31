@@ -66,7 +66,7 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 		number_of_trajectories++;
 		average_number_of_scatterings = 1.0 / number_of_trajectories * ((number_of_trajectories - 1) * average_number_of_scatterings + trajectory.number_of_scatterings);
 
-		if(trajectory.Particle_Captured(solar_model))
+		if(trajectory.Particle_Captured())
 			number_of_captured_particles++;
 		else
 		{
