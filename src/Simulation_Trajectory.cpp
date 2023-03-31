@@ -35,10 +35,11 @@ bool Trajectory_Result::Particle_Free() const
 	return number_of_scatterings == 0;
 }
 
-bool Trajectory_Result::Particle_Captured() const
+bool Trajectory_Result::Particle_Captured(Solar_Model& solar_model) const
 {
-	// A particle that is neither free nor reflected is considered captured.
-	return !Particle_Free() && !Particle_Reflected();
+	double r	= final_event.Radius();
+	double vesc = solar_model.Local_Escape_Speed(r);
+	return final_event.Speed() < vesc || (!Particle_Free() && !Particle_Reflected());
 }
 
 void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi_rank)
@@ -56,7 +57,7 @@ void Trajectory_Result::Print_Summary(Solar_Model& solar_model, unsigned int mpi
 				  << "Final radius [rSun]:\t" << libphysica::Round(In_Units(final_event.Radius(), rSun)) << std::endl
 				  << "Final speed [km/sec]:\t" << libphysica::Round(In_Units(final_event.Speed(), km / sec)) << std::endl
 				  << "Free particle:\t\t[" << (Particle_Free() ? "x" : " ") << "]" << std::endl
-				  << "Captured:\t\t[" << (Particle_Captured() ? "x" : " ") << "]" << std::endl
+				  << "Captured:\t\t[" << (Particle_Captured(solar_model) ? "x" : " ") << "]" << std::endl
 				  << "Reflection:\t\t[" << (Particle_Reflected() ? "x" : " ") << "]";
 
 		if(Particle_Reflected())
