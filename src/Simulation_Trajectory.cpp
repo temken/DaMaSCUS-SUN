@@ -253,7 +253,7 @@ Trajectory_Result Trajectory_Simulator::Simulate(const Event& initial_condition,
 	}
 	if(save_trajectories)
 		f.close();
-	libphysica::Check_For_Warning(number_of_scatterings == maximum_scatterings, "Trajectory_Simulator::Simulate()", "Trajectory aborted after scatterings reached the maximum of " + std::to_string(number_of_scatterings) + "\n\t.Particle is counted as captured.");
+	libphysica::Check_For_Warning(number_of_scatterings == maximum_scatterings, "Trajectory_Simulator::Simulate()", "Trajectory aborted after scatterings reached the maximum of " + std::to_string(number_of_scatterings) + ".\n\tParticle is counted as captured.");
 	return Trajectory_Result(initial_condition, current_event, number_of_scatterings, r_last_scattering, r_deepest_scattering);
 }
 
