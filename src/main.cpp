@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
 		double u_min = 0.0;
 		// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
-		data_set.Configure(1.1 * rSun, 1, 1000);
 		if(mpi_rank == 0)
 			std::cout << "\nDM parameters:" << std::endl
 					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << std::endl

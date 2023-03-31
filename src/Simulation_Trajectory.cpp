@@ -104,6 +104,12 @@ bool Trajectory_Simulator::Propagate_Freely(Event& current_event, obscura::DM_Pa
 					  << "\tAbort simulation." << std::endl;
 			return false;
 		}
+		else if(time_steps == maximum_time_steps)
+		{
+			std::cerr << "\nWarning in Propagate_Freely(): Number of time steps exceeds the maximum = " << maximum_time_steps << std::endl
+					  << "\tAbort simulation." << std::endl;
+			return false;
+		}
 
 		if(save_trajectories && time_steps % 20 == 0)
 		{
