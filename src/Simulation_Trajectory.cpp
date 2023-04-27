@@ -183,7 +183,7 @@ libphysica::Vector Trajectory_Simulator::Sample_Momentum_Transfer(int target_ind
 	double vDM = DM_velocity.Norm();
 	// 1. Sample theta, the angle between q and the initial DM velocity, and the momentum transfer norm q
 	double cos_theta, q;
-	double qMin = solar_model.zeta * DM.mass * vDM;
+	double qMin = solar_model.zeta * DM.mass * 0.0007;
 
 	double temperature							= solar_model.Temperature(r);
 	double number_density_electrons				= solar_model.Number_Density_Electron(r);

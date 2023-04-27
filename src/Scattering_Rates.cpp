@@ -143,7 +143,13 @@ double Maximum_Relative_Speed(double temperature, double mass_target, double vDM
 double Maximum_Momentum_Transfer(double mDM, double temperature, double mass_target, double vDM, double N)
 {
 	double vRelMax = Maximum_Relative_Speed(temperature, mass_target, vDM, N);
-	return 2.0 * libphysica::Reduced_Mass(mDM, mass_target) * vRelMax;
+	double qMax	   = 2.0 * libphysica::Reduced_Mass(mDM, mass_target) * vRelMax;
+	double zeta	   = 100.0;
+	double qMin	   = zeta * mDM * 0.0007;
+	if(qMax < qMin)
+		return 4.0 * qMin;
+	else
+		return qMax;
 }
 
 // 4. Marginal PDFs and sampling of cos(theta) and q

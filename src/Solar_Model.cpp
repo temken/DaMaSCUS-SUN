@@ -224,7 +224,7 @@ double Solar_Model::DM_Scattering_Rate_Electron(obscura::DM_Particle& DM, double
 		return 0.0;
 	else
 	{
-		double qMin					 = zeta * DM.mass * vDM;
+		double qMin					 = zeta * DM.mass * 0.0007;
 		auto number_densities_nuclei = Number_Densities_Nuclei(r);
 		return Total_Scattering_Rate_Electron(DM, vDM, Temperature(r), Number_Density_Electron(r), target_isotopes, number_densities_nuclei, use_medium_effects, qMin);
 	}
@@ -243,7 +243,7 @@ double Solar_Model::DM_Scattering_Rate_Nucleus(obscura::DM_Particle& DM, double 
 	{
 		double nucleus_density		 = Number_Density_Nucleus(r, nucleus_index);
 		auto number_densities_nuclei = Number_Densities_Nuclei(r);
-		double qMin					 = zeta * DM.mass * vDM;
+		double qMin					 = zeta * DM.mass * 0.0007;
 		return Total_Scattering_Rate_Nucleus(DM, vDM, target_isotopes[nucleus_index], nucleus_density, Temperature(r), Number_Density_Electron(r), target_isotopes, number_densities_nuclei, use_medium_effects, qMin);
 	}
 }
