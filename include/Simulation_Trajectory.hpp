@@ -19,8 +19,10 @@ struct Trajectory_Result
 {
 	Event initial_event, final_event;
 	unsigned long int number_of_scatterings;
+	double radius_last_scattering;
+	double radius_deepest_scattering;
 
-	Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat);
+	Trajectory_Result(const Event& event_ini, const Event& event_final, unsigned long int nScat, double r_last = -1.0, double r_deepest = -1.0);
 
 	bool Particle_Reflected() const;
 	bool Particle_Free() const;
@@ -41,9 +43,8 @@ class Trajectory_Simulator
 
 	bool Propagate_Freely(Event& current_event, obscura::DM_Particle& DM, std::ofstream& f);
 
-	int Sample_Target(obscura::DM_Particle& DM, double r, double DM_speed);
-	libphysica::Vector Sample_Target_Velocity(double temperature, double target_mass, const libphysica::Vector& vel_DM);
-	libphysica::Vector New_DM_Velocity(double cos_scattering_angle, double DM_mass, double target_mass, libphysica::Vector& vel_DM, libphysica::Vector& vel_target);
+	int Sample_Target(obscura::DM_Particle& DM, double r, double vDM);
+	libphysica::Vector Sample_Momentum_Transfer(int target_index, obscura::DM_Particle& DM, const libphysica::Vector& DM_velocity, double r);
 
   public:
 	std::mt19937 PRNG;

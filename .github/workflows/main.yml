@@ -2,9 +2,9 @@ name: Build & Tests
 
 on:
   push:
-    branches: [ main , dev]
+    branches: [ main , dev, lightmediator]
   pull_request:
-    branches: [ main , dev]
+    branches: [ main , dev, lightmediator]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)

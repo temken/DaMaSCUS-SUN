@@ -16,7 +16,7 @@ namespace DaMaSCUS_SUN
 using namespace libphysica::natural_units;
 
 Simulation_Data::Simulation_Data(unsigned int sample_size, double u_min, unsigned int iso_rings)
-: min_sample_size_above_threshold(sample_size), minimum_speed_threshold(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
+: min_sample_size_above_threshold(sample_size), minimum_speed_threshold(u_min), isoreflection_rings(iso_rings), number_of_trajectories(0), number_of_free_particles(0), number_of_reflected_particles(0), number_of_captured_particles(0), average_number_of_scatterings(0.0), average_radius_last_scattering(0.0), computing_time(0.0), number_of_data_points(std::vector<unsigned long int>(iso_rings, 0)), data(iso_rings, std::vector<libphysica::DataPoint>())
 {
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_processes);
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -40,6 +40,9 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 	int mpi_tag			= 0;
 	MPI_Status mpi_status;
 	MPI_Request mpi_request;
+
+	if(mpi_rank == 0)
+		std::cout << "\nGenerate data with " << mpi_processes << " worker(s).\t(u_min = " << libphysica::Round(In_Units(minimum_speed_threshold, km / sec)) << " km/s)" << std::endl;
 
 	// Configure the simulator
 	Trajectory_Simulator simulator(solar_model, maximum_free_time_steps, maximum_number_of_scatterings, initial_and_final_radius);
@@ -70,7 +73,11 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 			if(trajectory.Particle_Free())
 				number_of_free_particles++;
 			else if(trajectory.Particle_Reflected())
+			{
 				number_of_reflected_particles++;
+				average_radius_last_scattering	  = 1.0 / number_of_reflected_particles * ((number_of_reflected_particles - 1) * average_radius_last_scattering + trajectory.radius_last_scattering);
+				average_radius_deepest_scattering = 1.0 / number_of_reflected_particles * ((number_of_reflected_particles - 1) * average_radius_deepest_scattering + trajectory.radius_deepest_scattering);
+			}
 			else
 				continue;
 
@@ -126,14 +133,28 @@ void Simulation_Data::Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar
 
 void Simulation_Data::Perform_MPI_Reductions()
 {
-	average_number_of_scatterings *= number_of_trajectories;
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_trajectories, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_reflected_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &number_of_captured_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &average_number_of_scatterings, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	average_number_of_scatterings /= number_of_trajectories;
 
+	// Reduce averages accounting for the number of trajectories of each process
+	average_number_of_scatterings *= number_of_trajectories;
+	average_radius_last_scattering *= number_of_reflected_particles;
+	average_radius_deepest_scattering *= number_of_reflected_particles;
+
+	// Reduce particle counters
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_reflected_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_trajectories, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &average_number_of_scatterings, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &average_radius_last_scattering, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &average_radius_deepest_scattering, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	average_number_of_scatterings /= number_of_trajectories;
+	average_radius_last_scattering /= number_of_reflected_particles;
+	average_radius_deepest_scattering /= number_of_reflected_particles;
+
+	// Reduce remaining particle counters
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_free_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &number_of_captured_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+	// Reduce data
 	MPI_Datatype mpi_datapoint;
 	MPI_Type_contiguous(2, MPI_DOUBLE, &mpi_datapoint);
 	MPI_Type_commit(&mpi_datapoint);
@@ -162,6 +183,7 @@ void Simulation_Data::Perform_MPI_Reductions()
 		global_data.push_back(ring_data);
 	}
 	data = global_data;
+
 	MPI_Allreduce(MPI_IN_PLACE, &computing_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 }
 
@@ -212,7 +234,9 @@ void Simulation_Data::Print_Summary(unsigned int mpi_rank)
 				  << "Results:" << std::endl
 				  << "Simulated trajectories:\t\t" << number_of_trajectories << std::endl
 				  << "Generated data points (total):\t" << number_of_data_points_tot << std::endl
-				  << "Average # of scatterings:\t" << libphysica::Round(average_number_of_scatterings) << std::endl
+				  << "<nScatterings>:\t" << libphysica::Round(average_number_of_scatterings) << std::endl
+				  << "<r>(last scattering) [rSun]:\t" << libphysica::Round(In_Units(average_radius_last_scattering, rSun)) << std::endl
+				  << "<r>(deepest scattering) [rSun]:\t" << libphysica::Round(In_Units(average_radius_deepest_scattering, rSun)) << std::endl
 				  << "Free particles [%]:\t\t" << libphysica::Round(100.0 * Free_Ratio()) << std::endl
 				  << "Reflected particles [%]:\t" << libphysica::Round(100.0 * Reflection_Ratio()) << std::endl
 				  << "Captured particles [%]:\t\t" << libphysica::Round(100.0 * Capture_Ratio()) << std::endl;

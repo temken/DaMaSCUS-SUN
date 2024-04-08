@@ -21,16 +21,12 @@ class Simulation_Data
 	unsigned int isoreflection_rings;
 	double initial_and_final_radius			   = 1.1 * libphysica::natural_units::rSun;
 	unsigned int minimum_number_of_scatterings = 1;
-	unsigned int maximum_number_of_scatterings = 1000;
-	unsigned long int maximum_free_time_steps  = 1e7;
+	unsigned int maximum_number_of_scatterings = 10000;
+	unsigned long int maximum_free_time_steps  = 1e8;
 
 	// Results
-	unsigned long int number_of_trajectories;
-	unsigned long int number_of_free_particles;
-	unsigned long int number_of_reflected_particles;
-	unsigned long int number_of_captured_particles;
-	double average_number_of_scatterings;
-	double computing_time;
+	unsigned long int number_of_trajectories, number_of_free_particles, number_of_reflected_particles, number_of_captured_particles;
+	double average_number_of_scatterings, average_radius_last_scattering, average_radius_deepest_scattering, computing_time;
 
 	std::vector<unsigned long int> number_of_data_points;
 
@@ -45,7 +41,7 @@ class Simulation_Data
 
 	Simulation_Data(unsigned int sample_size, double u_min = 0.0, unsigned int iso_rings = 1);
 
-	void Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering, unsigned long int max_free_steps = 1e8);
+	void Configure(double initial_radius, unsigned int min_scattering, unsigned int max_scattering = 10000, unsigned long int max_free_steps = 1e8);
 
 	void Generate_Data(obscura::DM_Particle& DM, Solar_Model& solar_model, obscura::DM_Distribution& halo_model, unsigned int fixed_seed = 0);
 
