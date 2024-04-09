@@ -11,6 +11,7 @@
 #include "Data_Generation.hpp"
 #include "Parameter_Scan.hpp"
 #include "Reflection_Spectrum.hpp"
+#include "Scattering_Rates.hpp"
 #include "Solar_Model.hpp"
 #include "version.hpp"
 
@@ -39,8 +40,9 @@ int main(int argc, char* argv[])
 
 	// Configuration parameters
 	Configuration cfg(argv[1], mpi_rank);
-	Solar_Model SSM;
+	Solar_Model SSM(cfg.use_medium_effects, cfg.zeta);
 	cfg.Print_Summary(mpi_rank);
+	SSM.Print_Summary(mpi_rank);
 	MPI_Barrier(MPI_COMM_WORLD);
 	////////////////////////////////////////////////////////////////////////
 
@@ -50,13 +52,11 @@ int main(int argc, char* argv[])
 		double u_min = 0.0;
 		// double u_min = cfg.DM_detector->Minimum_DM_Speed(*cfg.DM);
 		Simulation_Data data_set(cfg.sample_size, u_min, cfg.isoreflection_rings);
-		data_set.Configure(1.1 * rSun, 1, 1000);
 		if(mpi_rank == 0)
-			std::cout << "Generate data..." << std::endl
-					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << "\t\t"
-					  << "sigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
-					  << "\tu_min [km/sec]:\t" << libphysica::Round(In_Units(u_min, km / sec)) << "\t\t"
-					  << "sigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
+			std::cout << "\nDM parameters:" << std::endl
+					  << "\tm_DM [MeV]:\t" << libphysica::Round(In_Units(cfg.DM->mass, MeV)) << std::endl
+					  << "\tsigma_p [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Nuclei"), cm * cm)) << std::endl
+					  << "\tsigma_e [cm2]:\t" << libphysica::Round(In_Units(cfg.DM->Get_Interaction_Parameter("Electrons"), cm * cm)) << std::endl
 					  << std::endl;
 		SSM.Interpolate_Total_DM_Scattering_Rate(*cfg.DM, cfg.interpolation_points, cfg.interpolation_points);
 		data_set.Generate_Data(*cfg.DM, SSM, *cfg.DM_distr);
@@ -65,12 +65,24 @@ int main(int argc, char* argv[])
 		{
 			Reflection_Spectrum spectrum(data_set, SSM, *cfg.DM_distr, cfg.DM->mass, 0);
 			spectrum.Print_Summary(mpi_rank);
-			std::function<double(double)> func = [&spectrum, &cfg](double v) {
+
+			// Export differential DM flux dPhi/dv to file
+			std::function<double(double)> dPhi_dv = [&spectrum, &cfg](double v) {
 				return spectrum.Differential_DM_Flux(v, cfg.DM->mass);
 			};
 			std::vector<double> speeds = libphysica::Linear_Space(spectrum.Minimum_DM_Speed(), spectrum.Maximum_DM_Speed(), 300);
 			if(mpi_rank == 0)
-				libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux.txt", func, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+				libphysica::Export_Function(cfg.results_path + "Differential_SRDM_Flux.txt", dPhi_dv, speeds, {km / sec, 1.0 / (km / sec) / cm / cm / sec});
+
+			// Export recoil energy spectrum dR/dE to file
+			std::function<double(double)> dR_dE = [&spectrum, &cfg](double E) {
+				return cfg.DM_detector->dRdE(E, *cfg.DM, spectrum);
+			};
+			std::vector<double> energies = libphysica::Log_Space(0.1 * eV, cfg.DM_detector->Maximum_Energy_Deposit(*cfg.DM, spectrum), 300);
+			if(mpi_rank == 0)
+				libphysica::Export_Function(cfg.results_path + "Differential_Energy_Spectrum.txt", dR_dE, energies, {keV, 1.0 / keV / kg / year});
+
+			// Compute p value for chosen experiment
 			double p = cfg.DM_detector->P_Value(*cfg.DM, spectrum);
 			libphysica::Print_Box("p = " + std::to_string(libphysica::Round(p)), 1, mpi_rank);
 		}
@@ -105,7 +117,7 @@ int main(int argc, char* argv[])
 	{
 		if(mpi_rank == 0 && cfg.compute_halo_constraints)
 		{
-			std::cout << "Compute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
+			std::cout << "\nCompute halo constraints for " << cfg.DM_detector->name << ":" << std::endl;
 			double mDM_min								= cfg.DM_detector->Minimum_DM_Mass(*cfg.DM, *cfg.DM_distr);
 			std::vector<double> DM_masses				= libphysica::Log_Space(mDM_min, GeV, 100);
 			std::vector<std::vector<double>> halo_limit = cfg.DM_detector->Upper_Limit_Curve(*cfg.DM, *cfg.DM_distr, DM_masses, cfg.constraints_certainty);
@@ -128,6 +140,66 @@ int main(int argc, char* argv[])
 	// Run some custom code
 	else
 	{
+		std::random_device rd;
+		std::mt19937 PRNG(rd());
+		double r				 = 0.1 * rSun;
+		double temperature		 = SSM.Temperature(r);
+		int target_index		 = 4;
+		obscura::Isotope nucleus = SSM.target_isotopes[target_index];
+		std::cout << nucleus.name << std::endl;
+		double nucleus_density						= SSM.Number_Density_Nucleus(target_index, r);
+		double number_density_electrons				= SSM.Number_Density_Electron(r);
+		auto nuclei									= SSM.target_isotopes;
+		std::vector<double> number_densities_nuclei = SSM.Number_Densities_Nuclei(r);
+		double vDM									= 5000 * km / sec;
+		double qMin									= SSM.zeta * cfg.DM->mass * vDM;
+		double qMax_Nucleus							= Maximum_Momentum_Transfer(cfg.DM->mass, temperature, nucleus.mass, vDM, 5);
+		double qMax_Electron						= Maximum_Momentum_Transfer(cfg.DM->mass, temperature, mElectron, vDM, 5);
+		auto qList_Nucleus							= libphysica::Linear_Space(qMin, qMax_Nucleus, 500);
+		auto qList_Electron							= libphysica::Linear_Space(qMin, qMax_Electron, 500);
+		auto x_list									= libphysica::Linear_Space(-1.0, 1.0, 500);
+		std::ofstream f, g;
+
+		// 1. PDF of cos(theta)
+		std::cout << "\n1. PDF of cos(theta)" << std::endl;
+		f.open("PDF_Cos_Theta_Electron.txt");
+		g.open("PDF_Cos_Theta_Nucleus.txt");
+		for(int i = 0; i < x_list.size(); i++)
+		{
+			libphysica::Print_Progress_Bar(1.0 * i / x_list.size());
+			f << x_list[i] << "\t" << PDF_Cos_Theta_Electron(x_list[i], *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << x_list[i] << "\t" << PDF_Cos_Theta_Nucleus(x_list[i], *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
+		f.close();
+		g.close();
+
+		// 2. PDF of q
+		std::cout << "\n2. PDF of q" << std::endl;
+		f.open("PDF_q_Electron.txt");
+		g.open("PDF_q_Nucleus.txt");
+		for(unsigned int i = 0; i < qList_Nucleus.size(); i++)
+		{
+			libphysica::Print_Progress_Bar(1.0 * i / qList_Nucleus.size());
+			f << qList_Electron[i] << "\t" << PDF_q_Electron(qList_Electron[i], *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+			g << qList_Nucleus[i] << "\t" << PDF_q_Nucleus(qList_Nucleus[i], *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin) << std::endl;
+		}
+		f.close();
+		g.close();
+
+		// 3. Sample cos_theta and q simultaneously
+		std::cout << "\n3. Sample cos_theta and q simultaneously" << std::endl;
+		f.open("Sample_Cos_Theta_q_Electron.txt");
+		g.open("Sample_Cos_Theta_q_Nucleus.txt");
+		for(int i = 0; i < cfg.sample_size; i++)
+		{
+			libphysica::Print_Progress_Bar(1.0 * i / cfg.sample_size);
+			auto cos_theta_q = Sample_Cos_Theta_q_Electron(PRNG, *cfg.DM, vDM, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin);
+			f << cos_theta_q.first << "\t" << cos_theta_q.second << std::endl;
+			cos_theta_q = Sample_Cos_Theta_q_Nucleus(PRNG, *cfg.DM, vDM, nucleus, nucleus_density, temperature, number_density_electrons, nuclei, number_densities_nuclei, SSM.use_medium_effects, qMin);
+			g << cos_theta_q.first << "\t" << cos_theta_q.second << std::endl;
+		}
+		f.close();
+		g.close();
 	}
 
 	////////////////////////////////////////////////////////////////////////

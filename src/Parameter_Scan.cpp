@@ -127,6 +127,34 @@ void Configuration::Import_Parameter_Scan_Parameter()
 		std::cerr << "No 'compute_halo_constraints' setting in configuration file." << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
+
+	try
+	{
+		use_medium_effects		   = config.lookup("use_medium_effects");
+		std::string DM_form_factor = config.lookup("DM_form_factor").c_str();
+		if(!use_medium_effects && DM_form_factor == "Long-Range")
+			use_medium_effects = true;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'use_medium_effects' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	try
+	{
+		std::string DM_form_factor = config.lookup("DM_form_factor").c_str();
+		if(DM_form_factor == "Long-Range")
+			zeta = config.lookup("zeta");
+		else
+			zeta = 0.0;
+	}
+	catch(const SettingNotFoundException& nfex)
+	{
+		std::cerr << "No 'zeta' setting in configuration file." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
 	try
 	{
 		perform_full_scan = config.lookup("perform_full_scan");
@@ -151,7 +179,7 @@ void Configuration::Construct_DM_Particle()
 	try
 	{
 		DM_mass = config.lookup("DM_mass");
-		DM_mass *= GeV;
+		DM_mass *= MeV;
 	}
 	catch(const SettingNotFoundException& nfex)
 	{
@@ -237,6 +265,12 @@ void Configuration::Construct_DM_Particle_Dark_Photon()
 		{
 			DM_mediator_mass = config.lookup("DM_mediator_mass");
 			DM_mediator_mass *= MeV;
+			if(DM_mediator_mass < 1e-60)
+			{
+				std::cout << "Error in Configuration::Construct_DM_Particle_Dark_Photon:\tMediator mass for \"General\" form factor needs to be positive. (DM_mediator_mass = " << DM_mediator_mass / MeV << " MeV)\n"
+						  << "\tFor long range interactions or zero mediator mass, use \"Long range\" form factor." << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
 		}
 		catch(const SettingNotFoundException& nfex)
 		{
@@ -245,6 +279,7 @@ void Configuration::Construct_DM_Particle_Dark_Photon()
 		}
 	}
 	dynamic_cast<DM_Particle_Dark_Photon*>(DM)->Set_FormFactor_DM(DM_form_factor, DM_mediator_mass);
+
 	double DM_cross_section_electron;
 	try
 	{
@@ -268,7 +303,10 @@ void Configuration::Print_Summary(int mpi_rank)
 				  << std::endl
 				  << "\tRun mode:\t\t\t" << run_mode << std::endl
 				  << "\tSample size:\t\t\t" << sample_size << std::endl
-				  << "\tSc. rate interpolation:\t\t" << ((interpolation_points > 0) ? "[x] (Grid: " + std::to_string(interpolation_points) + "×" + std::to_string(interpolation_points) + ")" : "[ ]") << std::endl;
+				  << "\tSc. rate interpolation:\t\t" << ((interpolation_points > 0) ? "[x] (Grid: " + std::to_string(interpolation_points) + "×" + std::to_string(interpolation_points) + ")" : "[ ]") << std::endl
+				  << "\tMedium effects:\t\t\t" << (use_medium_effects ? "[x]" : "[ ]") << std::endl;
+		if(zeta > 0.0)
+			std::cout << "\tQ-cutoff parameter zeta:\t" << zeta << std::endl;
 		if(run_mode == "Parameter point" && isoreflection_rings > 1)
 			std::cout << "\tIsoreflection rings:\t\t" << isoreflection_rings << std::endl;
 		else if(run_mode == "Parameter scan")
@@ -565,9 +603,8 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 	double mDM_original		 = DM.mass;
 	double coupling_original = DM.Get_Interaction_Parameter(detector.Target_Particles());
 
-	double p_critical					  = 1.0 - certainty_level;
-	unsigned int counter				  = 0;
-	unsigned int last_excluded_mass_index = DM_masses.size();
+	double p_critical	 = 1.0 - certainty_level;
+	unsigned int counter = 0;
 	for(unsigned int i = 0; i < couplings.size(); i++)
 	{
 		int row			   = couplings.size() - 1 - i;
@@ -608,10 +645,7 @@ void Parameter_Scan::Perform_Full_Scan(obscura::DM_Particle& DM, obscura::DM_Det
 			}
 
 			if(p < p_critical)
-			{
-				row_exclusion			 = true;
-				last_excluded_mass_index = j;
-			}
+				row_exclusion = true;
 		}
 		if(!row_exclusion)
 		{

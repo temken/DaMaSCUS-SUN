@@ -1,5 +1,5 @@
 [![Build & Test Status](https://github.com/temken/DaMaSCUS-SUN/workflows/Build%20&%20Tests/badge.svg)](https://github.com/temken/DaMaSCUS-SUN/actions)
-[![codecov](https://codecov.io/gh/temken/DaMaSCUS-SUN/branch/master/graph/badge.svg)](https://codecov.io/gh/temken/DaMaSCUS-SUN)
+[![codecov](https://codecov.io/gh/temken/DaMaSCUS-SUN/branch/main/graph/badge.svg)](https://codecov.io/gh/temken/DaMaSCUS-SUN)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 # DaMaSCUS-SUN
@@ -73,7 +73,9 @@ or alternatively with APT:
 
 <details><summary>Installation of libconfig</summary>
 <p>
-On Macs, it can be on installed using [homebrew](https://brew.sh/)
+It is no-longer strictly necessary to install libconfig. During the build of *libphysica*, CMake will download and build *libconfig* in libphysica/external/ if it cannot find an installation. It still makes sense to install it in most cases.
+
+On Macs, *libconfig* can be on installed using [homebrew](https://brew.sh/)
 
 ```
 >brew install libconfig
@@ -83,7 +85,7 @@ or using APT on Linux machines
 
 ```
 >sudo apt-get update -y
->sudo apt-get install -y libconfig-dev
+>sudo apt-get install -y libconfig++-dev
 ```
 
 Alternatively, it can be built from the source files via
@@ -157,7 +159,7 @@ Here *N* must be specified to the number of MPI processes.
 ```
 >mpirun -n N DaMaSCUS-SUN config.cfg                                                                                                                                                                                                                        1 ↵  
 [Started on Wed Feb 24 13:19:23 2021]
-DaMaSCUS-SUN-0.1.0	git:master/757a821
+DaMaSCUS-SUN-0.1.0	git:main/757a821
   ___       __  __      ___  ___ _   _ ___     ___ _   _ _  _
  |   \ __ _|  \/  |__ _/ __|/ __| | | / __|___/ __| | | | \| |
  | |) / _` | |\/| / _` \__ \ (__| |_| \__ \___\__ \ |_| | .` |
@@ -336,7 +338,25 @@ Bibtex entry:
 
 As well as the original publications,
 
-> Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
+> Emken, T. , 2021,  **Solar reflection of light dark matter with heavy mediators**, [Phys.Rev.D 105 (2022) 6, 063020](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.105.063020), [[arXiv:2102.12483]](https://arxiv.org/abs/2102.12483).
+
+Bibtex entry:
+
+```
+@article{Emken:2021lgc,
+    author = "Emken, Timon",
+    title = "{Solar reflection of light dark matter with heavy mediators}",
+    eprint = "2102.12483",
+    archivePrefix = "arXiv",
+    primaryClass = "hep-ph",
+    doi = "10.1103/PhysRevD.105.063020",
+    journal = "Phys. Rev. D",
+    volume = "105",
+    number = "6",
+    pages = "063020",
+    year = "2022"
+}
+```
 
 </p>
 </details>

@@ -24,8 +24,9 @@ TEST(TestSimulationTrajectory, TestTrajectoryResultConstructor)
 	Event initial_event(t_i, r_i, v_i);
 	Event final_event(t_f, r_f, v_f);
 	unsigned int nscat = 14;
+	double r_last	   = 0.9 * rSun;
 	// ACT
-	Trajectory_Result result(initial_event, final_event, nscat);
+	Trajectory_Result result(initial_event, final_event, nscat, r_last);
 	// ASSERT
 	EXPECT_EQ(result.initial_event.time, t_i);
 	EXPECT_EQ(result.initial_event.position, r_i);
@@ -34,6 +35,7 @@ TEST(TestSimulationTrajectory, TestTrajectoryResultConstructor)
 	EXPECT_EQ(result.final_event.position, r_f);
 	EXPECT_EQ(result.final_event.velocity, v_f);
 	EXPECT_EQ(result.number_of_scatterings, nscat);
+	EXPECT_EQ(result.radius_last_scattering, r_last);
 }
 
 TEST(TestSimulationTrajectory, TestParticleReflected)
