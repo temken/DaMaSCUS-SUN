@@ -320,7 +320,7 @@ A number of parameters need to be specified and they are described here.
 
 If you decide to use this code, please cite the latest archived version,
 
-> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) [Code, v0.1.1], Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559873]](https://doi.org/10.5281/zenodo.4559873)
+> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) [Code, v1.0.0], Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559873]](https://doi.org/10.5281/zenodo.4559873)
 
 Bibtex entry:
 
