@@ -5,7 +5,7 @@
 # DaMaSCUS-SUN
 
 <a href="https://ascl.net/2102.018"><img src="https://img.shields.io/badge/ascl-2102.018-blue.svg?colorB=262255" alt="ascl:2102.018" /></a>
-[![DOI](https://zenodo.org/badge/263334878.svg)](https://zenodo.org/badge/latestdoi/263334878)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10948125.svg)](https://doi.org/10.5281/zenodo.10948125)
 [![arXiv](https://img.shields.io/badge/arXiv-2102.12483-B31B1B.svg)](https://arxiv.org/abs/2102.12483)
 
 Dark Matter Simulation Code for Underground Scatterings - Sun Edition
@@ -310,6 +310,7 @@ A number of parameters need to be specified and they are described here.
 
 ## Version History
 
+- 09.04.2024: Release of version 1.0.0
 - 23.02.2021: Release of version 0.1.0
 
 ## Everything else
@@ -319,7 +320,7 @@ A number of parameters need to be specified and they are described here.
 
 If you decide to use this code, please cite the latest archived version,
 
-> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) [Code, v0.1.1], Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.5957388]](https://doi.org/10.5281/zenodo.5957388)
+> Emken, T., 2021, Dark Matter Simulation Code for Underground Scatterings - Sun Edition (DaMaSCUS-SUN) [Code, v0.1.1], Astrophysics Source Code Library, record [[ascl:2102.018]](https://ascl.net/2102.018), [[DOI:10.5281/zenodo.4559873]](https://doi.org/10.5281/zenodo.4559873)
 
 Bibtex entry:
 
@@ -329,10 +330,10 @@ Bibtex entry:
   title = {{Dark Matter Simulation Code for Underground Scatterings - Sun Edition~(DaMaSCUS-SUN) [Code, v0.1.1]}},
   year         = {2021},
   publisher    = {Zenodo},
-  version      = {v0.1.1},
-  doi          = {DOI:10.5281/zenodo.5957388},
-  url          = {https://doi.org/10.5281/zenodo.5957388},
-  howpublished={Astrophysics Source Code Library record \href{https://ascl.net/2102.018}{[ascl:2102.018]}. The code can be found under \url{https://github.com/temken/damascus-sun}. Version 0.1.1 is archived as \href{https://doi.org/10.5281/zenodo.5957388}{DOI:10.5281/zenodo.5957388}}
+  version      = {v1.0.0},
+  doi          = {DOI:10.5281/zenodo.10948125},
+  url          = {https://doi.org/10.5281/zenodo.10948125},
+  howpublished={Astrophysics Source Code Library record \href{https://ascl.net/2102.018}{[ascl:2102.018]}. The code can be found under \url{https://github.com/temken/damascus-sun}. Version 1.0.0 is archived as \href{https://doi.org/10.5281/zenodo.10948125}{DOI:10.5281/zenodo.10948125}}
 }
 ```
 
